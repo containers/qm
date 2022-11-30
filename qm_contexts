@@ -1,0 +1,5 @@
+process = "system_u:system_r:qm_container_t:s0"
+file = "system_u:object_r:qm_container_file_t:s0"
+ro_file="system_u:object_r:qm_container_ro_file_t:s0"
+kvm_process = "system_u:system_r:qm_container_kvm_t:s0"
+init_process = "system_u:system_r:qm_container_init_t:s0"

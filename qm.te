@@ -1,0 +1,40 @@
+policy_module(qm, 0.1.0)
+
+type qm_t;
+domain_type(qm_t)
+role system_r types qm_t;
+init_initrc_domain(qm_t)
+
+attribute qm_file_type;
+
+type qm_file_t, qm_file_type;
+files_type(qm_file_t)
+files_mountpoint(qm_file_t)
+
+type qm_container_var_lib_t, qm_file_type;
+files_mountpoint(qm_container_var_lib_t)
+
+type qm_container_ro_file_t, qm_file_type;
+files_mountpoint(qm_container_ro_file_t)
+
+allow qm_t qm_container_ro_file_t:file execmod;
+manage_files_pattern(qm_t, qm_file_type, qm_file_type)
+manage_dirs_pattern(qm_t, qm_file_type, qm_file_type)
+manage_lnk_files_pattern(qm_t, qm_file_type, qm_file_type)
+manage_chr_files_pattern(qm_t, qm_file_type, qm_file_type)
+manage_blk_files_pattern(qm_t, qm_file_type, qm_file_type)
+manage_sock_files_pattern(qm_t, qm_file_type, qm_file_type)
+fs_tmpfs_filetrans(qm_t, qm_file_t, { dir file lnk_file })
+
+filetrans_pattern(qm_t, qm_file_t, qm_container_var_lib_t, dir, "containers")
+filetrans_pattern(qm_t, qm_container_var_lib_t, qm_container_ro_file_t, dir, "overlay")
+filetrans_pattern(qm_t, qm_container_var_lib_t, qm_container_ro_file_t, dir, "overlay2")
+filetrans_pattern(qm_t, qm_container_var_lib_t, qm_container_ro_file_t, file, "config.env")
+filetrans_pattern(qm_t, qm_container_var_lib_t, qm_container_ro_file_t, file, "hostname")
+filetrans_pattern(qm_t, qm_container_var_lib_t, qm_container_ro_file_t, file, "hosts")
+
+gen_require(`
+	attribute container_domain;
+')
+allow container_domain qm_container_ro_file_t:file execmod;
+
