@@ -10,3 +10,10 @@ each other.
 
 For now all of the control processes in the qm other then containers will run
 with the same qm_t type.
+
+Setup testing environment
+
+Install:
+
+sudo dnf install --installroot /var/lib/qm/rootfs --releasever=37 systemd podman
+
