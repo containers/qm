@@ -2,6 +2,7 @@ policy_module(qm, 0.1.0)
 
 gen_require(`
 	attribute container_domain;
+	attribute filesystem_type;
 
 	type cgroup_t;
 	type fusefs_t;
@@ -14,6 +15,8 @@ gen_require(`
 	type sysctl_t;
 	type system_dbusd_t;
 	type systemd_machined_t;
+	type systemd_logind_t;
+	type unconfined_service_t;
 ')
 
 type qm_t;
@@ -26,6 +29,7 @@ attribute qm_file_type;
 type qm_file_t, qm_file_type;
 files_type(qm_file_t)
 files_mountpoint(qm_file_t)
+files_mountpoint(qm_file_t)
 
 type qm_container_var_lib_t, qm_file_type;
 files_mountpoint(qm_container_var_lib_t)
@@ -37,6 +41,7 @@ allow qm_t qm_container_ro_file_t:file execmod;
 manage_files_pattern(qm_t, qm_file_type, qm_file_type)
 can_exec(qm_t, qm_file_type)
 allow qm_t qm_file_type:file { map entrypoint mounton };
+allow qm_t qm_file_type:chr_file mounton;
 manage_dirs_pattern(qm_t, qm_file_type, qm_file_type)
 manage_fifo_files_pattern(qm_t, qm_file_type, qm_file_type)
 manage_lnk_files_pattern(qm_t, qm_file_type, qm_file_type)
@@ -64,10 +69,24 @@ rw_sock_files_pattern(systemd_machined_t, qm_file_type, qm_file_type)
 manage_chr_files_pattern(systemd_machined_t, qm_file_type, qm_file_type)
 allow systemd_machined_t qm_t:unix_stream_socket { connectto rw_stream_socket_perms };
 allow system_dbusd_t qm_file_type:chr_file { read write };
+allow systemd_machined_t unconfined_service_t:dir search;
+
+ps_process_pattern(systemd_logind_t, qm_t)
+manage_files_pattern(systemd_logind_t, qm_file_type, qm_file_type)
+manage_dirs_pattern(systemd_logind_t, qm_file_type, qm_file_type)
+manage_lnk_files_pattern(systemd_logind_t, qm_file_type, qm_file_type)
+rw_sock_files_pattern(systemd_logind_t, qm_file_type, qm_file_type)
+manage_chr_files_pattern(systemd_logind_t, qm_file_type, qm_file_type)
+allow systemd_logind_t qm_t:unix_stream_socket { connectto rw_stream_socket_perms };
+
+allow system_dbusd_t qm_file_type:chr_file { read write };
 
 allow qm_t self:bpf { map_create map_read map_write prog_load prog_run };
 allow qm_t self:cap_userns { chown dac_override dac_read_search fowner fsetid kill net_bind_service setfcap setgid setpcap setuid sys_admin sys_boot sys_chroot sys_ptrace sys_resource };
-allow qm_t self:capability { audit_write chown dac_override dac_read_search fowner fsetid kill net_bind_service setfcap setgid setpcap setuid sys_admin sys_boot sys_chroot sys_ptrace sys_resource };
+allow qm_t self:capability { audit_write chown dac_override dac_read_search fowner fsetid kill net_bind_service net_admin net_raw setfcap setgid setpcap setuid sys_admin sys_boot sys_chroot sys_ptrace sys_resource };
+allow qm_t self:capability2 { audit_read bpf perfmon};
+
+allow qm_t self:packet_socket create_socket_perms;
 allow qm_t self:icmp_socket create_stream_socket_perms;
 allow qm_t self:key { setattr write };
 allow qm_t self:netlink_audit_socket { create_netlink_socket_perms nlmsg_relay };
@@ -80,7 +99,7 @@ allow qm_t self:netlink_socket create_socket_perms;
 allow qm_t self:netlink_tcpdiag_socket create_netlink_socket_perms;
 allow qm_t self:process { getattr getcap getpgid getrlimit getsched setcap setpgid setrlimit setsched signal_perms };
 allow qm_t self:rawip_socket create_stream_socket_perms;
-allow qm_t self:tcp_socket create_socket_perms;
+allow qm_t self:tcp_socket create_stream_socket_perms;
 allow qm_t self:udp_socket create_socket_perms;
 allow qm_t self:unix_dgram_socket { sendto create_socket_perms };
 allow qm_t self:unix_stream_socket {  connectto rw_stream_socket_perms };
@@ -90,28 +109,26 @@ miscfiles_watch_localization_files(qm_t)
 
 seutil_search_default_contexts(qm_t)
 
-allow qm_t cgroup_t:filesystem { getattr remount };
-allow qm_t hugetlbfs_t:filesystem { mount unmount };
 allow qm_t mtrr_device_t:file { getattr mounton };
 allow qm_t proc_kcore_t:file { getattr mounton };
 allow qm_t proc_kmsg_t:file { getattr mounton };
 allow qm_t proc_t:file mounton;
-allow qm_t proc_t:filesystem { mount remount unmount };
 allow qm_t sysctl_irq_t:dir { getattr mounton };
 allow qm_t sysctl_t:file { getattr mounton };
-allow qm_t fusefs_t:filesystem { mount remount unmount };
+allow qm_t cgroup_t:filesystem { getattr remount };
 
-corenet_tcp_bind_generic_node(qm_t)
-corenet_udp_bind_generic_node(qm_t)
+corenet_icmp_bind_generic_node(qm_t)
 corenet_raw_bind_generic_node(qm_t)
-corenet_tcp_sendrecv_all_ports(qm_t)
-corenet_udp_sendrecv_all_ports(qm_t)
-corenet_udp_bind_all_ports(qm_t)
-corenet_tcp_bind_all_ports(qm_t)
-corenet_tcp_connect_all_ports(qm_t)
+corenet_rw_tun_tap_dev(qm_t)
 corenet_sctp_bind_all_ports(qm_t)
 corenet_sctp_connect_all_ports(qm_t)
-corenet_rw_tun_tap_dev(qm_t)
+corenet_tcp_bind_all_ports(qm_t)
+corenet_tcp_bind_generic_node(qm_t)
+corenet_tcp_connect_all_ports(qm_t)
+corenet_tcp_sendrecv_all_ports(qm_t)
+corenet_udp_bind_all_ports(qm_t)
+corenet_udp_bind_generic_node(qm_t)
+corenet_udp_sendrecv_all_ports(qm_t)
 
 dev_list_sysfs(qm_t)
 dev_mounton_sysfs(qm_t)
@@ -126,6 +143,7 @@ fs_all_mount_fs_perms_xattr_fs(qm_t)
 fs_manage_cgroup_dirs(qm_t)
 fs_manage_cgroup_files(qm_t)
 fs_read_nsfs_files(qm_t)
+fs_search_tracefs_dirs(qm_t)
 allow qm_t nsfs_t:filesystem { getattr unmount };
 
 kernel_dontaudit_search_security_state(qm_t)
@@ -140,10 +158,13 @@ kernel_mounton_systemd_ProtectKernelTunables(qm_t)
 kernel_mounton_systemd_ProtectKernelTunables(qm_t)
 kernel_read_fs_sysctls(qm_t)
 kernel_read_net_sysctls(qm_t)
+kernel_read_network_state(qm_t)
 kernel_read_network_state_symlinks(qm_t)
 kernel_read_proc_files(qm_t)
 kernel_read_security_state(qm_t)
+kernel_read_sysctl(qm_t)
 kernel_read_unix_sysctls(qm_t)
+kernel_request_load_module(qm_t)
 kernel_rw_fs_sysctls(qm_t)
 kernel_rw_kernel_sysctl(qm_t)
 kernel_rw_net_sysctls(qm_t)
@@ -151,7 +172,7 @@ kernel_rw_security_state(qm_t)
 kernel_rw_unix_sysctls(qm_t)
 kernel_rw_usermodehelper_state(qm_t)
 dontaudit qm_t proc_security_t:file write;
-dontaudit qm_t security_t:filesystem remount;
+allow qm_t filesystem_type:filesystem { mount remount unmount };
 
 unconfined_dgram_send(qm_t)
 
@@ -161,3 +182,7 @@ dontaudit qm_t security_t:file write;
 
 sysnet_read_config(qm_t)
 sysnet_write_config(qm_t)
+
+term_search_ptys(qm_t)
+term_use_generic_ptys(qm_t)
+term_setattr_generic_ptys(qm_t)
