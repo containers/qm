@@ -70,6 +70,7 @@ manage_chr_files_pattern(systemd_machined_t, qm_file_type, qm_file_type)
 allow systemd_machined_t qm_t:unix_stream_socket { connectto rw_stream_socket_perms };
 allow system_dbusd_t qm_file_type:chr_file { read write };
 allow systemd_machined_t unconfined_service_t:dir search;
+systemd_dbus_chat_machined(systemd_machined_t)
 
 ps_process_pattern(systemd_logind_t, qm_t)
 manage_files_pattern(systemd_logind_t, qm_file_type, qm_file_type)
@@ -78,6 +79,8 @@ manage_lnk_files_pattern(systemd_logind_t, qm_file_type, qm_file_type)
 rw_sock_files_pattern(systemd_logind_t, qm_file_type, qm_file_type)
 manage_chr_files_pattern(systemd_logind_t, qm_file_type, qm_file_type)
 allow systemd_logind_t qm_t:unix_stream_socket { connectto rw_stream_socket_perms };
+container_manage_dirs(systemd_logind_t)
+container_manage_files(systemd_logind_t)
 
 allow system_dbusd_t qm_file_type:chr_file { read write };
 
@@ -173,6 +176,7 @@ kernel_rw_unix_sysctls(qm_t)
 kernel_rw_usermodehelper_state(qm_t)
 dontaudit qm_t proc_security_t:file write;
 allow qm_t filesystem_type:filesystem { mount remount unmount };
+kernel_search_debugfs(qm_t)
 
 unconfined_dgram_send(qm_t)
 
@@ -186,3 +190,5 @@ sysnet_write_config(qm_t)
 term_search_ptys(qm_t)
 term_use_generic_ptys(qm_t)
 term_setattr_generic_ptys(qm_t)
+
+dev_write_sysfs_dirs(qm_t)
