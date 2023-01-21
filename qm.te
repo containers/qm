@@ -1,12 +1,15 @@
 policy_module(qm, 0.1.0)
 
 gen_require(`
+	class dbus { send_msg acquire_svc };
+
 	attribute container_domain;
 	attribute filesystem_type;
 
 	type cgroup_t;
 	type fusefs_t;
 	type hugetlbfs_t;
+	type init_t;
 	type mtrr_device_t;
 	type proc_kcore_t;
 	type proc_kmsg_t;
@@ -14,8 +17,8 @@ gen_require(`
 	type sysctl_irq_t;
 	type sysctl_t;
 	type system_dbusd_t;
-	type systemd_machined_t;
 	type systemd_logind_t;
+	type systemd_machined_t;
 	type unconfined_service_t;
 ')
 
@@ -42,16 +45,23 @@ manage_files_pattern(qm_t, qm_file_type, qm_file_type)
 can_exec(qm_t, qm_file_type)
 allow qm_t qm_file_type:file { map entrypoint mounton };
 allow qm_t qm_file_type:chr_file mounton;
+manage_blk_files_pattern(qm_t, qm_file_type, qm_file_type)
+manage_chr_files_pattern(qm_t, qm_file_type, qm_file_type)
 manage_dirs_pattern(qm_t, qm_file_type, qm_file_type)
 manage_fifo_files_pattern(qm_t, qm_file_type, qm_file_type)
 manage_lnk_files_pattern(qm_t, qm_file_type, qm_file_type)
-manage_chr_files_pattern(qm_t, qm_file_type, qm_file_type)
-allow qm_t qm_file_type:chr_file { watch watch_reads };
-manage_blk_files_pattern(qm_t, qm_file_type, qm_file_type)
 manage_sock_files_pattern(qm_t, qm_file_type, qm_file_type)
 fs_tmpfs_filetrans(qm_t, qm_file_t, { dir file lnk_file })
+allow qm_t qm_file_type:chr_file { watch watch_reads };
 allow qm_t qm_file_type:dir mounton;
 allow qm_t qm_file_type:filesystem { getattr remount unmount };
+
+manage_blk_files_pattern(init_t, qm_file_type, qm_file_type)
+manage_chr_files_pattern(init_t, qm_file_type, qm_file_type)
+manage_dirs_pattern(init_t, qm_file_type, qm_file_type)
+manage_fifo_files_pattern(init_t, qm_file_type, qm_file_type)
+manage_lnk_files_pattern(init_t, qm_file_type, qm_file_type)
+manage_sock_files_pattern(init_t, qm_file_type, qm_file_type)
 
 filetrans_pattern(qm_t, qm_file_t, qm_container_var_lib_t, dir, "containers")
 filetrans_pattern(qm_t, qm_container_var_lib_t, qm_container_ro_file_t, dir, "overlay")
@@ -70,7 +80,7 @@ manage_chr_files_pattern(systemd_machined_t, qm_file_type, qm_file_type)
 allow systemd_machined_t qm_t:unix_stream_socket { connectto rw_stream_socket_perms };
 allow system_dbusd_t qm_file_type:chr_file { read write };
 allow systemd_machined_t unconfined_service_t:dir search;
-systemd_dbus_chat_machined(systemd_machined_t)
+systemd_dbus_chat_machined(qm_t)
 
 ps_process_pattern(systemd_logind_t, qm_t)
 manage_files_pattern(systemd_logind_t, qm_file_type, qm_file_type)
@@ -79,8 +89,6 @@ manage_lnk_files_pattern(systemd_logind_t, qm_file_type, qm_file_type)
 rw_sock_files_pattern(systemd_logind_t, qm_file_type, qm_file_type)
 manage_chr_files_pattern(systemd_logind_t, qm_file_type, qm_file_type)
 allow systemd_logind_t qm_t:unix_stream_socket { connectto rw_stream_socket_perms };
-container_manage_dirs(systemd_logind_t)
-container_manage_files(systemd_logind_t)
 
 allow system_dbusd_t qm_file_type:chr_file { read write };
 
@@ -93,6 +101,7 @@ allow qm_t self:packet_socket create_socket_perms;
 allow qm_t self:icmp_socket create_stream_socket_perms;
 allow qm_t self:key { setattr write };
 allow qm_t self:netlink_audit_socket { create_netlink_socket_perms nlmsg_relay };
+allow qm_t self:dbus all_dbus_perms;
 allow qm_t self:netlink_generic_socket create_socket_perms;
 allow qm_t self:netlink_kobject_uevent_socket create_socket_perms;
 allow qm_t self:netlink_netfilter_socket create_socket_perms;
@@ -100,8 +109,9 @@ allow qm_t self:netlink_route_socket create_netlink_socket_perms;
 allow qm_t self:netlink_selinux_socket create_socket_perms;
 allow qm_t self:netlink_socket create_socket_perms;
 allow qm_t self:netlink_tcpdiag_socket create_netlink_socket_perms;
-allow qm_t self:process { getattr getcap getpgid getrlimit getsched setcap setpgid setrlimit setsched signal_perms };
+allow qm_t self:process { getattr getcap getpgid getrlimit getsched setcap setpgid setfscreate setrlimit setsockcreate setsched signal_perms };
 allow qm_t self:rawip_socket create_stream_socket_perms;
+allow qm_t self:system reload;
 allow qm_t self:tcp_socket create_stream_socket_perms;
 allow qm_t self:udp_socket create_socket_perms;
 allow qm_t self:unix_dgram_socket { sendto create_socket_perms };
@@ -139,18 +149,31 @@ dev_mounton_sysfs(qm_t)
 dev_read_sysfs(qm_t)
 dev_remount_sysfs_fs(qm_t)
 
+files_getattr_all_blk_files(qm_t)
+files_getattr_all_chr_files(qm_t)
+files_getattr_all_dirs(qm_t)
+files_getattr_all_file_type_fs(qm_t)
+files_getattr_all_files(qm_t)
+files_getattr_all_pipes(qm_t)
+files_getattr_all_sockets(qm_t)
+files_list_all(qm_t)
 files_mounton_kernel_symbol_table(qm_t)
 
 fs_all_mount_fs_perms_tmpfs(qm_t)
 fs_all_mount_fs_perms_xattr_fs(qm_t)
+fs_associate_cgroupfs(qm_file_t)
+fs_getattr_all_fs(qm_t)
+fs_list_all(qm_t)
 fs_manage_cgroup_dirs(qm_t)
 fs_manage_cgroup_files(qm_t)
 fs_read_nsfs_files(qm_t)
+fs_relabelfrom_tmpfs(qm_t)
+fs_relabelfrom_xattr_fs(qm_t)
 fs_search_tracefs_dirs(qm_t)
 allow qm_t nsfs_t:filesystem { getattr unmount };
 
 kernel_dontaudit_search_security_state(qm_t)
-kernel_list_proc(qm_t)
+kernel_list_all_proc(qm_t)
 kernel_mounton_core_if(qm_t)
 kernel_mounton_kernel_sysctl(qm_t)
 kernel_mounton_kernel_sysctl(qm_t)
@@ -159,13 +182,13 @@ kernel_mounton_proc(qm_t)
 kernel_mounton_proc(qm_t)
 kernel_mounton_systemd_ProtectKernelTunables(qm_t)
 kernel_mounton_systemd_ProtectKernelTunables(qm_t)
+kernel_read_all_sysctls(qm_t)
 kernel_read_fs_sysctls(qm_t)
 kernel_read_net_sysctls(qm_t)
 kernel_read_network_state(qm_t)
 kernel_read_network_state_symlinks(qm_t)
 kernel_read_proc_files(qm_t)
 kernel_read_security_state(qm_t)
-kernel_read_sysctl(qm_t)
 kernel_read_unix_sysctls(qm_t)
 kernel_request_load_module(qm_t)
 kernel_rw_fs_sysctls(qm_t)
@@ -192,3 +215,11 @@ term_use_generic_ptys(qm_t)
 term_setattr_generic_ptys(qm_t)
 
 dev_write_sysfs_dirs(qm_t)
+
+allow qm_t qm_file_t:dir relabelfrom;
+allow qm_t security_t:dir read;
+
+selinux_validate_context(qm_t)
+selinux_compute_access_vector(qm_t)
+selinux_compute_create_context(qm_t)
+selinux_get_enforce_mode(qm_t)
