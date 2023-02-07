@@ -1,0 +1,12 @@
+# /bin/podman run --network=host -v qm:/var:copy -ti --cap-add=all --security-opt label=type:qm_t --security-opt label=filetype:qm_file_t --read-only --name qm --replace --rootfs /usr/lib/qm/rootfs /sbin/init
+
+[Container]
+#FileLabel=system_u:object_r:qm_file_t:s0
+#ProcessLabel=system_u:system_r:qm_t:s0
+AddCapability=all
+Exec=/sbin/init
+Name=qm
+Network=host
+ReadOnly=true
+Rootfs=/usr/lib/qm/rootfs:idmap
+Volume=qm:/var:copy
