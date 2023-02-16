@@ -1,4 +1,4 @@
-# /bin/podman run --network=host -v qm:/var:copy -ti --cap-add=all --security-opt label=type:qm_t --security-opt label=filetype:qm_file_t --read-only --name qm --replace --rootfs /usr/lib/qm/rootfs /sbin/init
+# ./bin/podman run --runtime /usr/local/bin/crun --security-opt unmask=/proc -v /run/systemd/resolve/resolv.conf:/etc/resolv.conf --security-opt nested=true --network=host -v qm:/var:copy -ti --cap-add=all --security-opt label=type:qm_t --security-opt label=filetype:qm_file_t --name qm --replace -ti --rootfs /usr/lib/qm/rootfs /sbin/init
 
 [Container]
 #FileLabel=system_u:object_r:qm_file_t:s0

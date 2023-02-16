@@ -2,7 +2,7 @@
 
 install() {
     rootfs=$1
-    sudo dnf -y install --rootfs ${rootfs} selinux-policy-targeted podman systemd 
+    sudo dnf -y install --rootfs ${rootfs} selinux-policy-targeted podman systemd
 }
 
 setup_selinux() {
@@ -21,9 +21,8 @@ setup_selinux() {
 make
 rootfs=/usr/lib/qm/rootfs
 
-sudo semodule -i qm.pp.bz2
+#sudo semodule -i qm.pp.bz2
 
-install ${rootfs} 
+#install ${rootfs}
 
-setup_selinux  ${rootfs} 
-
+setup_selinux  ${rootfs}
