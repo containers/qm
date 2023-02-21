@@ -32,6 +32,7 @@ type qm_t;
 domain_type(qm_t)
 role system_r types qm_t;
 init_initrc_domain(qm_t)
+container_use_ptys(qm_t)
 
 attribute qm_file_type;
 allow qm_file_type self:filesystem associate;
