@@ -1,15 +1,14 @@
-# ./bin/podman run -v /run/systemd/resolve/resolv.conf:/etc/resolv.conf -v /sys/fs/selinux:/sys/fs/selinux --security-opt unmask=/sys/fs/selinux --network=host -v qm:/var:copy -ti --cap-add=all --security-opt label=type:qm_t --security-opt label=filetype:qm_file_t --read-only --name qm --replace --rootfs /usr/lib/qm/rootfs /sbin/init
+# ./bin/podman run -v /run/systemd/resolve/resolv.conf:/etc/resolv.conf --security-opt nested=true --network=host -v qm:/var:copy -ti --cap-add=all --security-opt label=type:qm_t --security-opt label=filetype:qm_file_t --read-only --name qm --replace --rootfs /usr/lib/qm/rootfs /sbin/init
 
 [Container]
 AddCapability=all
 ContainerName=qm
 Exec=/sbin/init
 Network=host
-PodmanArgs="--security-opt unmask=/sys/fs/selinux"
+PodmanArgs=--security-opt nested=true
 ReadOnly=true
-Rootfs=/usr/lib/qm/rootfs:idmap
+Rootfs=/usr/lib/qm/rootfs
 SecurityLabelFileType=qm_file_t
 SecurityLabelType=qm_t
-Volume=/run/systemd/resolve/resolv.conf:/etc/resolv.conf
-Volume=/sys/fs/selinux:/sys/fs/selinux
-Volume=qm:/var:copy
+Volume=qmVar:/var:copy
+Volume=qmEtc:/etc:copy
