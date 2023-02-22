@@ -26,6 +26,9 @@ gen_require(`
 	type systemd_logind_t;
 	type systemd_machined_t;
 	type unconfined_service_t;
+	type bpf_t;
+	type container_devpts_t;
+	type net_conf_t;
 ')
 
 type qm_t;
@@ -49,6 +52,7 @@ type qm_container_ro_file_t, qm_file_type;
 files_mountpoint(qm_container_ro_file_t)
 
 allow qm_t qm_file_type:file { execmod relabelfrom relabelto map entrypoint mounton };
+allow qm_t qm_file_type:dir_file_class_set { relabelfrom relabelto };
 manage_files_pattern(qm_t, qm_file_type, qm_file_type)
 can_exec(qm_t, qm_file_type)
 allow qm_t qm_file_type:chr_file mounton;
@@ -121,12 +125,13 @@ allow qm_t self:netlink_route_socket create_netlink_socket_perms;
 allow qm_t self:netlink_selinux_socket create_socket_perms;
 allow qm_t self:netlink_socket create_socket_perms;
 allow qm_t self:netlink_tcpdiag_socket create_netlink_socket_perms;
-allow qm_t self:process { getattr getcap getpgid getrlimit getsched setcap setpgid setfscreate setrlimit setsockcreate setsched signal_perms };
+allow qm_t self:process { getattr getcap getpgid getrlimit getsched setcap setexec setkeycreate setpgid setfscreate setrlimit setsockcreate setsched signal_perms };
 allow qm_t self:rawip_socket create_stream_socket_perms;
 allow qm_t self:tcp_socket create_stream_socket_perms;
 allow qm_t self:udp_socket create_socket_perms;
 allow qm_t self:unix_dgram_socket { sendto create_socket_perms };
 allow qm_t self:unix_stream_socket {  connectto rw_stream_socket_perms };
+dontaudit qm_t net_conf_t:file manage_file_perms;
 
 init_access_check(qm_t)
 miscfiles_watch_localization_files(qm_t)
@@ -140,6 +145,8 @@ allow qm_t proc_t:file mounton;
 allow qm_t sysctl_irq_t:dir { getattr mounton };
 allow qm_t sysctl_t:file { getattr mounton };
 allow qm_t cgroup_t:filesystem { getattr remount };
+allow qm_t container_devpts_t:chr_file { watch watch_reads };
+allow qm_t devpts_t:filesystem relabelfrom;
 
 corenet_icmp_bind_generic_node(qm_t)
 corenet_raw_bind_generic_node(qm_t)
@@ -159,6 +166,8 @@ dev_mounton_sysfs(qm_t)
 dev_mounton_sysfs(qm_t)
 dev_read_sysfs(qm_t)
 dev_remount_sysfs_fs(qm_t)
+allow qm_t bpf_t:dir mounton;
+allow qm_t container_runtime_t:fifo_file write;
 
 files_getattr_all_blk_files(qm_t)
 files_getattr_all_chr_files(qm_t)
@@ -240,6 +249,9 @@ allow container_runtime_t qm_t:process { dyntransition transition };
 allow qm_t container_runtime_t:process sigchld;
 allow container_runtime_t qm_t:process2 { nnp_transition nosuid_transition };
 dontaudit container_runtime_t qm_t:process { noatsecure rlimitinh siginh };
+manage_dirs_pattern(container_runtime_t, qm_file_type, qm_file_type)
+manage_files_pattern(container_runtime_t, qm_file_type, qm_file_type)
+manage_lnk_files_pattern(container_runtime_t, qm_file_type, qm_file_type)
 
 read_files_pattern(iptables_t, qm_file_type, qm_file_type)
 
@@ -248,6 +260,9 @@ read_files_pattern(iptables_t, qm_file_type, qm_file_type)
 #
 
 attribute qm_container_domain;
+allow qm_container_domain qm_t:fifo_file write;
+allow qm_t qm_container_domain:process transition;
+allow qm_t qm_container_domain:key manage_key_perms;
 
 type qm_container_t,  qm_container_domain;
 domain_type(qm_container_t)
@@ -257,6 +272,8 @@ container_manage_files_template(qm_container, qm_container)
 type qm_container_file_t, qm_file_type;
 files_type(qm_file_t)
 files_mountpoint(qm_file_t)
+fs_associate(qm_container_file_t)
+allow qm_container_domain qm_file_type:file { execmod relabelfrom relabelto map entrypoint mounton };
 
 # QM Container kvm - Policy for running kata containers
 type qm_container_kvm_t,  qm_container_domain;
@@ -336,3 +353,7 @@ tunable_policy(`virt_sandbox_use_sys_admin',`
 
 allow qm_container_init_t self:netlink_audit_socket nlmsg_relay;
 container_manage_files_template(qm_container_init, qm_container)
+
+read_files_pattern(qm_container_t, qm_container_ro_file_t,qm_container_ro_file_t,)
+read_lnk_files_pattern(qm_container_t, qm_container_ro_file_t,qm_container_ro_file_t,)
+list_dirs_pattern(qm_container_t, qm_container_ro_file_t,qm_container_ro_file_t,)
