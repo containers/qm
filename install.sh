@@ -5,6 +5,7 @@ sudo podman volume rm qmEtc qmVar --force
 
 install() {
     rootfs=$1
+    sudo semodule -i qm.pp.bz2
     sudo mkdir -p ${rootfs}
     sudo restorecon -v ${rootfs}
     sudo dnf -y install --installroot ${rootfs} selinux-policy-targeted podman systemd dnf iputils
@@ -16,7 +17,6 @@ setup_selinux() {
     rootfs=$1
     parent=$(dirname ${rootfs})
 
-    sudo semodule -i qm.pp.bz2
     sudo cp qm_contexts ${rootfs}/usr/share/containers/selinux/contexts
     sudo rm -rf ${rootfs}/etc/selinux/targeted/contexts/files/file_contexts/*
     sed \
