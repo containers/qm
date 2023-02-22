@@ -2,12 +2,14 @@ policy_module(qm, 0.1.0)
 
 gen_require(`
 	class dbus { send_msg acquire_svc };
+	class passwd rootok;
 
 	attribute container_domain;
 	attribute filesystem_type;
 	attribute container_init_domain;
 	attribute container_net_domain;
 	attribute container_user_domain;
+	attribute unconfined_domain_type;
 
 	type cgroup_t;
 	type container_runtime_t;
@@ -78,10 +80,11 @@ manage_sock_files_pattern(init_t, qm_file_type, qm_file_type)
 
 filetrans_pattern(qm_t, qm_file_t, qm_container_var_lib_t, dir, "containers")
 filetrans_pattern(qm_t, qm_container_var_lib_t, qm_container_ro_file_t, dir, "overlay")
+filetrans_pattern(qm_t, qm_container_var_lib_t, qm_container_ro_file_t, dir, "overlay-images")
+filetrans_pattern(qm_t, qm_container_var_lib_t, qm_container_ro_file_t, dir, "overlay-layers")
 filetrans_pattern(qm_t, qm_container_var_lib_t, qm_container_ro_file_t, dir, "overlay2")
-filetrans_pattern(qm_t, qm_container_var_lib_t, qm_container_ro_file_t, file, "config.env")
-filetrans_pattern(qm_t, qm_container_var_lib_t, qm_container_ro_file_t, file, "hostname")
-filetrans_pattern(qm_t, qm_container_var_lib_t, qm_container_ro_file_t, file, "hosts")
+filetrans_pattern(qm_t, qm_container_var_lib_t, qm_container_ro_file_t, dir, "overlay2-imagess")
+filetrans_pattern(qm_t, qm_container_var_lib_t, qm_container_ro_file_t, dir, "overlay2-layers")
 
 allow container_domain qm_container_ro_file_t:file execmod;
 ps_process_pattern(systemd_machined_t, qm_t)
@@ -260,7 +263,8 @@ read_files_pattern(iptables_t, qm_file_type, qm_file_type)
 #
 
 attribute qm_container_domain;
-allow qm_container_domain qm_t:fifo_file write;
+allow qm_container_domain qm_t:fifo_file rw_inherited_fifo_file_perms;
+
 allow qm_t qm_container_domain:process transition;
 allow qm_t qm_container_domain:key manage_key_perms;
 
@@ -357,3 +361,137 @@ container_manage_files_template(qm_container_init, qm_container)
 read_files_pattern(qm_container_t, qm_container_ro_file_t,qm_container_ro_file_t,)
 read_lnk_files_pattern(qm_container_t, qm_container_ro_file_t,qm_container_ro_file_t,)
 list_dirs_pattern(qm_container_t, qm_container_ro_file_t,qm_container_ro_file_t,)
+
+#
+# Rules for container domains in the qm
+#
+allow qm_container_domain self:association sendto;
+allow qm_container_domain self:cap2_userns ~{ sys_module  mac_override mac_admin };
+allow qm_container_domain self:cap_userns { sys_admin chown dac_override fowner kill setgid setuid setpcap net_bind_service net_raw sys_chroot mknod audit_write setfcap };
+allow qm_container_domain self:capability mknod;
+allow qm_container_domain self:capability2 ~{ mac_override mac_admin sys_module };
+allow qm_container_domain self:dir list_dir_perms;
+allow qm_container_domain self:fifo_file create_fifo_file_perms;
+allow qm_container_domain self:fifo_file manage_file_perms;
+allow qm_container_domain self:file rw_file_perms;
+allow qm_container_domain self:filesystem associate;
+allow qm_container_domain self:key manage_key_perms;
+allow qm_container_domain self:lnk_file read_file_perms;
+allow qm_container_domain self:lnk_file setattr;
+allow qm_container_domain self:msg all_msg_perms;
+allow qm_container_domain self:msgq create_msgq_perms;
+allow qm_container_domain self:netlink_kobject_uevent_socket create_socket_perms;
+allow qm_container_domain self:netlink_route_socket r_netlink_socket_perms;
+allow qm_container_domain self:netlink_socket create_socket_perms;
+allow qm_container_domain self:netlink_tcpdiag_socket create_netlink_socket_perms;
+allow qm_container_domain self:netlink_xfrm_socket create_socket_perms;
+allow qm_container_domain self:packet_socket create_socket_perms;
+allow qm_container_domain self:passwd rootok;
+allow qm_container_domain self:peer recv;
+allow qm_container_domain self:process { execmem execstack fork getattr getcap getpgid getsched getsession setcap setpgid setrlimit setsched sigchld sigkill signal signull sigstop setexec setfscreate getrlimit getattr signal_perms getsched getpgid getcap setsched setcap setpgid setrlimit };
+allow qm_container_domain self:sem create_sem_perms;
+allow qm_container_domain self:shm create_shm_perms;
+allow qm_container_domain self:socket_class_set { create_socket_perms map accept };
+allow qm_container_domain self:tcp_socket create_socket_perms;
+allow qm_container_domain self:tun_socket { create_socket_perms relabelfrom relabelto attach_queue };
+allow qm_container_domain self:udp_socket create_socket_perms;
+allow qm_container_domain self:unix_dgram_socket { sendto create_socket_perms };
+allow qm_container_domain self:unix_stream_socket { create_stream_socket_perms sendto connectto };
+allow qm_container_domain self:user_namespace create;
+allow qm_t qm_container_domain:fd use;
+allow qm_t qm_container_domain:fifo_file rw_fifo_file_perms;
+allow qm_t qm_container_domain:file relabelfrom;
+allow qm_t qm_container_domain:key manage_key_perms;
+allow qm_t qm_container_domain:process { dyntransition transition };
+allow qm_t qm_container_domain:process2 { nnp_transition nosuid_transition };
+allow qm_t qm_container_domain:tun_socket relabelfrom;
+
+allow qm_container_domain container_runtime_t:unix_dgram_socket sendto;
+allow qm_container_domain container_runtime_tmpfs_t:dir mounton;
+allow qm_container_domain fusefs_t:file { mounton execmod };
+allow qm_container_domain fusefs_t:filesystem remount;
+allow qm_container_domain init_t:socket_class_set { accept ioctl read getattr lock write append getopt };
+allow qm_container_domain qm_container_ro_file_t:file execmod;
+allow qm_container_domain qm_t:fd use;
+allow qm_container_domain qm_t:fifo_file { rw_fifo_file_perms map };
+allow qm_container_domain qm_t:socket_class_set { accept ioctl read getattr lock write append getopt setopt };
+allow qm_container_domain qm_t:tun_socket relabelfrom;
+
+allow unconfined_domain_type qm_container_domain:process {transition dyntransition };
+allow unconfined_domain_type qm_container_domain:process2 { nnp_transition nosuid_transition };
+allow unconfined_service_t qm_container_domain:process dyntransition;
+
+dev_dontaudit_mounton_sysfs(qm_container_domain)
+domain_dontaudit_link_all_domains_keyrings(qm_container_domain)
+domain_dontaudit_search_all_domains_keyrings(qm_container_domain)
+domain_dontaudit_search_all_domains_state(qm_container_domain)
+dontaudit qm_container_domain container_runtime_tmpfs_t:dir read;
+dontaudit qm_container_domain qm_container_domain:key search;
+dontaudit qm_container_domain self:capability fsetid;
+dontaudit qm_container_domain self:capability2  block_suspend ;
+dontaudit qm_container_domain self:dir { write add_name };
+dontaudit qm_container_domain sysctl_type:file write;
+dontaudit qm_container_domain usermodehelper_t:file write;
+dontaudit qm_t qm_container_domain:process { noatsecure rlimitinh siginh };
+
+files_read_kernel_modules(qm_container_domain)
+
+fs_dontaudit_getattr_all_dirs(qm_container_domain)
+fs_dontaudit_getattr_all_files(qm_container_domain)
+fs_dontaudit_remount_tmpfs(qm_container_domain)
+fs_exec_fusefs_files(qm_container_domain)
+fs_exec_hugetlbfs_files(qm_container_domain)
+fs_fusefs_entrypoint(qm_container_domain)
+fs_getattr_all_fs(qm_container_domain)
+fs_list_cgroup_dirs(qm_container_domain)
+fs_list_hugetlbfs(qm_container_domain)
+fs_manage_fusefs_dirs(qm_container_domain)
+fs_manage_fusefs_files(qm_container_domain)
+fs_manage_fusefs_named_pipes(qm_container_domain)
+fs_manage_fusefs_named_sockets(qm_container_domain)
+fs_manage_fusefs_symlinks(qm_container_domain)
+fs_manage_hugetlbfs_files(qm_container_domain)
+fs_mount_fusefs(qm_container_domain)
+fs_mount_tmpfs(qm_container_domain)
+fs_mount_xattr_fs(qm_container_domain)
+fs_mounton_fusefs(qm_container_domain)
+fs_read_cgroup_files(qm_container_domain)
+fs_read_nsfs_files(qm_container_domain)
+fs_read_tmpfs_symlinks(qm_container_domain)
+fs_remount_xattr_fs(qm_container_domain)
+fs_rw_inherited_tmpfs_files(qm_container_domain)
+fs_rw_onload_sockets(qm_container_domain)
+fs_search_tmpfs(qm_container_domain)
+fs_unmount_fusefs(qm_container_domain)
+fs_unmount_xattr_fs(qm_container_domain)
+
+kernel_dontaudit_access_check_proc(qm_container_domain)
+kernel_dontaudit_search_kernel_sysctl(qm_container_domain)
+kernel_dontaudit_setattr_proc_dirs(qm_container_domain)
+kernel_dontaudit_setattr_proc_files(qm_container_domain)
+kernel_dontaudit_write_kernel_sysctl(qm_container_domain)
+kernel_dontaudit_write_proc_files(qm_container_domain)
+kernel_dontaudit_write_usermodehelper_state(qm_container_domain)
+kernel_get_sysvipc_info(qm_container_domain)
+kernel_getattr_proc(qm_container_domain)
+kernel_list_all_proc(qm_container_domain)
+kernel_read_all_sysctls(qm_container_domain)
+kernel_read_irq_sysctls(qm_container_domain)
+kernel_read_network_state(qm_container_domain)
+kernel_read_network_state(qm_container_domain)
+kernel_rw_net_sysctls(qm_container_domain)
+kernel_rw_net_sysctls(qm_container_domain)
+kernel_rw_rpc_sysctls(qm_container_domain)
+kernel_rw_unix_sysctls(qm_container_domain)
+kernel_search_network_sysctl(qm_container_domain)
+
+logging_dontaudit_send_audit_msgs(qm_container_domain)
+
+storage_rw_fuse(qm_container_domain)
+
+sysnet_read_config(qm_container_domain)
+
+term_use_all_inherited_terms(qm_container_domain)
+
+userdom_rw_inherited_user_pipes(qm_container_domain)
+userdom_use_user_ptys(qm_container_domain)
