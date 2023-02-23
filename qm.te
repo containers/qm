@@ -366,10 +366,11 @@ list_dirs_pattern(qm_container_t, qm_container_ro_file_t,qm_container_ro_file_t,
 # Rules for container domains in the qm
 #
 allow qm_container_domain self:association sendto;
-allow qm_container_domain self:cap2_userns ~{ sys_module  mac_override mac_admin };
+allow qm_container_domain self:cap2_userns ~{ mac_override mac_admin };
 allow qm_container_domain self:cap_userns { sys_admin chown dac_override fowner kill setgid setuid setpcap net_bind_service net_raw sys_chroot mknod audit_write setfcap };
 allow qm_container_domain self:capability mknod;
-allow qm_container_domain self:capability2 ~{ mac_override mac_admin sys_module };
+allow qm_container_domain self:capability ~{ sys_module };
+allow qm_container_domain self:capability2 ~{ mac_override mac_admin };
 allow qm_container_domain self:dir list_dir_perms;
 allow qm_container_domain self:fifo_file create_fifo_file_perms;
 allow qm_container_domain self:fifo_file manage_file_perms;
