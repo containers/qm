@@ -1,8 +1,15 @@
-# ./bin/podman run -v /run/systemd/resolve/resolv.conf:/etc/resolv.conf --security-opt nested=true --network=host -v qm:/var:copy -ti --cap-add=all --security-opt label=type:qm_t --security-opt label=filetype:qm_file_t --read-only --name qm --replace --rootfs /usr/lib/qm/rootfs /sbin/init
+[Service]
+AllowedCPUs=6-11
+CPUWeight=50
+Delegate=true
+IOWeight=50
+ManagedOOMSwap=kill
+MemorySwapMax=0
+Slice=QM.slice
 
 [Container]
 AddCapability=all
-ContainerName=qm
+ContainerName=qm.slice
 Exec=/sbin/init
 Network=host
 PodmanArgs=--security-opt nested=true
@@ -10,5 +17,5 @@ ReadOnly=true
 Rootfs=/usr/lib/qm/rootfs
 SecurityLabelFileType=qm_file_t
 SecurityLabelType=qm_t
-Volume=qmVar:/var:copy
 Volume=qmEtc:/etc:copy
+Volume=qmVar:/var:copy
