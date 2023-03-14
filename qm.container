@@ -8,6 +8,9 @@ MemorySwapMax=0
 Slice=QM.slice
 Restart=always
 OOMScoreAdjust=500 # This should be set higher for containers
+# Individual containers should be run with
+# --cgroup-conf memory.oom.group=1
+
 
 [Container]
 AddCapability=all
