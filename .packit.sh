@@ -14,14 +14,14 @@ git archive --prefix=qm-selinux-$HEAD_VERSION/ -o qm-selinux-$HEAD_VERSION.tar.g
 
 # RPM Spec modifications
 
-# Fix Version
+# Update Version in spec with Version from qm.te
 sed -i "s/^Version:.*/Version: $HEAD_VERSION/" qm-selinux.spec
 
-# Fix Release
-sed -i "s/^Release: %autorelease/Release: $PACKIT_RPMSPEC_RELEASE%{?dist}/" qm-selinux.spec
+# Update Release in spec with Packit's release envvar
+sed -i "s/^Release:.*/Release: $PACKIT_RPMSPEC_RELEASE%{?dist}/" qm-selinux.spec
 
-# Fix Source0
-sed -i "s/^Source0:.*.tar.gz/Source0: %{name}-$HEAD_VERSION.tar.gz/" qm-selinux.spec
+# Update Source tarball name in spec
+sed -i "s/^Source:.*.tar.gz/Source: %{name}-$HEAD_VERSION.tar.gz/" qm-selinux.spec
 
-# Fix autosetup
-sed -i "s/^%autosetup.*/%autosetup -Sgit -n %{name}-$HEAD_VERSION/" qm-selinux.spec
+# Update setup macro to use the correct build dir
+sed -i "s/^%setup.*/%autosetup -Sgit -n %{name}-$HEAD_VERSION/" qm-selinux.spec
