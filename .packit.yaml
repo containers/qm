@@ -1,38 +1,52 @@
+---
 # See the documentation for more information:
 # https://packit.dev/docs/configuration/
 
-upstream_package_name: qm-selinux
-downstream_package_name: qm-selinux
+# Build targets can be found at:
+# https://copr.fedorainfracloud.org/coprs/rhcontainerbot/packit-builds/
+
+specfile_path: qm-selinux.spec
+
 
 jobs:
-  - job: copr_build
+  - &copr
+    job: copr_build
     # Run on every PR
     trigger: pull_request
-    # Defaults to x86_64 unless architecture is explicitly specified
+    owner: rhcontainerbot
+    project: packit-builds
+    enable_net: true
+    # x86_64 is assumed by default
+    # qm-selinux is noarch so we only need to test on one arch
     targets:
       - fedora-rawhide
-    actions:
-      post-upstream-clone:
-        - "curl -O https://src.fedoraproject.org/rpms/qm-selinux/raw/rawhide/f/qm-selinux.spec"
-      fix-spec-file:
-        - bash .packit.sh
-
-  - job: copr_build
-    trigger: pull_request
-    targets:
+      - fedora-38
       - fedora-37
+      - centos-stream-9
+    srpm_build_deps:
+      - make
+      - rpkg
     actions:
       post-upstream-clone:
-        - "curl -O https://src.fedoraproject.org/rpms/qm-selinux/raw/f37/f/qm-selinux.spec"
+        - rpkg spec --outdir ./
       fix-spec-file:
         - bash .packit.sh
 
-  - job: copr_build
-    trigger: pull_request
-    targets:
-      - fedora-36
-    actions:
-      post-upstream-clone:
-        - "curl -O https://src.fedoraproject.org/rpms/qm-selinux/raw/f36/f/qm-selinux.spec"
-      fix-spec-file:
-        - bash .packit.sh
+  - <<: *copr
+    # Run on commit to main branch
+    trigger: commit
+    branch: main
+    project: podman-next
+
+  # All tests specified in the `/plans/` subdir
+  #- job: tests
+  #  trigger: pull_request
+  #  targets: *test_targets
+  #  identifier: podman_e2e_test
+  #  tmt_plan: "/plans/podman_e2e_test"
+
+  #- job: tests
+  #  trigger: pull_request
+  #  targets: *test_targets
+  #  identifier: podman_system_test
+  #  tmt_plan: "/plans/podman_system_test"

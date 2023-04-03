@@ -1,0 +1,93 @@
+# For automatic rebuilds in COPR
+
+# The following tag is to get correct syntax highlighting for this file in vim text editor
+# vim: syntax=spec
+
+%global debug_package %{nil}
+
+# container-selinux stuff (prefix with ds_ for version/release etc.)
+# Some bits borrowed from the openstack-selinux package
+%global selinuxtype targeted
+%global moduletype services
+%global modulenames qm
+
+%global _installscriptdir %{_prefix}/lib/qm
+
+# Usage: _format var format
+# Expand 'modulenames' into various formats as needed
+# Format must contain '$x' somewhere to do anything useful
+%global _format() export %1=""; for x in %{modulenames}; do %1+=%2; %%1+=" "; done;
+
+Name: {{{ git_dir_name }}}
+Epoch: 101
+Version: {{{ git_dir_version }}}
+Release: 1%{?dist}
+License: GPLv2
+URL: https://github.com/containers/container-selinux
+Summary: SELinux policies for container runtimes
+VCS: {{{ git_dir_vcs }}}
+Source: {{{ git_dir_pack }}}
+BuildArch: noarch
+BuildRequires: container-selinux
+BuildRequires: make
+BuildRequires: git-core
+BuildRequires: pkgconfig(systemd)
+BuildRequires: selinux-policy >= %_selinux_policy_version
+BuildRequires: selinux-policy-devel >= %_selinux_policy_version
+Requires: selinux-policy >= %_selinux_policy_version
+Requires(post): selinux-policy-base >= %_selinux_policy_version
+Requires(post): selinux-policy-targeted >= %_selinux_policy_version
+Requires(post): policycoreutils
+Requires(post): libselinux-utils
+
+%description
+SELinux policy modules for use with container runtimes.
+
+%prep
+{{{ git_dir_setup_macro }}}
+sed -i 's/install: man/install:/' Makefile
+
+# Remove unavailable tokens
+%if 0%{?fedora} <= 37 || 0%{?rhel} <= 9
+sed -i '/user_namespace/d' qm.if
+%endif
+
+%build
+%{__make}
+
+%install
+# install policy modules
+%_format MODULES $x.pp.bz2
+%{__make} DESTDIR=%{buildroot} DATADIR=%{_datadir} install install-setup install-quadlet
+
+%pre
+
+%post
+
+%postun
+if [ $1 -eq 0 ]; then
+   %selinux_modules_uninstall -s %{selinuxtype} %{modulenames}
+fi
+
+%posttrans
+
+#define license tag if not already defined
+%{!?_licensedir:%global license %doc}
+
+%files
+%doc README.md
+%dir %{_datadir}/selinux
+%{_datadir}/selinux/*
+%dir %{_datadir}/containers
+%dir %{_datadir}/containers/systemd
+%{_datadir}/containers/systemd/qm.container
+%{_mandir}/man8/*
+%dir %{_sharedstatedir}/qm
+%dir %{_sharedstatedir}/qm/rootfs%{_datadir}
+%dir %{_sharedstatedir}/qm/rootfs%{_datadir}/containers
+%{_sharedstatedir}/qm/rootfs%{_datadir}/containers/container_contexts
+%dir %{_installscriptdir}
+%{_installscriptdir}/install
+
+%changelog
+{{{ git_dir_changelog }}}
