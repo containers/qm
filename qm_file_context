@@ -1,0 +1,8 @@
+(/.*)?	system_u:object_r:qm_file_t:s0
+/var/lib/containers(/.*)?	system_u:object_r:qm_container_var_lib_t:s0
+/var/lib/containers/storage/overlay(/.*)?	system_u:object_r:qm_container_ro_file_t:s0
+/var/lib/containers/storage/overlay2(/.*)?	system_u:object_r:qm_container_ro_file_t:s0
+/var/lib/containers/storage/overlay-layers(/.*)?	system_u:object_r:qm_container_ro_file_t:s0
+/var/lib/containers/storage/overlay2-layers(/.*)?	system_u:object_r:qm_container_ro_file_t:s0
+/var/lib/containers/storage/overlay-images(/.*)?	system_u:object_r:qm_container_ro_file_t:s0
+/var/lib/containers/storage/overlay2-images(/.*)?	system_u:object_r:qm_container_ro_file_t:s0

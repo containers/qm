@@ -1,0 +1,34 @@
+#!/bin/sh -ex
+#
+# This setup script will install an OS environment by default into
+# /usr/share/qm/rootfs and create a Podman quadlet containerized environment
+# running systemd as PID1 inside.
+#
+INSTALLDIR="$1"
+[ ! -z "${INSTALLDIR}" ] || INSTALLDIR=/usr/share/qm
+
+ROOTFS="$2"
+[ ! -z "${ROOTFS}" ] || ROOTFS=/usr/lib/qm/rootfs
+
+. /etc/os-release
+
+sudo systemctl stop qm 2> /dev/null
+sudo podman volume rm --force qmEtc qmVar
+
+install() {
+    rootfs=$1
+    sudo mkdir -p ${rootfs}
+    sudo restorecon -v ${rootfs}
+    sudo dnf -y install --releasever=${VERSION_ID} --installroot ${rootfs} selinux-policy-targeted podman systemd hirte
+    sudo dnf -y update --installroot ${rootfs}
+    sudo rm -rf ${rootfs}/etc/selinux/targeted/contexts/files/file_contexts/*
+    sudo cp ${INSTALLDIR}/containers.conf ${rootfs}/etc/containers/
+    sudo cp ${INSTALLDIR}/contexts ${rootfs}/usr/share/containers/selinux/
+    sudo cp ${INSTALLDIR}/file_contexts ${rootfs}/etc/selinux/targeted/contexts/files/file_contexts
+    sudo restorecon -R ${rootfs}
+}
+
+install ${ROOTFS}
+
+sudo systemctl daemon-reload
+sudo systemctl start qm.service
