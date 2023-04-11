@@ -58,7 +58,7 @@ sed -i '/user_namespace/d' qm.if
 %install
 # install policy modules
 %_format MODULES $x.pp.bz2
-%{__make} DESTDIR=%{buildroot} DATADIR=%{_datadir} install install-setup install-quadlet
+%{__make} DESTDIR=%{buildroot} DATADIR=%{_datadir} install
 
 %pre
 
@@ -78,16 +78,15 @@ fi
 %doc README.md
 %dir %{_datadir}/selinux
 %{_datadir}/selinux/*
-%dir %{_datadir}/containers
-%dir %{_datadir}/containers/systemd
-%{_datadir}/containers/systemd/qm.container
+%dir %{_datadir}/qm
+%{_datadir}/qm/containers.conf
+%{_datadir}/qm/contexts
+%{_datadir}/qm/file_contexts
+%{_datadir}/qm/setup
+%ghost %dir %{_datadir}/containers
+%ghost %dir %{_datadir}/containers/systemd
+%{_sysconfdir}/containers/systemd/qm.container
 %{_mandir}/man8/*
-%dir %{_sharedstatedir}/qm
-%dir %{_sharedstatedir}/qm/rootfs%{_datadir}
-%dir %{_sharedstatedir}/qm/rootfs%{_datadir}/containers
-%{_sharedstatedir}/qm/rootfs%{_datadir}/containers/container_contexts
-%dir %{_installscriptdir}
-%{_installscriptdir}/install
 
 %changelog
 {{{ git_dir_changelog }}}

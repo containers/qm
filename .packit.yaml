@@ -5,7 +5,7 @@
 # Build targets can be found at:
 # https://copr.fedorainfracloud.org/coprs/rhcontainerbot/packit-builds/
 
-specfile_path: qm-selinux.spec
+specfile_path: qm.spec
 
 
 jobs:
@@ -17,7 +17,7 @@ jobs:
     project: packit-builds
     enable_net: true
     # x86_64 is assumed by default
-    # qm-selinux is noarch so we only need to test on one arch
+    # qm is noarch so we only need to test on one arch
     targets:
       - fedora-rawhide
       - fedora-38
