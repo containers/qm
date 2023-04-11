@@ -63,6 +63,9 @@ sed -i '/user_namespace/d' qm.if
 %pre
 
 %post
+# Install all modules in a single transaction
+%_format MODULES %{_datadir}/selinux/packages/$x.pp.bz2
+%selinux_modules_install -s %{selinuxtype} $MODULES
 
 %postun
 if [ $1 -eq 0 ]; then
