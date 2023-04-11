@@ -10,18 +10,18 @@ set -eo pipefail
 HEAD_VERSION=$(grep '^policy_module' qm.te | sed 's/[^0-9.]//g')
 
 # Generate source tarball
-git archive --prefix=qm-selinux-$HEAD_VERSION/ -o qm-selinux-$HEAD_VERSION.tar.gz HEAD
+git archive --prefix=qm-$HEAD_VERSION/ -o qm-$HEAD_VERSION.tar.gz HEAD
 
 # RPM Spec modifications
 
 # Update Version in spec with Version from qm.te
-sed -i "s/^Version:.*/Version: $HEAD_VERSION/" qm-selinux.spec
+sed -i "s/^Version:.*/Version: $HEAD_VERSION/" qm.spec
 
 # Update Release in spec with Packit's release envvar
-sed -i "s/^Release:.*/Release: $PACKIT_RPMSPEC_RELEASE%{?dist}/" qm-selinux.spec
+sed -i "s/^Release:.*/Release: $PACKIT_RPMSPEC_RELEASE%{?dist}/" qm.spec
 
 # Update Source tarball name in spec
-sed -i "s/^Source:.*.tar.gz/Source: %{name}-$HEAD_VERSION.tar.gz/" qm-selinux.spec
+sed -i "s/^Source:.*.tar.gz/Source: %{name}-$HEAD_VERSION.tar.gz/" qm.spec
 
 # Update setup macro to use the correct build dir
-sed -i "s/^%setup.*/%autosetup -Sgit -n %{name}-$HEAD_VERSION/" qm-selinux.spec
+sed -i "s/^%setup.*/%autosetup -Sgit -n %{name}-$HEAD_VERSION/" qm.spec

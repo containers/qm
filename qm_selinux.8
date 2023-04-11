@@ -1,4 +1,4 @@
-.TH  "qm_selinux"  "8"  "23-03-21" "qm" "SELinux Policy qm"
+.TH  "qm_selinux"  "8"  "23-04-11" "qm" "SELinux Policy qm"
 .SH "NAME"
 qm_selinux \- Security Enhanced Linux Policy for the qm processes
 .SH "DESCRIPTION"
@@ -60,6 +60,38 @@ The SELinux process type qm_t can manage files labeled with the following file t
 .br
 
 .br
+.B initrc_tmp_t
+
+
+.br
+.B mnt_t
+
+	/mnt(/[^/]*)?
+.br
+	/mnt(/[^/]*)?
+.br
+	/rhev(/[^/]*)?
+.br
+	/rhev/[^/]*/.*
+.br
+	/media(/[^/]*)?
+.br
+	/media(/[^/]*)?
+.br
+	/media/\.hal-.*
+.br
+	/var/run/media(/[^/]*)?
+.br
+	/afs
+.br
+	/net
+.br
+	/misc
+.br
+	/rhev
+.br
+
+.br
 .B net_conf_t
 
 	/etc/hosts[^/]*
@@ -107,6 +139,28 @@ The SELinux process type qm_t can manage files labeled with the following file t
 .B security_t
 
 	/selinux
+.br
+
+.br
+.B tmp_t
+
+	/sandbox(/.*)?
+.br
+	/tmp
+.br
+	/usr/tmp
+.br
+	/var/tmp
+.br
+	/var/tmp
+.br
+	/tmp-inst
+.br
+	/var/tmp-inst
+.br
+	/var/tmp/tmp-inst
+.br
+	/var/tmp/vi\.recover
 .br
 
 .SH FILE CONTEXTS

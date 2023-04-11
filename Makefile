@@ -14,9 +14,9 @@ file_contexts: qm.fc
 	 -e "s/,s0)/:s0/g" \
 	 -e "s|${QMDIR}||g" qm.fc > qm_file_contexts
 
-all: ${TARGETS:=.pp.bz2} file_contexts
+all: selinux file_contexts
 
-%.pp.bz2: %.pp
+selinux: qm.pp
 	@echo Compressing $^ -\> $@
 	bzip2 -f -9 $^
 
@@ -33,7 +33,7 @@ man:
 install-policy: all
 	semodule -i ${TARGETS}.pp.bz2
 
-install: man
+install: man all
 	install -D -pm 644 ${TARGETS}.pp.bz2 ${DESTDIR}${DATADIR}/selinux/packages/qm.pp.bz2
 	install -D -pm 644 qm.if ${DESTDIR}${DATADIR}/selinux/devel/include/services/qm.if
 	install -D -pm 644 qm_selinux.8 ${DESTDIR}${DATADIR}/man/man8/qm_selinux.8
