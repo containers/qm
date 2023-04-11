@@ -13,7 +13,6 @@ ROOTFS="$2"
 . /etc/os-release
 
 sudo systemctl stop qm 2> /dev/null
-sudo podman volume rm --force qmEtc qmVar
 
 install() {
     rootfs=$1
