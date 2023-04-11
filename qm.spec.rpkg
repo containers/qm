@@ -5,7 +5,6 @@
 
 %global debug_package %{nil}
 
-# container-selinux stuff (prefix with ds_ for version/release etc.)
 # Some bits borrowed from the openstack-selinux package
 %global selinuxtype targeted
 %global moduletype services
@@ -23,12 +22,11 @@ Epoch: 101
 Version: {{{ git_dir_version }}}
 Release: 1%{?dist}
 License: GPLv2
-URL: https://github.com/containers/container-selinux
-Summary: SELinux policies for container runtimes
+URL: https://github.com/containers/qm
+Summary: Setup Containerized environment for running Functional Safety QM (Quality Management) software.
 VCS: {{{ git_dir_vcs }}}
 Source: {{{ git_dir_pack }}}
 BuildArch: noarch
-BuildRequires: container-selinux
 BuildRequires: make
 BuildRequires: git-core
 BuildRequires: pkgconfig(systemd)
@@ -41,7 +39,18 @@ Requires(post): policycoreutils
 Requires(post): libselinux-utils
 
 %description
-SELinux policy modules for use with container runtimes.
+This package allow users to setup an environment which prevents applications
+and container tools from interfering with other all other processes on the
+system.
+
+The QM runs its own version of systemd and Podman to isolate not only the
+applications and containers launched by systemd and Podman but systemd and
+Podman themselves.
+
+Software install into the QM environment under /usr/lib/qm/rootfs is
+automatically isolated from the host. If developers need to further
+isolate there applications from other processes in the QM they should
+use container tools like Podman.
 
 %prep
 {{{ git_dir_setup_macro }}}
