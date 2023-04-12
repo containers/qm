@@ -27,6 +27,7 @@ Summary: Setup Containerized environment for running Functional Safety QM (Quali
 VCS: {{{ git_dir_vcs }}}
 Source: {{{ git_dir_pack }}}
 BuildArch: noarch
+BuildRequires: go-md2man
 BuildRequires: container-selinux
 BuildRequires: make
 BuildRequires: git-core
