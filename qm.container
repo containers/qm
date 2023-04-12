@@ -7,9 +7,8 @@ ManagedOOMSwap=kill
 MemorySwapMax=0
 Slice=QM.slice
 Restart=always
-OOMScoreAdjust=500  # Containers by default are set to 750
-# Individual containers should be run with
-# --cgroup-conf memory.oom.group=1
+# Containers within the qm y default set OOMScoreAdj to 750
+OOMScoreAdjust=500 
 
 [Container]
 AddCapability=all
