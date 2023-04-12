@@ -23,7 +23,7 @@ Version: {{{ git_dir_version }}}
 Release: 1%{?dist}
 License: GPLv2
 URL: https://github.com/containers/qm
-Summary: Setup Containerized environment for running Functional Safety QM (Quality Management) software.
+Summary: Containerized environment for running functionally safe QM (Quality Management) software.
 VCS: {{{ git_dir_vcs }}}
 Source: {{{ git_dir_pack }}}
 BuildArch: noarch
