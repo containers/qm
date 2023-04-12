@@ -32,11 +32,14 @@ jobs:
       fix-spec-file:
         - bash .packit.sh
 
-  - <<: *copr
-    # Run on commit to main branch
-    trigger: commit
-    branch: main
-    project: podman-next
+  # FIXME: This section doesn't work as expected yet, so
+  # copr builds to `rhcontainerbot/podman-next` are currently
+  # handled via webhook.
+  #- <<: *copr
+  #  # Run on commit to main branch
+  #  trigger: commit
+  #  branch: main
+  #  project: podman-next
 
   # All tests specified in the `/plans/` subdir
   #- job: tests
