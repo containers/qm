@@ -16,13 +16,6 @@ jobs:
     owner: rhcontainerbot
     project: packit-builds
     enable_net: true
-    # x86_64 is assumed by default
-    # qm is noarch so we only need to test on one arch
-    targets:
-      - fedora-rawhide
-      - fedora-38
-      - fedora-37
-      - centos-stream-9
     srpm_build_deps:
       - make
       - rpkg
