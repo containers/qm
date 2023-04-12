@@ -1,4 +1,4 @@
-#!/bin/sh -ex
+#! /bin/sh -ex
 #
 # This setup script will install an OS environment by default into
 # /usr/share/qm/rootfs and create a Podman quadlet containerized environment
@@ -15,16 +15,13 @@ INSTALLDIR="$1"
 ROOTFS="$2"
 [ ! -z "${ROOTFS}" ] || ROOTFS=/usr/lib/qm/rootfs
 
-. /etc/os-release
-
-systemctl stop qm 2> /dev/null
+systemctl stop qm.service 2>/dev/null || true
 
 install() {
     rootfs=$1
-    mkdir -p ${rootfs}/etc/pki
-    cp -pR /etc/pki/rpm-gpg ${rootfs}/etc/pki
-    restorecon -R ${rootfs}
-    dnf -y install --releasever=${VERSION_ID} --installroot ${rootfs} selinux-policy-targeted podman systemd hirte
+    . /etc/os-release
+    mkdir -Z -p ${rootfs}
+    dnf -y install --releasever=${VERSION_ID} --installroot ${rootfs} selinux-policy-targeted podman systemd hirte-agent --nogpgcheck
     dnf -y update --installroot ${rootfs}
     rm -rf ${rootfs}/etc/selinux/targeted/contexts/files/file_contexts/*
     cp ${INSTALLDIR}/containers.conf ${rootfs}/etc/containers/
