@@ -1,4 +1,4 @@
-.TH  "qm_selinux"  "8"  "23-04-11" "qm" "SELinux Policy qm"
+.TH  "qm_selinux"  "8"  "23-04-12" "qm" "SELinux Policy qm"
 .SH "NAME"
 qm_selinux \- Security Enhanced Linux Policy for the qm processes
 .SH "DESCRIPTION"
@@ -185,6 +185,14 @@ store files with these types in a different paths, you need to execute the seman
 Note: SELinux often uses regular expressions to specify labels that match multiple files.
 
 .I The following file types are defined for qm:
+
+
+.EX
+.PP
+.B qm_container_file_t
+.EE
+
+- Set files with the qm_container_file_t type, if you want to treat the files as qm container content.
 
 
 .EX
