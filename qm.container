@@ -15,7 +15,7 @@ AddCapability=all
 ContainerName=qm
 Exec=/sbin/init
 Network=host
-PodmanArgs=--security-opt label=nested
+PodmanArgs=--security-opt label=nested --security-opt unmask=all
 ReadOnly=true
 Rootfs=/usr/lib/qm/rootfs
 SecurityLabelFileType=qm_file_t
