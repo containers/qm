@@ -39,7 +39,7 @@ Requires(post): selinux-policy-base >= %_selinux_policy_version
 Requires(post): selinux-policy-targeted >= %_selinux_policy_version
 Requires(post): policycoreutils
 Requires(post): libselinux-utils
-Requires: podman >= 4.5
+Requires: podman >= 5:4.5
 Requires: hirte-agent
 
 %description
