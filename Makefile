@@ -48,4 +48,4 @@ install: man all
 	install -D -m 755 setup ${DESTDIR}${DATADIR}/qm/setup
 	install -D -m 644 qm_file_contexts ${DESTDIR}${DATADIR}/qm/file_contexts
 	install -D -m 644 containers.conf ${DESTDIR}${DATADIR}/qm/containers.conf
-	install -D -m 644 qm.container ${DESTDIR}${SYSCONFDIR}/containers/systemd/qm.container
+	install -D -m 644 qm.container ${DESTDIR}${DATADIR}/containers/systemd/qm.container

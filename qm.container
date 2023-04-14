@@ -19,6 +19,7 @@ PodmanArgs=--security-opt label=nested --security-opt unmask=all
 ReadOnly=true
 Rootfs=/usr/lib/qm/rootfs
 SecurityLabelFileType=qm_file_t
+SecurityLabelLevel=s0
 SecurityLabelType=qm_t
 Volume=qmEtc:/etc:copy
 Volume=qmVar:/var:copy
