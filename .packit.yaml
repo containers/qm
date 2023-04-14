@@ -32,24 +32,36 @@ jobs:
       fix-spec-file:
         - bash .packit.sh
 
-  # FIXME: This section doesn't work as expected yet, so
-  # copr builds to `rhcontainerbot/podman-next` are currently
-  # handled via webhook.
-  #- <<: *copr
-  #  # Run on commit to main branch
-  #  trigger: commit
-  #  branch: main
-  #  project: podman-next
+  - <<: *copr
+    # Run on commit to main branch
+    trigger: commit
+    branch: main
+    project: podman-next
+    targets:
+      - fedora-rawhide-aarch64
+      - fedora-rawhide-ppc64le
+      - fedora-rawhide-s390x
+      - fedora-rawhide-x86_64
+      - fedora-38-aarch64
+      - fedora-38-ppc64le
+      - fedora-38-s390x
+      - fedora-38-x86_64
+      - fedora-37-aarch64
+      - fedora-37-ppc64le
+      - fedora-37-s390x
+      - fedora-37-x86_64
+      - centos-stream+epel-next-9-aarch64
+      - centos-stream+epel-next-9-ppc64le
+      - centos-stream+epel-next-9-s390x
+      - centos-stream+epel-next-9-x86_64
 
-  # All tests specified in the `/plans/` subdir
-  #- job: tests
-  #  trigger: pull_request
-  #  targets: *test_targets
-  #  identifier: podman_e2e_test
-  #  tmt_plan: "/plans/podman_e2e_test"
-
-  #- job: tests
-  #  trigger: pull_request
-  #  targets: *test_targets
-  #  identifier: podman_system_test
-  #  tmt_plan: "/plans/podman_system_test"
+  - <<: *copr
+    # Run on commit to main branch
+    trigger: commit
+    branch: main
+    project: qm
+    targets:
+      - centos-stream-9-aarch64
+      - centos-stream-9-ppc64le
+      - centos-stream-9-s390x
+      - centos-stream-9-x86_64
