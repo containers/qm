@@ -9,6 +9,11 @@ if [ "$EUID" -ne 0 ];then
     exit 1
 fi
 
+replaceIDs() {
+    touch $1
+    grep -q "^$2:" $1 || echo $2:$3 >> $1
+}
+
 INSTALLDIR="$1"
 [ ! -z "${INSTALLDIR}" ] || INSTALLDIR=/usr/share/qm
 
@@ -27,10 +32,16 @@ install() {
     cp ${INSTALLDIR}/containers.conf ${rootfs}/etc/containers/
     cp ${INSTALLDIR}/contexts ${rootfs}/usr/share/containers/selinux/
     cp ${INSTALLDIR}/file_contexts ${rootfs}/etc/selinux/targeted/contexts/files/file_contexts
+    replaceIDs ${rootfs}/etc/subuid containers 1000000000:1500000000
+    replaceIDs ${rootfs}/etc/subgid containers 1000000000:1500000000
     restorecon -R ${rootfs}
 }
 
 install ${ROOTFS}
+replaceIDs /etc/subuid qmcontainers 1000000000:1500000000
+replaceIDs /etc/subgid qmcontainers 1000000000:1500000000
+replaceIDs /etc/subuid containers   2500000000:1500000000
+replaceIDs /etc/subgid containers   2500000000:1500000000
 
 systemctl daemon-reload
 systemctl start qm.service
