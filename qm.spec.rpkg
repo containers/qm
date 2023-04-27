@@ -80,6 +80,16 @@ sed -i '/user_namespace/d' qm.if
 %_format MODULES %{_datadir}/selinux/packages/$x.pp.bz2
 %selinux_modules_install -s %{selinuxtype} $MODULES
 
+# Set AllowedCPUs in quadlet file
+NPROC=$(nproc)
+if [[ $NPROC == 2 ]]; then
+    ALLOWED_CPUS=1
+else
+    ALLOWED_CPUS=$(expr $NPROC / 2)"-"$(expr $NPROC - 1)
+fi
+sed -i "s/^AllowedCPUs=.*/AllowedCPUs=$ALLOWED_CPUS/" %{_datadir}/containers/systemd/qm.container
+
+
 %postun
 if [ $1 -eq 0 ]; then
    %selinux_modules_uninstall -s %{selinuxtype} %{modulenames}
@@ -101,7 +111,7 @@ fi
 %{_datadir}/qm/setup
 %ghost %dir %{_datadir}/containers
 %ghost %dir %{_datadir}/containers/systemd
-%{_datadir}/containers/systemd/qm.container
+%config(noreplace) %{_datadir}/containers/systemd/qm.container
 %{_mandir}/man8/*
 
 %changelog
