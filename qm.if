@@ -279,8 +279,11 @@ template(`qm_domain_template',`
 	attribute $1_container_domain;
 	allow $1_container_domain $1_t:fifo_file rw_inherited_fifo_file_perms;
 
-	allow $1_t $1_container_domain:process transition;
+	allow $1_t $1_container_domain:process all_process_perms;
 	allow $1_t $1_container_domain:key manage_key_perms;
+
+	read_files_pattern($1_t, $1_container_domain,$1_container_domain)
+	read_lnk_files_pattern($1_t, $1_container_domain,$1_container_domain)
 
 	type $1_container_t,  $1_container_domain;
 	domain_type($1_container_t)
@@ -403,11 +406,11 @@ template(`qm_domain_template',`
 	allow $1_container_domain self:packet_socket create_socket_perms;
 	allow $1_container_domain self:passwd rootok;
 	allow $1_container_domain self:peer recv;
-	allow $1_container_domain self:process { execmem execstack fork getattr getcap getpgid getsched getsession setcap setpgid setrlimit setsched sigchld sigkill signal signull sigstop setexec setfscreate getrlimit getattr signal_perms getsched getpgid getcap setsched setcap setpgid setrlimit };
+	allow $1_container_domain self:process  all_process_perms;
 	allow $1_container_domain self:sem create_sem_perms;
 	allow $1_container_domain self:shm create_shm_perms;
 	allow $1_container_domain self:socket_class_set { create_socket_perms map accept };
-	allow $1_container_domain self:tcp_socket create_socket_perms;
+	allow $1_container_domain self:tcp_socket create_stream_socket_perms;
 	allow $1_container_domain self:tun_socket { create_socket_perms relabelfrom relabelto attach_queue };
 	allow $1_container_domain self:udp_socket create_socket_perms;
 	allow $1_container_domain self:unix_dgram_socket { sendto create_socket_perms };
@@ -448,6 +451,19 @@ template(`qm_domain_template',`
 	dontaudit $1_container_domain sysctl_type:file write;
 	dontaudit $1_container_domain usermodehelper_t:file write;
 	dontaudit $1_t $1_container_domain:process { noatsecure rlimitinh siginh };
+
+	corenet_icmp_bind_generic_node($1_container_domain)
+	corenet_raw_bind_generic_node($1_container_domain)
+	corenet_rw_tun_tap_dev($1_container_domain)
+	corenet_sctp_bind_all_ports($1_container_domain)
+	corenet_sctp_connect_all_ports($1_container_domain)
+	corenet_tcp_bind_all_ports($1_container_domain)
+	corenet_tcp_bind_generic_node($1_container_domain)
+	corenet_tcp_connect_all_ports($1_container_domain)
+	corenet_tcp_sendrecv_all_ports($1_container_domain)
+	corenet_udp_bind_all_ports($1_container_domain)
+	corenet_udp_bind_generic_node($1_container_domain)
+	corenet_udp_sendrecv_all_ports($1_container_domain)
 
 	files_read_kernel_modules($1_container_domain)
 
