@@ -256,10 +256,11 @@ template(`qm_domain_template',`
 	allow $1_t security_t:dir read;
 	allow $1_t hugetlbfs_t:dir relabelfrom;
 
-	selinux_validate_context($1_t)
+	dontaudit $1_t security_t:security read_policy;
 	selinux_compute_access_vector($1_t)
 	selinux_compute_create_context($1_t)
 	selinux_get_enforce_mode($1_t)
+	selinux_validate_context($1_t)
 
 	allow container_runtime_t $1_t:process { dyntransition transition };
 	allow $1_t container_runtime_t:process sigchld;
