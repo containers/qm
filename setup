@@ -42,7 +42,7 @@ hirteSetup() {
 NodeName=qm.${hostname}
 EOF
     fi
-    chroot ${rootfs} systemctl enable hirte-agent 2> /dev/null
+    unshare --mount-proc -R /usr/lib/qm/rootfs -m systemctl enable hirte-agent.service
 }
 
 install() {
