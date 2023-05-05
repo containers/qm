@@ -1,5 +1,5 @@
 [Service]
-AllowedCPUs=6-11
+AllowedCPUs=1
 CPUWeight=50
 Delegate=true
 IOWeight=50
