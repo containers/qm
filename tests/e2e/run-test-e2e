@@ -1,0 +1,93 @@
+#!/bin/bash
+# shellcheck disable=SC1091
+#
+# Copyright 2023 The qm Authors
+#
+# This program is free software; you can redistribute it and/or
+# modify it under the terms of the GNU General Public License
+# as published by the Free Software Foundation; either version 2
+# of the License, or (at your option) any later version.
+#
+# This program is distributed in the hope that it will be useful,
+# but WITHOUT ANY WARRANTY; without even the implied warranty of
+# MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+# GNU General Public License for more details.
+#
+# You should have received a copy of the GNU General Public License
+# along with this program; If not, see <http://www.gnu.org/licenses/>.
+#
+SCRIPT_DIR=$( cd -- "$( dirname -- "${BASH_SOURCE[0]}" )" &> /dev/null && pwd )
+
+source "${SCRIPT_DIR}"/lib/utils
+source "${SCRIPT_DIR}"/lib/container
+source "${SCRIPT_DIR}"/lib/systemd
+source "${SCRIPT_DIR}"/lib/tests
+
+export CONFIG_NODE_AGENT_PATH="/etc/hirte/agent.conf.d/agent.conf"
+export REGISTRY_UBI8_MINIMAL="registry.access.redhat.com/ubi8/ubi-minimal"
+export WAIT_HIRTE_SERVER_BE_READY_IN_SEC=5
+export CONTROL_CONTAINER_NAME="control"
+export NODES_FOR_TESTING=("control" "node1")
+
+# If no additional nodes are required, use 1
+if [ -z "${NUMBER_OF_NODES}" ]; then
+    export NUMBER_OF_NODES=1
+fi
+
+if [ -z "${TAG_CONTROL_MACHINE}" ]; then
+    export TAG_CONTROL_MACHINE="${CONTROL_CONTAINER_NAME}:latest"
+fi
+
+if [ -z "${NET_INTERFACE_IP_CONTROL}" ]; then
+    export NET_INTERFACE_IP_CONTROL="eth0"
+fi
+
+# ====================== Start - int main {} ;-)
+info_message "Starting setup"
+info_message "=============================="
+
+if [ "$EUID" -ne 0 ]
+then
+    echo -e "[\033[91m ERROR\033[0m ] Please run as root this script. It requires to set limits inside a container which is not allowed by root."
+    exit
+fi
+
+info_message "Cleaning any previous e2e files"
+cleanup "${CONTROL_CONTAINER_NAME}"
+cleanup "node1"
+
+echo
+info_message "Preparing ASIL environment"
+info_message "=============================="
+
+# Creates the control container - a.k.a ASIL
+create_asil_node
+
+# Create pods regarding ASIL services
+srvs_asil=("safety" "cruise_control" "tires" "breaks")
+create_stub_systemd_srv "${CONTROL_CONTAINER_NAME}" "" "${srvs_asil[@]}"
+
+echo
+info_message "Preparing QM environment"
+info_message "=============================="
+
+# Creates the node container - a.k.a QM
+create_qm_node
+
+# Create pods regarding QM services
+srvs_qm=("radio" "store" "stream_audio" "maps")
+create_stub_systemd_srv "node1" "qm" "${srvs_qm[@]}"
+
+# Tests
+echo
+info_message "Starting tests"
+info_message "=============================="
+info_message "Waiting hirte containers be ready..."
+sleep "${WAIT_HIRTE_SERVER_BE_READY_IN_SEC}"
+# see: https://github.com/containers/hirte/issues/281
+
+echo
+info_message "#1- Test scenario: hirte list all units from control to node (vise-versa)"
+test_hirte_list_all_units
+
+info_message "All set!"

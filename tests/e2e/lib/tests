@@ -1,0 +1,27 @@
+#!/bin/bash
+#
+# Copyright 2023 The qm Authors
+#
+# This program is free software; you can redistribute it and/or
+# modify it under the terms of the GNU General Public License
+# as published by the Free Software Foundation; either version 2
+# of the License, or (at your option) any later version.
+#
+# This program is distributed in the hope that it will be useful,
+# but WITHOUT ANY WARRANTY; without even the implied warranty of
+# MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+# GNU General Public License for more details.
+#
+# You should have received a copy of the GNU General Public License
+# along with this program; If not, see <http://www.gnu.org/licenses/>.
+#
+test_hirte_list_all_units() {
+    for node_name in "${NODES_FOR_TESTING[@]}"
+    do
+        info_message "Connected to \033[92m${CONTROL_CONTAINER_NAME}\033[0m, listing few systemd units from \033[92m${node_name}\033[0m"
+        cmd_list_units="podman exec ${CONTROL_CONTAINER_NAME} hirtectl list-units ${node_name} | head -5"
+        info_message "\033[92mExecuting\033[0m: ${cmd_list_units}"
+        echo "${cmd_list_units}" | bash
+        echo
+    done
+}
