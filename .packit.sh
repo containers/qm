@@ -6,6 +6,9 @@
 
 set -eo pipefail
 
+# Set path to rpm spec file
+SPEC_FILE=rpm/qm.spec
+
 # Get Version from HEAD
 HEAD_VERSION=$(grep '^policy_module' qm.te | sed 's/[^0-9.]//g')
 
@@ -15,13 +18,10 @@ git archive --prefix=qm-$HEAD_VERSION/ -o qm-$HEAD_VERSION.tar.gz HEAD
 # RPM Spec modifications
 
 # Update Version in spec with Version from qm.te
-sed -i "s/^Version:.*/Version: $HEAD_VERSION/" qm.spec
+sed -i "s/^Version:.*/Version: $HEAD_VERSION/" $SPEC_FILE
 
 # Update Release in spec with Packit's release envvar
-sed -i "s/^Release:.*/Release: $PACKIT_RPMSPEC_RELEASE%{?dist}/" qm.spec
+sed -i "s/^Release:.*/Release: $PACKIT_RPMSPEC_RELEASE%{?dist}/" $SPEC_FILE
 
 # Update Source tarball name in spec
-sed -i "s/^Source:.*.tar.gz/Source: %{name}-$HEAD_VERSION.tar.gz/" qm.spec
-
-# Update setup macro to use the correct build dir
-sed -i "s/^%setup.*/%autosetup -Sgit -n %{name}-$HEAD_VERSION/" qm.spec
+sed -i "s/^Source0:.*.tar.gz/Source0: %{name}-$HEAD_VERSION.tar.gz/" $SPEC_FILE

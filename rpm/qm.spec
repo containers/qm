@@ -1,8 +1,3 @@
-# For automatic rebuilds in COPR
-
-# The following tag is to get correct syntax highlighting for this file in vim text editor
-# vim: syntax=spec
-
 %global debug_package %{nil}
 
 # Some bits borrowed from the openstack-selinux package
@@ -17,17 +12,26 @@
 # Format must contain '$x' somewhere to do anything useful
 %global _format() export %1=""; for x in %{modulenames}; do %1+=%2; %%1+=" "; done;
 
-Name: {{{ git_dir_name }}}
-Epoch: 101
-Version: {{{ git_dir_version }}}
-Release: 1%{?dist}
-License: GPLv2
+# Built only for Fedora 38+ and EL 9+.
+# user_namespace token not available on el9 yet.
+%if 0%{?rhel} <= 9
+%bcond_without no_user_namespace
+%else
+%bcond_with no_user_namespace
+%endif
+
+Name: qm
+# Keep Version in upstream specfile at 0. It will be automatically set
+# to the correct value by Packit for copr and koji builds.
+# IGNORE this comment if you're looking at it in dist-git.
+Version: 0
+Release: %autorelease
+License: GPL-2.0-only
 URL: https://github.com/containers/qm
-Summary: Containerized environment for running functionally safe QM (Quality Management) software.
-VCS: {{{ git_dir_vcs }}}
-Source: {{{ git_dir_pack }}}
+Summary: Containerized environment for running Quality Management software
+Source0: %{url}/archive/v%{version}.tar.gz
 BuildArch: noarch
-BuildRequires: go-md2man
+BuildRequires: %{_bindir}/go-md2man
 BuildRequires: container-selinux
 BuildRequires: make
 BuildRequires: git-core
@@ -57,23 +61,21 @@ isolate there applications from other processes in the QM they should
 use container tools like Podman.
 
 %prep
-{{{ git_dir_setup_macro }}}
-sed -i 's/install: man/install:/' Makefile
+%autosetup -Sgit -n %{name}-%{version}
+sed -i 's/^install: man all/install:/' Makefile
 
 # Remove unavailable tokens
-%if 0%{?fedora} <= 37 || 0%{?rhel} <= 9
+%if %{with no_user_namespace}
 sed -i '/user_namespace/d' qm.if
 %endif
 
 %build
-%{__make}
+%{__make} all
 
 %install
 # install policy modules
 %_format MODULES $x.pp.bz2
 %{__make} DESTDIR=%{buildroot} DATADIR=%{_datadir} install
-
-%pre
 
 %post
 # Install all modules in a single transaction
@@ -89,19 +91,17 @@ else
 fi
 sed -i "s/^AllowedCPUs=.*/AllowedCPUs=$ALLOWED_CPUS/" %{_datadir}/containers/systemd/qm.container
 
-
 %postun
 if [ $1 -eq 0 ]; then
    %selinux_modules_uninstall -s %{selinuxtype} %{modulenames}
 fi
 
-%posttrans
-
 #define license tag if not already defined
 %{!?_licensedir:%global license %doc}
 
 %files
-%doc README.md
+%license LICENSE
+%doc CODE-OF-CONDUCT.md NOTICE README.md SECURITY.md
 %dir %{_datadir}/selinux
 %{_datadir}/selinux/*
 %dir %{_datadir}/qm
@@ -111,8 +111,12 @@ fi
 %{_datadir}/qm/setup
 %ghost %dir %{_datadir}/containers
 %ghost %dir %{_datadir}/containers/systemd
-%config(noreplace) %{_datadir}/containers/systemd/qm.container
+%{_datadir}/containers/systemd/qm.container
+%ghost %{_sysconfdir}/systemd/qm.container
 %{_mandir}/man8/*
+%ghost %dir %{_installscriptdir}
+%ghost %dir %{_installscriptdir}/rootfs
+%ghost %{_installscriptdir}/rootfs/*
 
 %changelog
-{{{ git_dir_changelog }}}
+%autochangelog
