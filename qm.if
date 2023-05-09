@@ -154,15 +154,17 @@ template(`qm_domain_template',`
 
 	seutil_search_default_contexts($1_t)
 
+	allow $1_t bpf_t:dir mounton;
+	allow $1_t cgroup_t:filesystem { getattr remount };
+	allow $1_t container_devpts_t:chr_file { watch watch_reads };
+	allow $1_t container_runtime_t:fifo_file rw_fifo_file_perms;
+	allow $1_t devpts_t:filesystem relabelfrom;
 	allow $1_t mtrr_device_t:file { getattr mounton };
 	allow $1_t proc_kcore_t:file { getattr mounton };
 	allow $1_t proc_kmsg_t:file { getattr mounton };
 	allow $1_t proc_t:file mounton;
 	allow $1_t sysctl_irq_t:dir { getattr mounton };
 	allow $1_t sysctl_t:file { getattr mounton };
-	allow $1_t cgroup_t:filesystem { getattr remount };
-	allow $1_t container_devpts_t:chr_file { watch watch_reads };
-	allow $1_t devpts_t:filesystem relabelfrom;
 
 	corenet_icmp_bind_generic_node($1_t)
 	corenet_raw_bind_generic_node($1_t)
@@ -182,8 +184,6 @@ template(`qm_domain_template',`
 	dev_mounton_sysfs($1_t)
 	dev_read_sysfs($1_t)
 	dev_remount_sysfs_fs($1_t)
-	allow $1_t bpf_t:dir mounton;
-	allow $1_t container_runtime_t:fifo_file write;
 
 	files_getattr_all_blk_files($1_t)
 	files_getattr_all_chr_files($1_t)
@@ -241,6 +241,7 @@ template(`qm_domain_template',`
 
 	selinux_dontaudit_get_fs_mount($1_t)
 	selinux_dontaudit_search_fs($1_t)
+	selinux_mounton_fs(qm_t)
 	selinux_setcheckreqprot($1_t)
 	dontaudit $1_t security_t:file write;
 
