@@ -50,6 +50,9 @@ template(`qm_domain_template',`
 	role system_r types $1_t;
 	init_initrc_domain($1_t)
 	container_use_ptys($1_t)
+	container_read_share_files($1_t)
+	container_exec_share_files($1_t)
+	allow $1_t container_ro_file_t:file execmod;
 
 	attribute $1_file_type;
 	allow $1_file_type self:filesystem associate;
@@ -84,6 +87,10 @@ template(`qm_domain_template',`
 
 	allow $1_t $1_file_type:service all_service_perms;
 
+	container_read_share_files($1_container_domain)
+	container_exec_share_files($1_container_domain)
+	allow $1_container_domain container_ro_file_t:file execmod;
+
 	manage_blk_files_pattern(init_t, $1_file_type, $1_file_type)
 	manage_chr_files_pattern(init_t, $1_file_type, $1_file_type)
 	manage_dirs_pattern(init_t, $1_file_type, $1_file_type)
@@ -98,8 +105,8 @@ template(`qm_domain_template',`
 	filetrans_pattern($1_t, $1_container_var_lib_t, $1_container_ro_file_t, dir, "overlay2")
 	filetrans_pattern($1_t, $1_container_var_lib_t, $1_container_ro_file_t, dir, "overlay2-imagess")
 	filetrans_pattern($1_t, $1_container_var_lib_t, $1_container_ro_file_t, dir, "overlay2-layers")
+	allow $1_container_domain $1_container_ro_file_t:file execmod;
 
-	allow container_domain $1_container_ro_file_t:file execmod;
 	ps_process_pattern(systemd_machined_t, $1_t)
 	read_files_pattern(systemd_machined_t, $1_file_type, $1_file_type)
 	list_dirs_pattern(systemd_machined_t, $1_file_type, $1_file_type)
@@ -154,15 +161,17 @@ template(`qm_domain_template',`
 
 	seutil_search_default_contexts($1_t)
 
+	allow $1_t bpf_t:dir mounton;
+	allow $1_t cgroup_t:filesystem { getattr remount };
+	allow $1_t container_devpts_t:chr_file { watch watch_reads };
+	allow $1_t container_runtime_t:fifo_file rw_fifo_file_perms;
+	allow $1_t devpts_t:filesystem relabelfrom;
 	allow $1_t mtrr_device_t:file { getattr mounton };
 	allow $1_t proc_kcore_t:file { getattr mounton };
 	allow $1_t proc_kmsg_t:file { getattr mounton };
 	allow $1_t proc_t:file mounton;
 	allow $1_t sysctl_irq_t:dir { getattr mounton };
 	allow $1_t sysctl_t:file { getattr mounton };
-	allow $1_t cgroup_t:filesystem { getattr remount };
-	allow $1_t container_devpts_t:chr_file { watch watch_reads };
-	allow $1_t devpts_t:filesystem relabelfrom;
 
 	corenet_icmp_bind_generic_node($1_t)
 	corenet_raw_bind_generic_node($1_t)
@@ -180,10 +189,10 @@ template(`qm_domain_template',`
 	dev_list_sysfs($1_t)
 	dev_mounton_sysfs($1_t)
 	dev_mounton_sysfs($1_t)
+	dev_read_rand($1_t)
 	dev_read_sysfs($1_t)
+	dev_read_urand($1_t)
 	dev_remount_sysfs_fs($1_t)
-	allow $1_t bpf_t:dir mounton;
-	allow $1_t container_runtime_t:fifo_file write;
 
 	files_getattr_all_blk_files($1_t)
 	files_getattr_all_chr_files($1_t)
@@ -207,6 +216,8 @@ template(`qm_domain_template',`
 	fs_relabelfrom_xattr_fs($1_t)
 	fs_search_tracefs_dirs($1_t)
 	allow $1_t nsfs_t:filesystem { getattr unmount };
+
+	domain_obj_id_change_exemption($1_t)
 
 	kernel_dontaudit_search_security_state($1_t)
 	kernel_list_all_proc($1_t)
@@ -241,6 +252,7 @@ template(`qm_domain_template',`
 
 	selinux_dontaudit_get_fs_mount($1_t)
 	selinux_dontaudit_search_fs($1_t)
+	selinux_mounton_fs($1_t)
 	selinux_setcheckreqprot($1_t)
 	dontaudit $1_t security_t:file write;
 
