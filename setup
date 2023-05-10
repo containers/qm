@@ -45,6 +45,21 @@ EOF
     unshare --mount-proc -R /usr/lib/qm/rootfs -m systemctl enable hirte-agent.service
 }
 
+storage() {
+    rootfs=$1
+    if ! test -f ${rootfs}/etc/containers/storage.conf; then
+	mkdir -p ${rootfs}/var/lib/shared/overlay-images \
+	      ${rootfs}/var/lib/shared/overlay-layers
+	touch ${rootfs}/var/lib/shared/overlay-images/images.lock \
+	      ${rootfs}/var/lib/shared/overlay-layers/layers.lock
+
+	sed -e '/additionalimage.*/a "/var/lib/shared",' \
+            -e 's|^#.*transient_store.*|transient_store=true|g' \
+            ${rootfs}/usr/share/containers/storage.conf \
+            > ${rootfs}/etc/containers/storage.conf
+    fi
+}
+
 install() {
     rootfs=$1
     . /etc/os-release
@@ -58,6 +73,7 @@ install() {
     replaceIDs ${rootfs}/etc/subuid containers ${qmContainerIDs}
     replaceIDs ${rootfs}/etc/subgid containers ${qmContainerIDs}
     hirteSetup ${rootfs}
+    storage ${rootfs}
     restorecon -R ${rootfs}
 }
 
