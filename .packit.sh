@@ -13,7 +13,7 @@ SPEC_FILE=rpm/qm.spec
 HEAD_VERSION=$(grep '^policy_module' qm.te | sed 's/[^0-9.]//g')
 
 # Generate source tarball
-git archive --prefix=qm-$HEAD_VERSION/ -o qm-$HEAD_VERSION.tar.gz HEAD
+git archive --prefix=qm-$HEAD_VERSION/ -o rpm/qm-$HEAD_VERSION.tar.gz HEAD
 
 # RPM Spec modifications
 
