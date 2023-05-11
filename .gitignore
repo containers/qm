@@ -3,3 +3,4 @@ tmp
 qm.pp.bz2
 *~
 qm_file_contexts
+*.8
