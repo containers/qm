@@ -173,6 +173,8 @@ template(`qm_domain_template',`
 	allow $1_t sysctl_irq_t:dir { getattr mounton };
 	allow $1_t sysctl_t:file { getattr mounton };
 
+	corecmd_entrypoint_all_executables($1_t)
+
 	corenet_icmp_bind_generic_node($1_t)
 	corenet_raw_bind_generic_node($1_t)
 	corenet_rw_tun_tap_dev($1_t)
