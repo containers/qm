@@ -1,0 +1,75 @@
+FROM quay.io/centos/centos:stream9
+
+RUN dnf install -y \
+	dnf-plugin-config-manager \
+	epel-release
+
+RUN dnf config-manager -y --set-enabled crb
+
+RUN dnf install -y \
+	clang-tools-extra \
+        codespell \
+        bzip2 \
+        gcc \
+        meson \
+	hostname \
+	podman \
+        selinux-policy-targeted \
+        selinux-policy-devel \
+	systemd \
+        valgrind \
+	createrepo_c \
+        dnf-utils \
+        git \
+        gzip \
+        jq \
+	container-selinux \
+	kernel \
+	kernel-modules \
+	passwd \
+        meson \
+        rpm-build \
+        sed \
+        systemd-devel \
+	iputils \
+        tar \
+        golang-github-cpuguy83-md2man \
+	telnet \
+	net-tools \
+	iproute
+
+
+WORKDIR /root
+
+RUN dnf -y copr enable rhcontainerbot/qm centos-stream-9
+RUN dnf -y copr enable mperina/hirte-snapshot centos-stream-9
+RUN dnf -y install hirte hirte-agent hirte-ctl
+
+# [start] CONTROL - settings
+# Setting configuration, uncommenting:
+#	- ManagePort to communicate via 842
+#	- Use journal for logging
+#	- Set AllowedNodeNames as control and node1
+# TODO: remove the static node1 here, dynamic by rune2e script via sed
+RUN sed -e '/^#ManagerPort=/s/^#//g' \
+	-e '/LogTarget/s/^#//' \
+	-e "s/^AllowedNodeNames=/AllowedNodeNames=control,node1/" \
+	-i /usr/share/hirte/config/hirte.conf
+# [end] CONTROL - settings
+
+RUN echo 'Foobar!' | passwd --stdin root 
+RUN cp /usr/share/hirte/config/hirte.conf /etc/hirte/hirte.conf.d/hirte.conf
+
+# [start] CONTROL - agent settings
+RUN cp /usr/share/hirte-agent/config/agent.conf /etc/hirte/agent.conf.d/agent.conf
+RUN IPv4_CONTROL="$(ip -brief address show eth0 | awk '{print $3}' | awk -F/ '{print $1}')" && \
+	sed -e "s/NodeName=/NodeName=control/" \
+		-i /etc/hirte/agent.conf.d/agent.conf
+
+# [end] CONTROL - agent settings
+
+# [start] CONTROL - enable services and systemd
+RUN systemctl enable hirte &> /dev/null
+RUN systemctl enable hirte-agent &> /dev/null
+CMD ["/usr/lib/systemd/systemd"]
+# [end] CONTROL - enable services and systemd

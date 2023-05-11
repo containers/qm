@@ -1,0 +1,82 @@
+#!/bin/bash
+#
+# Copyright 2023 The qm Authors
+#
+# This program is free software; you can redistribute it and/or
+# modify it under the terms of the GNU General Public License
+# as published by the Free Software Foundation; either version 2
+# of the License, or (at your option) any later version.
+#
+# This program is distributed in the hope that it will be useful,
+# but WITHOUT ANY WARRANTY; without even the implied warranty of
+# MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+# GNU General Public License for more details.
+#
+# You should have received a copy of the GNU General Public License
+# along with this program; If not, see <http://www.gnu.org/licenses/>.
+
+create_stub_systemd_srv() {
+    container_target="${1}"
+    creates_on_qm_node="${2}"
+    shift
+
+    if [ -n "${creates_on_qm_node}" ]; then
+        command_on_qm_node="podman exec qm" # keep the space before podman 
+    else
+        shift # remove the "" from qm param to the loop below
+    fi 
+    services_to_be_stub=("$@")
+
+
+    for srv in "${services_to_be_stub[@]}"
+    do
+	if [ "${srv}" = "qm" ]; then
+	     continue
+	fi
+
+        if [ -n "${creates_on_qm_node}" ]; then
+            info_message "Creating stub systemd service: \033[92mcontainer-${srv}\033[0m in \033[92m${container_target}\033[0m and moving it to container \033[92mqm\033[0m inside \033[92m${container_target}\033[0m"
+	else
+            info_message "Creating stub systemd service: \033[92mcontainer-${srv}\033[0m in container \033[92m${container_target}\033[0m"
+	fi
+
+        # create stub pod for the service
+        cmd_create_pod="podman exec ${container_target} podman create --name ${srv} ${REGISTRY_UBI8_MINIMAL} sleep infinity" 
+	#echo "${cmd_create_pod}"
+	eval "${cmd_create_pod}" &> /dev/null
+
+        if [ -n "${creates_on_qm_node}" ]; then
+	    # FIXME: podman generate systemd --files generates the systemd file in the dir it's running. As we are running in a read-only FS in QM container, we must generate
+	    # in node1 and copy later to /etc/systemd/system
+	    cmd_gen_systemd_srv="podman exec ${container_target} podman generate systemd --new --files --name ${srv}"
+	    #echo "${cmd_gen_systemd_srv}"
+	    eval "${cmd_gen_systemd_srv}" &> /dev/null
+ 	    cmd_cp_systemd_srv="podman exec ${container_target} podman cp container-${srv}.service qm:/etc/systemd/system"
+	    #echo "${cmd_cp_systemd_srv}"
+	    eval "${cmd_cp_systemd_srv}" &> /dev/null
+	    cmd_rm_systemd_srv="podman exec ${container_target} rm container-${srv}.service"
+	    #echo "${cmd_rm_systemd_srv}"
+	    eval "${cmd_rm_systemd_srv}" &> /dev/null
+	else
+            # generate systemd service from the stub just created (reminder: inside the pod)
+   	    cmd_generate_systemd_srv="podman exec ${container_target} podman generate systemd --new --files --name ${srv}"
+	    #echo "${cmd_generate_systemd_srv}"
+	    eval "${cmd_generate_systemd_srv}" &> /dev/null
+            # move the new systemd file to /etc/systemd/system
+	    cmd_move_systemd_files="podman exec ${container_target} ${command_on_qm_node} mv container-${srv}.service /usr/lib/systemd/system"
+            #echo "${cmd_move_systemd_files}"
+	    eval "${cmd_move_systemd_files}" &> /dev/null
+	fi
+
+
+        # enable the new systemd service (inside pod)
+	cmd_enable_systemd_srv="podman exec ${container_target} ${command_on_qm_node} systemctl enable container-${srv}"
+	#echo "${cmd_enable_systemd_srv}"
+	eval "${cmd_enable_systemd_srv}" &> /dev/null
+
+        # start the service (inside pod)
+	cmd_start_systemd_srv="podman exec ${container_target} ${command_on_qm_node} systemctl start container-${srv}"
+	#echo "${cmd_start_systemd_srv}"
+	eval "${cmd_start_systemd_srv}" &> /dev/null
+    done
+}
