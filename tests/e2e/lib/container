@@ -20,13 +20,15 @@ get_ip_container() {
     container_name="${1}"
     container_interface="${2}"
 
-    IP_CONTROL_MACHINE=$(
-        podman exec \
-                "${container_name}" \
-                ip -brief address show "${container_interface}" | awk '{print $3}' | awk -F/ '{print $1}'
-    )
+    ip_output=$(podman exec \
+	    "${container_name}" \
+	    ip \
+	    --brief \
+	    address \
+	    show \
+	    "${container_interface}") || exit 1
 
-    echo "${IP_CONTROL_MACHINE}"
+    echo "${ip_output}" | awk '{print $3}' | awk -F/ '{print $1}'
 }
 
 create_container() {
@@ -56,7 +58,6 @@ create_container() {
 
 setup_node() {
         nodeID="${1}"
-        ip_control_machine="${2}"
 
         # copy control as template to node${number}
         cp ContainerFile.control ContainerFile.node"${nodeID}"
@@ -71,9 +72,11 @@ create_qm_node() {
     for nodeID in $(seq 1 "${NUMBER_OF_NODES}") ;
     do
         # Generates the Container.node${ID}
+	eval "IP_CONTROL_MACHINE=\$(get_ip_container \${CONTROL_CONTAINER_NAME} \${NET_INTERFACE_IP_CONTROL})"
+	if_error_exit "unable to get ip from ${CONTROL_CONTAINER_NAME}"
         setup_node \
             "${nodeID}" \
-            "$(get_ip_container "${CONTROL_CONTAINER_NAME}" "${NET_INTERFACE_IP_CONTROL}")"
+            "${IP_CONTROL_MACHINE}"
 
         # Add final instructions
 	echo "RUN dnf -y copr enable rhcontainerbot/qm centos-stream-9 &> /dev/null" >> ContainerFile.node"${nodeID}"
@@ -91,7 +94,7 @@ create_qm_node() {
 	# Enable hirte-agent
 	echo 'RUN cp /usr/share/hirte-agent/config/agent.conf /etc/hirte/agent.conf.d/agent.conf' >> ContainerFile.node"${nodeID}"
         echo 'RUN sed -i -e "s/NodeName=/NodeName='"node${nodeID}/"\" \
-                '-e "s/^ManagerHost=/ManagerHost='"${ip_control_machine}/"\" \
+                '-e "s/^ManagerHost=/ManagerHost='"${IP_CONTROL_MACHINE}/"\" \
                 ' /etc/hirte/agent.conf.d/agent.conf' >> ContainerFile.node"${nodeID}"
         echo "RUN systemctl enable hirte-agent &> /dev/null" >> ContainerFile.node"${nodeID}"
 
@@ -123,9 +126,8 @@ create_qm_node() {
 
 	NODES_FOR_TESTING+=("${qm_node_name}")
 
-	IP_CONTROL_NODE=$(get_ip_container "${CONTROL_CONTAINER_NAME}" "${NET_INTERFACE_IP_CONTROL}")
 	podman exec node"${nodeID}" \
-		podman exec qm sed -i 's/^ManagerHost=/ManagerHost='"${IP_CONTROL_NODE}"'/g' /etc/hirte/agent.conf.d/agent.conf
+		podman exec qm sed -i 's/^ManagerHost=/ManagerHost='"${IP_CONTROL_MACHINE}"'/g' /etc/hirte/agent.conf.d/agent.conf
 
 	podman exec node"${nodeID}" \
 		podman exec qm sed -i 's/^NodeName=/NodeName='"${qm_node_name}"'/g' /etc/hirte/agent.conf.d/agent.conf

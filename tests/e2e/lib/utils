@@ -15,23 +15,6 @@
 # You should have received a copy of the GNU General Public License
 # along with this program; If not, see <http://www.gnu.org/licenses/>.
 
-if_error_warning() {
-    ###########################################################################
-    # Description:                                                            #
-    # Validate if previous command failed and show an error msg (if provided) #
-    #                                                                         #
-    # Arguments:                                                              #
-    #   arg1 - error message if not provided, it will just exit               #
-    ###########################################################################
-    if [ "$?" != "0" ]; then
-        if [ -n "$1" ]; then
-            RED="\033[91m"
-            ENDCOLOR="\033[0m"
-            echo -e "[ ${RED}FAILED${ENDCOLOR} ] ${1}"
-        fi
-    fi
-}
-
 if_error_exit() {
     ###########################################################################
     # Description:                                                            #
@@ -41,30 +24,11 @@ if_error_exit() {
     #   $1 - error message if not provided, it will just exit                 #
     ###########################################################################
     if [ "$?" != "0" ]; then
-        if [ -n "$1" ]; then
-            RED="\033[91m"
-            ENDCOLOR="\033[0m"
-            echo -e "[ ${RED}FAILED${ENDCOLOR} ] ${1}"
-        fi
-        exit 1
+        RED="\033[91m"
+        ENDCOLOR="\033[0m"
+        echo -e "[ ${RED}FAILED${ENDCOLOR} ] ${1}"
+        kill $$ &> /dev/null
     fi
-}
-
-pass_message() {
-    ###########################################################################
-    # Description:                                                            #
-    # show [PASSED] in green and a message as the validation passed.          #
-    #                                                                         #
-    # Arguments:                                                              #
-    #   $1 - message to output                                                #
-    ###########################################################################
-    if [ -z "${1}" ]; then
-        echo "pass_message() requires a message"
-        exit 1
-    fi
-    GREEN="\033[92m"
-    ENDCOLOR="\033[0m"
-    echo -e "[ ${GREEN}PASSED${ENDCOLOR} ] ${1}"
 }
 
 info_message() {
