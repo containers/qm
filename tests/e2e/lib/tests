@@ -18,10 +18,14 @@
 test_hirte_list_all_units() {
     for node_name in "${NODES_FOR_TESTING[@]}"
     do
+	echo
         info_message "Connected to \033[92m${CONTROL_CONTAINER_NAME}\033[0m, listing few systemd units from \033[92m${node_name}\033[0m"
-        cmd_list_units="podman exec ${CONTROL_CONTAINER_NAME} hirtectl list-units ${node_name} | head -5"
-        info_message "\033[92mExecuting\033[0m: ${cmd_list_units}"
-        echo "${cmd_list_units}" | bash
-        echo
+        hirtectl_cmd=$(podman exec \
+		"${CONTROL_CONTAINER_NAME}" \
+		hirtectl \
+		list-units
+	)
+	if_error_exit "unable to execute hirtectl command on ${CONTROL_CONTAINER_NAME}"
+	echo "${hirtectl_cmd}" | head -5
     done
 }
