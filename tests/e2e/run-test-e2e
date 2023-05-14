@@ -28,6 +28,7 @@ export REGISTRY_UBI8_MINIMAL="registry.access.redhat.com/ubi8/ubi-minimal"
 export WAIT_HIRTE_SERVER_BE_READY_IN_SEC=5
 export CONTROL_CONTAINER_NAME="control"
 export NODES_FOR_TESTING=("control" "node1")
+export IP_CONTROL_MACHINE=""
 
 # If no additional nodes are required, use 1
 if [ -z "${NUMBER_OF_NODES}" ]; then

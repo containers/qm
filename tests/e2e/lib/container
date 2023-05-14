@@ -20,13 +20,15 @@ get_ip_container() {
     container_name="${1}"
     container_interface="${2}"
 
-    IP_CONTROL_MACHINE=$(
-        podman exec \
-                "${container_name}" \
-                ip -brief address show "${container_interface}" | awk '{print $3}' | awk -F/ '{print $1}'
-    )
+    ip_output=$(podman exec \
+	    "${container_name}" \
+	    ip \
+	    --brief \
+	    address \
+	    show \
+	    "${container_interface}") || exit 1
 
-    echo "${IP_CONTROL_MACHINE}"
+    echo "${ip_output}" | awk '{print $3}' | awk -F/ '{print $1}'
 }
 
 create_container() {
@@ -35,34 +37,47 @@ create_container() {
     container_tag="${3}"
 
     # Execute build with tag for latest
-    podman build \
+    eval "$(podman build \
             -q \
             -f "${container_file}" \
-            --tag "${container_tag}" 1> /dev/null
+	    --tag "${container_tag}" 1> /dev/null
+    )"
+    if_error_exit "create_container: \
+podman build failed! \
+file: ${container_file} tag: ${container_tag}"
 
     # Get the image id
-    IMAGE_ID=$(podman images "${container_name}" -n  | awk '{print $3}' | uniq)
+    image_name=$(podman images \
+	    "${container_name}" -n
+    )
+    if_error_exit "create_container: \
+podman images failed! name: ${container_name}"
+
+    IMAGE_ID=$(echo "${image_name}" | awk '{print $3}' | uniq)
 
     # Execute the container
-    podman run -d \
+    eval "$(podman run -d \
                 --privileged \
                 --name "${container_name}" \
                 --hostname "${container_name}" \
                 "${IMAGE_ID}" 1> /dev/null
-
-    podman exec "${container_name}" echo "${PODS_DNS}" > /etc/resolv.conf
-
+    )"
+    if_error_exit "create_container: podman run failed! \
+name: ${container_name} \
+hostname: ${container_name} \
+imageID: ${IMAGE_ID}"
 }
 
 setup_node() {
         nodeID="${1}"
-        ip_control_machine="${2}"
 
         # copy control as template to node${number}
         cp ContainerFile.control ContainerFile.node"${nodeID}"
+        if_error_exit "failed to copy ContainerFile control template to node!"
 
         # remove specific code from control mode (template)
         sed -i '/start/,/end/d' ContainerFile.node"${nodeID}"
+        if_error_exit "failed to sed ContainerFile node template!"
 }
 
 create_qm_node() {
@@ -71,9 +86,12 @@ create_qm_node() {
     for nodeID in $(seq 1 "${NUMBER_OF_NODES}") ;
     do
         # Generates the Container.node${ID}
+	eval "IP_CONTROL_MACHINE=\$(get_ip_container \${CONTROL_CONTAINER_NAME} \${NET_INTERFACE_IP_CONTROL})"
+	if_error_exit "unable to get ip from ${CONTROL_CONTAINER_NAME}"
+
         setup_node \
             "${nodeID}" \
-            "$(get_ip_container "${CONTROL_CONTAINER_NAME}" "${NET_INTERFACE_IP_CONTROL}")"
+            "${IP_CONTROL_MACHINE}"
 
         # Add final instructions
 	echo "RUN dnf -y copr enable rhcontainerbot/qm centos-stream-9 &> /dev/null" >> ContainerFile.node"${nodeID}"
@@ -91,7 +109,7 @@ create_qm_node() {
 	# Enable hirte-agent
 	echo 'RUN cp /usr/share/hirte-agent/config/agent.conf /etc/hirte/agent.conf.d/agent.conf' >> ContainerFile.node"${nodeID}"
         echo 'RUN sed -i -e "s/NodeName=/NodeName='"node${nodeID}/"\" \
-                '-e "s/^ManagerHost=/ManagerHost='"${ip_control_machine}/"\" \
+                '-e "s/^ManagerHost=/ManagerHost='"${IP_CONTROL_MACHINE}/"\" \
                 ' /etc/hirte/agent.conf.d/agent.conf' >> ContainerFile.node"${nodeID}"
         echo "RUN systemctl enable hirte-agent &> /dev/null" >> ContainerFile.node"${nodeID}"
 
@@ -102,43 +120,82 @@ create_qm_node() {
         info_message "Creating container \033[92mnode${nodeID}\033[0m [\033[92mQM mode\033[0m]"
         create_container \
                 ContainerFile.node"${nodeID}" \
-                node"${nodeID}" "node${nodeID}:latest"
+                "node${nodeID}" \
+		"node${nodeID}:latest"
 
 	# qm - after the setup, reload daemon and start qm
-	podman exec node"${nodeID}" systemctl daemon-reload &> /dev/null
-	podman exec node"${nodeID}" systemctl start qm &> /dev/null
+	eval "$(podman exec \
+		node"${nodeID}" \
+		systemctl daemon-reload &> /dev/null
+	)"
+	if_error_exit "unable to execute systemctl daemon-load in node${nodeID}"
+
+	eval "$(podman exec \
+		node"${nodeID}" \
+		systemctl start qm &> /dev/null
+	)"
+	if_error_exit "unable to execute systemctl start qm"
 
 	# set in the QM container the ManagerHost (Control Machine) and restart hirte-agent	
-	podman exec node"${nodeID}" \
-		podman exec qm cp /usr/share/hirte-agent/config/agent.conf /etc/hirte/agent.conf.d/agent.conf
+	eval "$(podman exec node"${nodeID}" \
+		podman exec qm \
+		cp \
+		/usr/share/hirte-agent/config/agent.conf \
+		/etc/hirte/agent.conf.d/agent.conf
+	)"
+	if_error_exit "unable to copy agent.conf template to agent.conf.d dir"
 
 	# get the QM nodename from /etc/hirte/agent.conf (env var $NodeName) INSIDE node$ID
 	# FIXME: /etc/hirte/agent.conf should be deprecated soon.
 	qm_node_name=$(podman exec node"${nodeID}" \
-		podman exec qm cat /etc/hirte/agent.conf | grep NodeName= | awk -F'=' '{print $2}')
+		podman exec qm \
+		cat /etc/hirte/agent.conf | grep NodeName= | awk -F'=' '{print $2}'
+	)
+	if_error_exit "unable to find NodeName in qm container"
 
 	# removing old agent.conf location
-	podman exec node"${nodeID}" \
-		podman exec qm rm -f /etc/hirte/agent.conf
+	eval "$(podman exec node"${nodeID}" \
+		podman exec qm \
+		rm -f /etc/hirte/agent.conf
+	)"
+	if_error_exit "unable to remove old agent.conf file"
 
 	NODES_FOR_TESTING+=("${qm_node_name}")
 
-	IP_CONTROL_NODE=$(get_ip_container "${CONTROL_CONTAINER_NAME}" "${NET_INTERFACE_IP_CONTROL}")
-	podman exec node"${nodeID}" \
-		podman exec qm sed -i 's/^ManagerHost=/ManagerHost='"${IP_CONTROL_NODE}"'/g' /etc/hirte/agent.conf.d/agent.conf
+	eval "$(podman exec node"${nodeID}" \
+		podman exec qm \
+		sed -i 's/^ManagerHost=/ManagerHost='"${IP_CONTROL_MACHINE}"'/g' \
+		/etc/hirte/agent.conf.d/agent.conf
+	)"
+	if_error_exit "qm node: unable to sed ManagerHost in hirte agent.conf"
 
-	podman exec node"${nodeID}" \
-		podman exec qm sed -i 's/^NodeName=/NodeName='"${qm_node_name}"'/g' /etc/hirte/agent.conf.d/agent.conf
+	eval "$(podman exec node"${nodeID}" \
+		podman exec qm \
+		sed -i 's/^NodeName=/NodeName='"${qm_node_name}"'/g' \
+		/etc/hirte/agent.conf.d/agent.conf
+	)"
+	if_error_exit "qm node: unable to sed NodeName in hirte agent.conf"
 	
         # restarting the qm hirte-agent	
-	podman exec node"${nodeID}" \
-		podman exec qm systemctl restart hirte-agent
+	eval "$(podman exec node"${nodeID}" \
+		podman exec qm \
+		systemctl restart hirte-agent
+	)"
+	if_error_exit "qm node: unable to restart hirte-agent service"
 
 	# CONTROL NODE: append QM node into /etc/hirte/agent.conf.din the control node the new qm node name
-	podman exec "${CONTROL_CONTAINER_NAME}" sed -i '/^AllowedNodeNames=/ s/$/,'"${qm_node_name}"'/' /etc/hirte/hirte.conf.d/hirte.conf
+	eval "$(podman exec "${CONTROL_CONTAINER_NAME}" \
+		sed -i '/^AllowedNodeNames=/ s/$/,'"${qm_node_name}"'/' \
+		/etc/hirte/hirte.conf.d/hirte.conf
+	)"
+	if_error_exit "control node: unable to sed AllowedNodeName in hirte.conf"
 
 	# restart the hirte service
-	podman exec "${CONTROL_CONTAINER_NAME}" systemctl restart hirte
+	eval "$(podman exec \
+		"${CONTROL_CONTAINER_NAME}" \
+		systemctl restart hirte
+	)"
+	if_error_exit "control node: unable to restart hirte service"
     done
 }
 
