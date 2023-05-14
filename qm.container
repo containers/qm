@@ -13,6 +13,7 @@ Slice=QM.slice
 [Container]
 AddCapability=all
 AddDevice=-/dev/kvm
+AddDevice=-/dev/fuse
 ContainerName=qm
 Exec=/sbin/init
 Network=host
