@@ -48,6 +48,8 @@ template(`qm_domain_template',`
 	type $1_t;
 	domain_type($1_t)
 	role system_r types $1_t;
+	unconfined_stub_role()
+	role unconfined_r types $1_t;
 	init_initrc_domain($1_t)
 	container_use_ptys($1_t)
 	container_read_share_files($1_t)
