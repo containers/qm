@@ -5,6 +5,8 @@
 bold=$(tput bold)
 cyan=$(tput setaf 6)
 reset=$(tput sgr0)
+export qm_quadlet=/etc/containers/systemd/qm.container
+export rootfs=/usr/lib/qm/rootfs
 
 read_color() {
     read -p "${bold}$1${reset}"
@@ -25,13 +27,14 @@ init() {
     sudo systemctl stop qm > /dev/null
     sudo podman rm qm --force -t 0 > /dev/null
     sudo podman volume rm --force qmEtc qmVar > /dev/null
+    sudo podman --root /var/lib/shared rmi -i ubi9 > /dev/null
     sudo rm -rf /usr/lib/qm > /dev/null
+    test -s ${qm_quadlet}.orig && sudo mv ${qm_quadlet}.orig ${qm_quadlet}
 }
 
 install() {
     echo_color "Installing qm packages"
     exec_color "sudo dnf -y install qm; sudo dnf -y update qm"
-
     clear
 }
 
@@ -80,14 +83,12 @@ podman() {
     exec_color "sudo podman exec qm podman run --userns=auto alpine cat /proc/self/uid_map"
     exec_color "sudo podman run --userns=auto ubi9 cat /proc/self/uid_map"
     exec_color "sudo podman run --userns=auto ubi9 cat /proc/self/uid_map"
-    exec_color "sudo podman exec -ti qm sh"
 }
 
 hirte() {
     clear
     exec_color "sudo hirtectl list-units | grep --color running"
     exec_color "sudo podman exec -ti qm podman pull ubi8/httpd-24"
-    rootfs=/usr/lib/qm/rootfs
     exec_color "echo \"[Container]
 Image=registry.access.redhat.com/ubi8/httpd-24
 Network=host
@@ -100,6 +101,30 @@ Network=host
     exec_color "curl 127.0.0.1:8080"
     exec_color "sudo hirtectl stop qm.fedora myquadlet.service"
     exec_color "sudo hirtectl list-units | grep --color myquadlet"
+}
+
+additional_store() {
+    test -s ${qm_quadlet}.orig || sudo cp ${qm_quadlet} ${qm_quadlet}.orig
+    exec_color "sudo podman --root /var/lib/shared pull ubi9"
+    exec_color "sudo podman --root /var/lib/shared images | grep -A 10 -B 10 --color ubi9"
+    exec_color "sudo podman exec qm podman images | grep -A 10 -B 10 --color ubi9"
+    exec_color  "sudo sed -i -e '\$aVolume=/var/lib/shared:/var/lib/shared:ro' /etc/containers/systemd/qm.container"
+    exec_color "sudo systemctl daemon-reload"
+    exec_color "sudo systemctl restart qm.service"
+    exec_color "sudo podman exec qm podman images | grep -A 10 -B 10 --color ubi9"
+}
+
+asilservice() {
+    exec_color "grep -A 20 -B 20 --color system_u.*s0 asilservice.py"
+    exec_color "sudo python asilservice.py &"
+    exec_color "sudo systemctl stop qm"
+    sudo podman volume rm --force qmEtc qmVar > /dev/null
+    exec_color "sudo dnf -y install --installroot ${rootfs} nmap-ncat --nogpgcheck"
+    exec_color "sudo restorecon -R ${rootfs}"
+    exec_color  "sudo sed -i -e '\$aVolume=/run/asilservice:/run/asilservice' /etc/containers/systemd/qm.container"
+    exec_color "sudo systemctl daemon-reload"
+    exec_color "sudo systemctl restart qm"
+    exec_color "sudo podman exec -ti qm /usr/bin/nc -U /run/asilservice/asilservice.sock"
 }
 
 init
@@ -115,6 +140,10 @@ cpuweight
 podman
 
 hirte
+
+additional_store
+
+asilservice
 
 echo done
 read
