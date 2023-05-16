@@ -12,14 +12,6 @@
 # Format must contain '$x' somewhere to do anything useful
 %global _format() export %1=""; for x in %{modulenames}; do %1+=%2; %%1+=" "; done;
 
-# Built only for Fedora 38+ and EL 9+.
-# user_namespace token not available on el9 yet.
-%if 0%{?rhel} <= 9
-%bcond_without no_user_namespace
-%else
-%bcond_with no_user_namespace
-%endif
-
 %if 0%{?fedora}
 %global podman_epoch 5
 %else
@@ -69,11 +61,6 @@ use container tools like Podman.
 %prep
 %autosetup -Sgit -n %{name}-%{version}
 sed -i 's/^install: man all/install:/' Makefile
-
-# Remove unavailable tokens
-%if %{with no_user_namespace}
-sed -i '/user_namespace/d' qm.if
-%endif
 
 %build
 %{__make} all
