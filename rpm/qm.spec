@@ -20,6 +20,12 @@
 %bcond_with no_user_namespace
 %endif
 
+%if 0%{?fedora}
+%global podman_epoch 5
+%else
+%global podman_epoch 2
+%endif
+
 Name: qm
 # Keep Version in upstream specfile at 0. It will be automatically set
 # to the correct value by Packit for copr and koji builds.
@@ -43,7 +49,7 @@ Requires(post): selinux-policy-base >= %_selinux_policy_version
 Requires(post): selinux-policy-targeted >= %_selinux_policy_version
 Requires(post): policycoreutils
 Requires(post): libselinux-utils
-Requires: podman >= 5:4.5
+Requires: podman >= %{podman_epoch}:4.5
 Requires: hirte-agent
 
 %description
