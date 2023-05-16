@@ -12,6 +12,13 @@ SPEC_FILE=rpm/qm.spec
 # Get Version from HEAD
 HEAD_VERSION=$(grep '^policy_module' qm.te | sed 's/[^0-9.]//g')
 
+# Check version consistency in qm.te and VERSION before proceeding
+if [[ $(cat VERSION) != $HEAD_VERSION ]]; then
+    echo "Inconsistent versions mentioned in VERSION and qm.te files. Investigate!"
+    echo "Aborting Packit tasks!"
+    exit 1
+fi
+
 # Generate source tarball
 git archive --prefix=qm-$HEAD_VERSION/ -o rpm/qm-$HEAD_VERSION.tar.gz HEAD
 
