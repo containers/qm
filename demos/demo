@@ -33,8 +33,8 @@ init() {
 }
 
 install() {
-    echo_color "Installing qm packages"
-    exec_color "sudo dnf -y install qm; sudo dnf -y update qm"
+    echo_color "Installing packages"
+    exec_color "sudo dnf -y install qm hirte hirte-agent hirte-ctl podman container-selinux; sudo dnf -y update qm hirte hirte-agent hirte-ctl podman container-selinux"
     clear
 }
 
