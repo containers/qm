@@ -67,18 +67,20 @@ jobs:
     dist_git_branches:
       - fedora-rawhide
       - fedora-38
-      - epel-9
+      # Disable epel-9 until hirte and podman 4.5 are available
+      # Ref: https://bodhi.fedoraproject.org/updates/FEDORA-EPEL-2023-77d64cf134#comment-3026157
+      #- epel-9
 
   - job: koji_build
     trigger: commit
     dist_git_branches:
       - fedora-rawhide
       - fedora-38
-      - epel-9
+      #- epel-9
 
   - job: bodhi_update
     trigger: commit
     dist_git_branches:
       # rawhide updates are created automatically
       - fedora-38
-      - epel-9
+      #- epel-9
