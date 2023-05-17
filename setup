@@ -64,7 +64,7 @@ install() {
     rootfs=$1
     . /etc/os-release
     mkdir -Z -p ${rootfs}
-    dnf -y install --releasever=${VERSION_ID} --installroot ${rootfs} selinux-policy-targeted podman systemd hirte-agent --nogpgcheck
+    dnf -y install --releasever=${VERSION_ID} --installroot ${rootfs} selinux-policy-targeted podman systemd hirte-agent procps-ng --nogpgcheck
     dnf -y update --installroot ${rootfs} --nogpgcheck
     rm -rf ${rootfs}/etc/selinux/targeted/contexts/files/file_contexts/*
     cp ${INSTALLDIR}/containers.conf ${rootfs}/etc/containers/

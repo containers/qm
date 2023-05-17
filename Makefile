@@ -11,6 +11,7 @@ ifeq ($(wildcard /sys/fs/selinux/class/user_namespace),)
 	USER_NAMESPACE="user_namespace"
 endif
 
+.PHONY: file_contexts
 file_contexts: qm.fc
 	sed \
 	-e "s|${QMDIR}/rootfs||" \
@@ -20,6 +21,7 @@ file_contexts: qm.fc
 
 all: selinux file_contexts  man
 
+.PHONY: selinux
 selinux: qm.pp
 	@echo Compressing $^ -\> $@
 	bzip2 -f -9 $^
