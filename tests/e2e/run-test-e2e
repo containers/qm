@@ -23,12 +23,18 @@ source "${SCRIPT_DIR}"/lib/container
 source "${SCRIPT_DIR}"/lib/systemd
 source "${SCRIPT_DIR}"/lib/tests
 
+# GLOBALS
 export CONFIG_NODE_AGENT_PATH="/etc/hirte/agent.conf.d/agent.conf"
 export REGISTRY_UBI8_MINIMAL="registry.access.redhat.com/ubi8/ubi-minimal"
 export WAIT_HIRTE_SERVER_BE_READY_IN_SEC=5
 export CONTROL_CONTAINER_NAME="control"
 export NODES_FOR_TESTING=("control" "node1")
 export IP_CONTROL_MACHINE=""
+
+export BUILD_QM_FROM_GH_URL=""
+export BUILD_HIRTE_FROM_GH_URL=""
+export BRANCH_HIRTE=""
+export BRANCH_QM=""
 
 # If no additional nodes are required, use 1
 if [ -z "${NUMBER_OF_NODES}" ]; then
@@ -44,9 +50,94 @@ if [ -z "${NET_INTERFACE_IP_CONTROL}" ]; then
 fi
 
 # ====================== Start - int main {} ;-)
+ARGUMENT_LIST=(
+  "build-qm-from-gh-url"
+  "branch-qm"
+  "build-hirte-from-gh-url"
+  "branch-hirte"
+)
+
+usage() {
+	echo "Usage: $0 [OPTIONS]"
+	echo
+	echo "--help"
+        echo -e "\tThis message"
+	echo
+	echo "--build-qm-from-gh-url"
+	echo -e "\tBuild QM from a specific GitHub URL, useful for testing new features"
+	echo "--branch-qm"
+	echo -e "\tSpecify which branch the GitHub repo will be set. Requires --build-qm-from-gh-url"
+	echo
+	echo "--build-hirte-from-gh-url"
+	echo -e "\tBuild HIRTE from a specific GitHub URL, useful for testing new features"
+	echo "--branch-hirte"
+	echo -e "\tSpecify which branch the GitHub repo will be set. Requires --build-hirte-from-gh-url"
+	echo
+	echo "Examples:"
+	echo
+	echo -e "\tNo args, it will install latest qm and hirte from copr rpm repository"
+	echo -e "\t\t${0}"
+	echo
+	echo -e "\tBuild qm and hirte from a specific github url and select the branches"
+	echo -e "\t\t${0} \\"
+	echo -e "\t\t\t--branch-qm=superfeature \\"
+	echo -e	"\t\t\t--build-qm-from-gh-url=https://github.com/MYUSER/qm.git \\"
+	echo -e "\t\t\t--branch-hirte=superfeature"
+	echo -e	"\t\t\t--build-hirte-from-gh-url=https://github.com/MYUSER/hirte.git \\"
+	echo
+	exit 0
+}
+
+# read arguments
+opts=$(getopt \
+  --longoptions "$(printf "help,%s:," "${ARGUMENT_LIST[@]}")" \
+  --name "$(basename "$0")" \
+  --options "" \
+  -- "$@"
+)
+
+eval set --"${opts}"
+
+while [[ $# -gt 0 ]]; do
+  case "$1" in
+    --branch-qm)
+      BRANCH_QM="${2}"
+      shift 2
+      ;;
+
+    --branch-hirte)
+      BRANCH_HIRTE="${2}"
+      shift 2
+
+      ;;
+    --build-qm-from-gh-url)
+      if [ -z "${BRANCH_QM}" ]; then
+          BRANCH_QM="main"
+      fi
+      BUILD_QM_FROM_GH_URL="${2}"
+      shift 2
+      ;;
+
+    --build-hirte-from-gh-url)
+      if [ -z "${BRANCH_HIRTE}" ]; then
+          BRANCH_HIRTE="main"
+      fi
+      BUILD_HIRTE_FROM_GH_URL="${2}"
+      shift 2
+      ;;
+
+    --help)
+      usage
+      shift 2
+      ;;
+    *)
+      break
+      ;;
+  esac
+done
+
 info_message "Starting setup"
 info_message "=============================="
-
 if [ "$EUID" -ne 0 ]
 then
     echo -e "[\033[91m ERROR\033[0m ] Please run as root this script. It requires to set limits inside a container which is not allowed by root."
@@ -60,6 +151,19 @@ cleanup "node1"
 echo
 info_message "Preparing ASIL environment"
 info_message "=============================="
+
+# If user would like to build hirte from source code, let's adjust the ContainerFile
+if [ -n "${BUILD_HIRTE_FROM_GH_URL}" ]; then
+    echo
+    info_message "Building hirte from source code, using:"
+    info_message "=============================="
+    info_message "\tGH URL: ${BUILD_HIRTE_FROM_GH_URL}"
+    info_message "\tBranch: ${BRANCH_HIRTE}"
+    echo
+    sed -i -e 's#@BUILD_HIRTE_FROM_GH_URL@#'"${BUILD_HIRTE_FROM_GH_URL}"'#g' ContainerFile.control
+    sed -i -e 's/@BRANCH_HIRTE@/'"${BRANCH_HIRTE}"'/g' ContainerFile.control
+    sed -i -e 's/# \[manually install hirte\] //' ContainerFile.control
+fi
 
 # Creates the control container - a.k.a ASIL
 create_asil_node
