@@ -45,26 +45,54 @@ RUN dnf -y copr enable rhcontainerbot/qm centos-stream-9
 RUN dnf -y copr enable mperina/hirte-snapshot centos-stream-9
 RUN dnf -y install hirte hirte-agent hirte-ctl
 
+# Script will remove the lines before the commands automatically
+# [manually install hirte] RUN rpm -e hirte hirte-agent hirte-ctl hirte-selinux
+# [manually install hirte] RUN git clone @BUILD_HIRTE_FROM_GH_URL@
+# [manually install hirte] WORKDIR /root/hirte
+
+
+# Look for remote branches
+# [manually install hirte] RUN if git branch -a | grep "remotes/origin/@BRANCH_HIRTE@" &> /dev/null; then \
+# [manually install hirte] git checkout @BRANCH_HIRTE@ &> /dev/null; \
+# [manually install hirte] else \
+# Look to see if the branch already exists, like main branch
+# [manually install hirte] if git branch -a | grep -w @BRANCH_HIRTE@ &> /dev/null; then \
+# [manually install hirte] git checkout @BRANCH_HIRTE@ || true &> /dev/null; \
+# The Branch doesn't exist, create one using -b
+# [manually install hirte] else \
+# [manually install hirte] git checkout -b @BRANCH_HIRTE@ || true &> /dev/null; \
+# [manually install hirte] fi \
+# [manually install hirte] fi
+
+# Execute the build after selecting the branch
+# [manually install hirte] RUN ./build-scripts/build-rpm.sh || true
+
+# Upgrade the current hirte using the new rpm packages but exclude src.rpm
+# [manually install hirte] RUN find . -not -name *.src* -name *.rpm | xargs dnf install -y
+# RUN cp /usr/share/hirte/config/hirte.conf /etc/hirte/hirte.conf.d/hirte.conf
+# [manually install hirte] RUN cp /usr/share/hirte/config/hirte.conf /etc/hirte/hirte.conf
+
 # [start] CONTROL - settings
 # Setting configuration, uncommenting:
 #	- ManagePort to communicate via 842
 #	- Use journal for logging
 #	- Set AllowedNodeNames as control and node1
 # TODO: remove the static node1 here, dynamic by rune2e script via sed
+RUN cp /usr/share/hirte/config/hirte.conf /etc/hirte/
+RUN cp /usr/share/hirte-agent/config/agent.conf /etc/hirte/
 RUN sed -e '/^#ManagerPort=/s/^#//g' \
 	-e '/LogTarget/s/^#//' \
 	-e "s/^AllowedNodeNames=/AllowedNodeNames=control,node1/" \
-	-i /usr/share/hirte/config/hirte.conf
+	-i /etc/hirte/hirte.conf
 # [end] CONTROL - settings
 
 RUN echo 'Foobar!' | passwd --stdin root 
-RUN cp /usr/share/hirte/config/hirte.conf /etc/hirte/hirte.conf.d/hirte.conf
 
 # [start] CONTROL - agent settings
-RUN cp /usr/share/hirte-agent/config/agent.conf /etc/hirte/agent.conf.d/agent.conf
+RUN cp /usr/share/hirte-agent/config/*.conf /etc/hirte/ &> /dev/null
 RUN IPv4_CONTROL="$(ip -brief address show eth0 | awk '{print $3}' | awk -F/ '{print $1}')" && \
 	sed -e "s/NodeName=/NodeName=control/" \
-		-i /etc/hirte/agent.conf.d/agent.conf
+		-i /etc/hirte/agent.conf
 
 # [end] CONTROL - agent settings
 

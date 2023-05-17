@@ -94,9 +94,6 @@ create_qm_node() {
             "${IP_CONTROL_MACHINE}"
 
         # Add final instructions
-	echo "RUN dnf -y copr enable rhcontainerbot/qm centos-stream-9 &> /dev/null" >> ContainerFile.node"${nodeID}"
-        echo "RUN dnf -y copr enable mperina/hirte-snapshot centos-stream-9 &> /dev/null" >> ContainerFile.node"${nodeID}"
-        echo "RUN dnf update -y &> /dev/null" >> ContainerFile.node"${nodeID}"
         echo "RUN dnf install qm -y &> /dev/null" >> ContainerFile.node"${nodeID}"
 
 	# Execute qm setup
@@ -107,10 +104,10 @@ create_qm_node() {
 	echo 'RUN echo "AddDevice=-/dev/fuse" >> /usr/share/containers/systemd/qm.container' >> ContainerFile.node"${nodeID}"
 
 	# Enable hirte-agent
-	echo 'RUN cp /usr/share/hirte-agent/config/agent.conf /etc/hirte/agent.conf.d/agent.conf' >> ContainerFile.node"${nodeID}"
+	echo 'RUN cp /usr/share/hirte-agent/config/*.conf /etc/hirte/' >> ContainerFile.node"${nodeID}"
         echo 'RUN sed -i -e "s/NodeName=/NodeName='"node${nodeID}/"\" \
                 '-e "s/^ManagerHost=/ManagerHost='"${IP_CONTROL_MACHINE}/"\" \
-                ' /etc/hirte/agent.conf.d/agent.conf' >> ContainerFile.node"${nodeID}"
+                ' /etc/hirte/agent.conf' >> ContainerFile.node"${nodeID}"
         echo "RUN systemctl enable hirte-agent &> /dev/null" >> ContainerFile.node"${nodeID}"
 
 	# Add systemd as CMD
@@ -141,38 +138,24 @@ create_qm_node() {
 		podman exec qm \
 		cp \
 		/usr/share/hirte-agent/config/agent.conf \
-		/etc/hirte/agent.conf.d/agent.conf
+		/etc/hirte/agent.conf
 	)"
 	if_error_exit "unable to copy agent.conf template to agent.conf.d dir"
 
-	# get the QM nodename from /etc/hirte/agent.conf (env var $NodeName) INSIDE node$ID
-	# FIXME: /etc/hirte/agent.conf should be deprecated soon.
-	qm_node_name=$(podman exec node"${nodeID}" \
-		podman exec qm \
-		cat /etc/hirte/agent.conf | grep NodeName= | awk -F'=' '{print $2}'
-	)
-	if_error_exit "unable to find NodeName in qm container"
-
-	# removing old agent.conf location
-	eval "$(podman exec node"${nodeID}" \
-		podman exec qm \
-		rm -f /etc/hirte/agent.conf
-	)"
-	if_error_exit "unable to remove old agent.conf file"
-
+	qm_node_name="qm-node${nodeID}"
 	NODES_FOR_TESTING+=("${qm_node_name}")
 
 	eval "$(podman exec node"${nodeID}" \
 		podman exec qm \
 		sed -i 's/^ManagerHost=/ManagerHost='"${IP_CONTROL_MACHINE}"'/g' \
-		/etc/hirte/agent.conf.d/agent.conf
+		/etc/hirte/agent.conf
 	)"
 	if_error_exit "qm node: unable to sed ManagerHost in hirte agent.conf"
 
 	eval "$(podman exec node"${nodeID}" \
 		podman exec qm \
 		sed -i 's/^NodeName=/NodeName='"${qm_node_name}"'/g' \
-		/etc/hirte/agent.conf.d/agent.conf
+		/etc/hirte/agent.conf
 	)"
 	if_error_exit "qm node: unable to sed NodeName in hirte agent.conf"
 	
@@ -186,7 +169,7 @@ create_qm_node() {
 	# CONTROL NODE: append QM node into /etc/hirte/agent.conf.din the control node the new qm node name
 	eval "$(podman exec "${CONTROL_CONTAINER_NAME}" \
 		sed -i '/^AllowedNodeNames=/ s/$/,'"${qm_node_name}"'/' \
-		/etc/hirte/hirte.conf.d/hirte.conf
+		/etc/hirte/hirte.conf
 	)"
 	if_error_exit "control node: unable to sed AllowedNodeName in hirte.conf"
 
@@ -201,7 +184,7 @@ create_qm_node() {
 
 create_asil_node() {
     # Creates the control container - a.k.a ASIL
-    info_message "Creating container \033[92m${CONTROL_CONTAINER_NAME}\033[0m [\033[92mASIL mode\033[0m]"
+    info_message "Creating container \033[92m${CONTROL_CONTAINER_NAME}\033[0m [\033[92mASIL mode\033[0m]. It might take some time..."
     create_container \
         "ContainerFile.control" \
         "${CONTROL_CONTAINER_NAME}" \

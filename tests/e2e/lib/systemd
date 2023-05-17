@@ -37,7 +37,7 @@ create_stub_systemd_srv() {
         if [ -n "${creates_on_qm_node}" ]; then
             info_message "Creating stub systemd service: \033[92mcontainer-${srv}\033[0m in \033[92m${container_target}\033[0m and moving it to container \033[92mqm\033[0m inside \033[92m${container_target}\033[0m"
 	else
-            info_message "Creating stub systemd service: \033[92mcontainer-${srv}\033[0m in container \033[92m${container_target}\033[0m"
+            info_message "Creating stub systemd service: \033[92mcontainer-${srv}\033[0m in container \033[92m${container_target}\033[0m. It might take some time..."
 	fi
 
         # create stub pod for the service
