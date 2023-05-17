@@ -16,6 +16,7 @@ replaceIDs() {
     grep -q "^$2:" $1 || echo $2:$3 >> $1
 }
 
+AGENTCONF=/etc/hirte/agent.conf
 INSTALLDIR="$1"
 [ ! -z "${INSTALLDIR}" ] || INSTALLDIR=/usr/share/qm
 
@@ -26,23 +27,22 @@ systemctl stop qm.service 2>/dev/null || true
 
 hirteSetup() {
     rootfs=$1
-    if test ! -f ${rootfs}/etc/hirte/agent.conf; then
-	if test -f /etc/hirte/agent.conf; then
-	    sed -e 's,^NodeName=,NodeName=qm.,g' /etc/hirte/agent.conf >  ${rootfs}/etc/hirte/agent.conf
+    if test ! -f ${rootfs}${AGENTCONF}; then
+	if test -f ${AGENTCONF}; then
+	    sed -e 's,^NodeName=,NodeName=qm.,g' ${AGENTCONF} >  ${rootfs}${AGENTCONF}
 	fi
     fi
     hostname=$(hostname)
-    if test -f ${rootfs}/etc/hirte/agent.conf; then
+    if test -f ${rootfs}${AGENTCONF}; then
 	sed -e "s,^NodeName=qm.$,NodeName=qm.${hostname},g" \
 	    -e "s,^NodeName=$,NodeName=qm.${hostname},g" \
-	    -i ${rootfs}/etc/hirte/agent.conf
+	    -i ${rootfs}${AGENTCONF}
     else
-	cat > ${rootfs}/etc/hirte/agent.conf <<EOF
+	cat > ${rootfs}${AGENTCONF} <<EOF
 [hirte-agent]
 NodeName=qm.${hostname}
 EOF
     fi
-    unshare --mount-proc -R /usr/lib/qm/rootfs -m systemctl enable hirte-agent.service
 }
 
 storage() {
@@ -73,15 +73,23 @@ install() {
     replaceIDs ${rootfs}/etc/subuid containers ${qmContainerIDs}
     replaceIDs ${rootfs}/etc/subgid containers ${qmContainerIDs}
     hirteSetup ${rootfs}
+    unshare --mount-proc -R /usr/lib/qm/rootfs -m systemctl enable hirte-agent.service
     storage ${rootfs}
     restorecon -R ${rootfs}
 }
 
-install ${ROOTFS}
-replaceIDs /etc/subuid qmcontainers ${qmContainerIDs}
-replaceIDs /etc/subgid qmcontainers ${qmContainerIDs}
-replaceIDs /etc/subuid containers   ${containerIDs}
-replaceIDs /etc/subgid containers   ${containerIDs}
-
-systemctl daemon-reload
-systemctl start qm.service
+case "$1" in
+    hirte-agent)
+	rm -f ${ROOTFS}${AGENTCONF}
+	hirteSetup ${ROOTFS}
+	;;
+    *)
+	install ${ROOTFS}
+	replaceIDs /etc/subuid qmcontainers ${qmContainerIDs}
+	replaceIDs /etc/subgid qmcontainers ${qmContainerIDs}
+	replaceIDs /etc/subuid containers   ${containerIDs}
+	replaceIDs /etc/subgid containers   ${containerIDs}
+	systemctl daemon-reload
+	systemctl start qm.service
+	;;
+esac
