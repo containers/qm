@@ -9,6 +9,7 @@ MemorySwapMax=0
 OOMScoreAdjust=500 
 Restart=always
 Slice=QM.slice
+ExecPreStart=/usr/share/qm/setup hirte-agent
 
 [Container]
 AddCapability=all

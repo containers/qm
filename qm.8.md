@@ -115,5 +115,16 @@ applications within the QM. All applications within the QM environment are
 prevented from interfering with applications running outside of the QM
 environment.
 
+## Configuring hirte agent in the QM
+
+The configuration of the hosts /etc/hirte/agent.conf file is copied into the QM every time the
+qm.service is started, with the nodename of the hosts agent.conf modified by prepending `qm.`
+on the front of the nodename. If the hosts /etc/hirte/agent.conf does not exists, then the
+QM hirte agent will default to `qm.`$(hostname).
+
+If you want permanently modify the hirte agent within the QM you can add config to
+/usr/lib/qm/rootfs/etc/hirte/agent.conf.d/ directory or modify the /etc/containers/systemd/qm.container
+quadlet file to not execute the hirte-agent setup script.
+
 ## SEE ALSO
-**[podman(1)](https://github.com/containers/podman/blob/main/docs/source/markdown/podman.1.md)**, **[quadlet(5)](https://github.com/containers/podman/blob/main/docs/source/markdown/podman-systemd.unit.5.md)**, systemctl(1), systemd(1), dnf(8)
+**[podman(1)](https://github.com/containers/podman/blob/main/docs/source/markdown/podman.1.md)**,**[quadlet(5)](https://github.com/containers/podman/blob/main/docs/source/markdown/podman-systemd.unit.5.md)**, systemctl(1), systemd(1), dnf(8), [hirte-agent(1)](https://github.com/containers/hirte/blob/main/doc/man/hirte-agent.1.md),[hirte-agent.conf.5](https://github.com/containers/hirte/blob/main/doc/man/hirte-agent.conf.5.md)

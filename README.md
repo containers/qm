@@ -2,7 +2,8 @@
 
 The main purpose of this package is allow users to setup an environment which
 prevents applications and container tools from interfering with other all
-other processes on the system.
+other processes on the system. For example ASIL (Automotive Safety Integrity Level)
+environments.
 
 The QM environment uses containerization tools like cgoups, namespaces, and
 security isolation to prevent accidental interference by processes in the qm.
@@ -31,3 +32,20 @@ each other.
 
 For now all of the control processes in the qm other then containers will run
 with the same qm_t type.
+
+* [Hirte](https://github.com/containers/qm/pull/57)
+
+The package configures the hirte agent within the QM.
+
+Hirte is a systemd service controller intended for multi-node environments with
+a predefined number of nodes and with a focus on highly regulated ecosystems such
+as those requiring functional safety. Potential use cases can be found in domains
+such as transportation, where services need to be controlled across different
+edge devices and where traditional orchestration tools are not compliant with
+regulatory requirements.
+
+Systems with QM installed will have two systemd's running on them. The QM hirte-agent
+is based on the hosts /etc/hirte/agent.conf file. By default any changes to the
+systems agent.conf file are reflected into the QM /etc/hirte/agent.conf. You can
+further customize the QM hirte agent by adding content to the
+/usr/lib/qm/rootfs/etc/hirte/agent.conf.d/ directory.

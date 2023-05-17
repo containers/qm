@@ -36,10 +36,10 @@ Just call `export VARNAME=foobar` before executing the script.
 | ----------- | ----------- |
 | NUMBER_OF_NODES      | Increase the number of agent nodes. Useful for scale tests.       |
 | NET_INTERFACE_IP_CONTROL   | By default is eth0. Used to collect ip address of controller node        |
-| TAG_CONTROL_MACHINE | The control machine tag. Default is contro:latest
+| TAG_CONTROL_MACHINE | The control machine tag. Default is control:latest
 
 ## Demo
-If your brower doesn't support asciinema, here the demo in text:
+If your browser doesn't support asciinema, here the demo in text:
 ```
 [root@dell730 e2e]# #host
 [root@dell730 e2e]# cat /etc/fedora-release
