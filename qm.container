@@ -9,6 +9,7 @@ MemorySwapMax=0
 OOMScoreAdjust=500 
 Restart=always
 Slice=QM.slice
+Environment=ROOTFS=/usr/lib/qm/rootfs
 ExecPreStart=/usr/share/qm/setup hirte-agent
 
 [Container]
@@ -20,9 +21,9 @@ Exec=/sbin/init
 Network=host
 PodmanArgs=--security-opt label=nested --security-opt unmask=all
 ReadOnly=true
-Rootfs=/usr/lib/qm/rootfs
+Rootfs=${ROOTFS}
 SecurityLabelFileType=qm_file_t
 SecurityLabelLevel=s0
 SecurityLabelType=qm_t
-Volume=qmEtc:/etc:copy
-Volume=qmVar:/var:copy
+Volume=${ROOTFS}/etc:/etc
+Volume=${ROOTFS}/var:/var
