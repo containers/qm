@@ -12,10 +12,12 @@
 # Format must contain '$x' somewhere to do anything useful
 %global _format() export %1=""; for x in %{modulenames}; do %1+=%2; %%1+=" "; done;
 
-%if 0%{?fedora}
-%global podman_epoch 5
+%if 0%{?rhel}
+%bcond_with podman_45
+%bcond_with hirte_agent
 %else
-%global podman_epoch 2
+%bcond_without podman_45
+%bcond_without hirte_agent
 %endif
 
 Name: qm
@@ -41,8 +43,12 @@ Requires(post): selinux-policy-base >= %_selinux_policy_version
 Requires(post): selinux-policy-targeted >= %_selinux_policy_version
 Requires(post): policycoreutils
 Requires(post): libselinux-utils
-Requires: podman >= %{podman_epoch}:4.5
+%if %{with podman_45}
+Requires: podman >= 5:4.5
+%endif
+%if %{with hirte_agent}
 Requires: hirte-agent
+%endif
 
 %description
 This package allow users to setup an environment which prevents applications
