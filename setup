@@ -26,19 +26,19 @@ ROOTFS="$2"
 systemctl stop qm.service 2>/dev/null || true
 
 hirteSetup() {
-    rootfs=$1
-    if test ! -f ${rootfs}${AGENTCONF}; then
+    ROOTFS=$1
+    if test ! -f ${ROOTFS}${AGENTCONF}; then
 	if test -f ${AGENTCONF}; then
-	    sed -e 's,^NodeName=,NodeName=qm.,g' ${AGENTCONF} >  ${rootfs}${AGENTCONF}
+	    sed -e 's,^NodeName=,NodeName=qm.,g' ${AGENTCONF} >  ${ROOTFS}${AGENTCONF}
 	fi
     fi
     hostname=$(hostname)
-    if test -f ${rootfs}${AGENTCONF}; then
+    if test -f ${ROOTFS}${AGENTCONF}; then
 	sed -e "s,^NodeName=qm.$,NodeName=qm.${hostname},g" \
 	    -e "s,^NodeName=$,NodeName=qm.${hostname},g" \
-	    -i ${rootfs}${AGENTCONF}
+	    -i ${ROOTFS}${AGENTCONF}
     else
-	cat > ${rootfs}${AGENTCONF} <<EOF
+	cat > ${ROOTFS}${AGENTCONF} <<EOF
 [hirte-agent]
 NodeName=qm.${hostname}
 EOF
@@ -46,36 +46,36 @@ EOF
 }
 
 storage() {
-    rootfs=$1
-    if ! test -f ${rootfs}/etc/containers/storage.conf; then
-	mkdir -p ${rootfs}/var/lib/shared/overlay-images \
-	      ${rootfs}/var/lib/shared/overlay-layers
-	touch ${rootfs}/var/lib/shared/overlay-images/images.lock \
-	      ${rootfs}/var/lib/shared/overlay-layers/layers.lock
+    ROOTFS=$1
+    if ! test -f ${ROOTFS}/etc/containers/storage.conf; then
+	mkdir -p ${ROOTFS}/var/lib/shared/overlay-images \
+	      ${ROOTFS}/var/lib/shared/overlay-layers
+	touch ${ROOTFS}/var/lib/shared/overlay-images/images.lock \
+	      ${ROOTFS}/var/lib/shared/overlay-layers/layers.lock
 
 	sed -e '/additionalimage.*/a "/var/lib/shared",' \
             -e 's|^#.*transient_store.*|transient_store=true|g' \
-            ${rootfs}/usr/share/containers/storage.conf \
-            > ${rootfs}/etc/containers/storage.conf
+            ${ROOTFS}/usr/share/containers/storage.conf \
+            > ${ROOTFS}/etc/containers/storage.conf
     fi
 }
 
 install() {
-    rootfs=$1
+    ROOTFS=$1
     . /etc/os-release
-    mkdir -Z -p ${rootfs}
-    dnf -y install --releasever=${VERSION_ID} --installroot ${rootfs} selinux-policy-targeted podman systemd hirte-agent procps-ng
-    dnf -y update --installroot ${rootfs}
-    rm -rf ${rootfs}/etc/selinux/targeted/contexts/files/file_contexts/*
-    cp ${INSTALLDIR}/containers.conf ${rootfs}/etc/containers/
-    cp ${INSTALLDIR}/contexts ${rootfs}/usr/share/containers/selinux/
-    cp ${INSTALLDIR}/file_contexts ${rootfs}/etc/selinux/targeted/contexts/files/file_contexts
-    replaceIDs ${rootfs}/etc/subuid containers ${qmContainerIDs}
-    replaceIDs ${rootfs}/etc/subgid containers ${qmContainerIDs}
-    hirteSetup ${rootfs}
-    unshare --mount-proc -R /usr/lib/qm/rootfs -m systemctl enable hirte-agent.service
-    storage ${rootfs}
-    restorecon -R ${rootfs}
+    mkdir -Z -p ${ROOTFS}
+    dnf -y install --releasever=${VERSION_ID} --installroot ${ROOTFS} selinux-policy-targeted podman systemd hirte-agent procps-ng
+    dnf -y update --installroot ${ROOTFS}
+    rm -rf ${ROOTFS}/etc/selinux/targeted/contexts/files/file_contexts/*
+    cp ${INSTALLDIR}/containers.conf ${ROOTFS}/etc/containers/
+    cp ${INSTALLDIR}/contexts ${ROOTFS}/usr/share/containers/selinux/
+    cp ${INSTALLDIR}/file_contexts ${ROOTFS}/etc/selinux/targeted/contexts/files/file_contexts
+    replaceIDs ${ROOTFS}/etc/subuid containers ${qmContainerIDs}
+    replaceIDs ${ROOTFS}/etc/subgid containers ${qmContainerIDs}
+    hirteSetup ${ROOTFS}
+    unshare --mount-proc -R ${ROOTFS} -m systemctl enable hirte-agent.service
+    storage ${ROOTFS}
+    restorecon -R ${ROOTFS}
 }
 
 case "$1" in
