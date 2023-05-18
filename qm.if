@@ -219,6 +219,7 @@ template(`qm_domain_template',`
 	fs_relabelfrom_tmpfs($1_t)
 	fs_relabelfrom_xattr_fs($1_t)
 	fs_search_tracefs_dirs($1_t)
+	fs_set_xattr_fs_quotas($1_t)
 	allow $1_t nsfs_t:filesystem { getattr unmount };
 
 	domain_obj_id_change_exemption($1_t)
