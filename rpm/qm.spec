@@ -12,6 +12,14 @@
 # Format must contain '$x' somewhere to do anything useful
 %global _format() export %1=""; for x in %{modulenames}; do %1+=%2; %%1+=" "; done;
 
+# copr_username is only set on copr environments, not on others like koji
+# Check if copr is owned by rhcontainerbot
+%if "%{?copr_username}" != "rhcontainerbot"
+%bcond_with copr
+%else
+%bcond_without copr
+%endif
+
 %if 0%{?rhel}
 %bcond_with podman_45
 %bcond_with hirte_agent
@@ -21,6 +29,10 @@
 %endif
 
 Name: qm
+# Set different Epochs for copr and koji
+%if %{with copr}
+Epoch: 101
+%endif
 # Keep Version in upstream specfile at 0. It will be automatically set
 # to the correct value by Packit for copr and koji builds.
 # IGNORE this comment if you're looking at it in dist-git.
@@ -83,12 +95,14 @@ sed -i 's/^install: man all/install:/' Makefile
 
 # Set AllowedCPUs in quadlet file
 NPROC=$(nproc)
-if [[ $NPROC == 2 ]]; then
+if [[ $NPROC == 1 ]]; then
+    ALLOWED_CPUS=0
+elif [[ $NPROC == 2 ]]; then
     ALLOWED_CPUS=1
 else
     ALLOWED_CPUS=$(expr $NPROC / 2)"-"$(expr $NPROC - 1)
 fi
-sed -i "s/^AllowedCPUs=.*/AllowedCPUs=$ALLOWED_CPUS/" %{_datadir}/containers/systemd/qm.container
+sed "s/^AllowedCPUs=.*/AllowedCPUs=$ALLOWED_CPUS/" %{_datadir}/containers/systemd/%{name}.container > %{_sysconfdir}/containers/systemd/%{name}.container
 
 %postun
 if [ $1 -eq 0 ]; then
