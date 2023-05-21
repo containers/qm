@@ -168,14 +168,18 @@ template(`qm_domain_template',`
 	allow $1_t container_devpts_t:chr_file { watch watch_reads };
 	allow $1_t container_runtime_t:fifo_file rw_fifo_file_perms;
 	allow $1_t devpts_t:filesystem relabelfrom;
+	allow $1_t hugetlbfs_t:dir relabelfrom;
 	allow $1_t mtrr_device_t:file { getattr mounton };
 	allow $1_t proc_kcore_t:file { getattr mounton };
 	allow $1_t proc_kmsg_t:file { getattr mounton };
 	allow $1_t proc_t:file mounton;
+	allow $1_t security_t:dir read;
 	allow $1_t sysctl_irq_t:dir { getattr mounton };
 	allow $1_t sysctl_t:file { getattr mounton };
 
 	corecmd_entrypoint_all_executables($1_t)
+	corecmd_exec_bin($1_t)
+	corecmd_exec_shell($1_t)
 
 	corenet_icmp_bind_generic_node($1_t)
 	corenet_raw_bind_generic_node($1_t)
@@ -197,6 +201,7 @@ template(`qm_domain_template',`
 	dev_read_sysfs($1_t)
 	dev_read_urand($1_t)
 	dev_remount_sysfs_fs($1_t)
+	dev_write_sysfs_dirs($1_t)
 
 	files_getattr_all_blk_files($1_t)
 	files_getattr_all_chr_files($1_t)
@@ -224,6 +229,7 @@ template(`qm_domain_template',`
 
 	domain_obj_id_change_exemption($1_t)
 
+	kernel_dgram_send($1_t)
 	kernel_dontaudit_search_security_state($1_t)
 	kernel_list_all_proc($1_t)
 	kernel_mounton_core_if($1_t)
@@ -249,17 +255,22 @@ template(`qm_domain_template',`
 	kernel_rw_security_state($1_t)
 	kernel_rw_unix_sysctls($1_t)
 	kernel_rw_usermodehelper_state($1_t)
+	kernel_search_debugfs($1_t)
 	dontaudit $1_t proc_security_t:file write;
 	allow $1_t filesystem_type:filesystem { mount remount unmount };
-	kernel_search_debugfs($1_t)
 
 	unconfined_dgram_send($1_t)
 
+	selinux_compute_access_vector($1_t)
+	selinux_compute_create_context($1_t)
 	selinux_dontaudit_get_fs_mount($1_t)
 	selinux_dontaudit_search_fs($1_t)
+	selinux_get_enforce_mode($1_t)
 	selinux_mounton_fs($1_t)
 	selinux_setcheckreqprot($1_t)
+	selinux_validate_context($1_t)
 	dontaudit $1_t security_t:file write;
+	dontaudit $1_t security_t:security read_policy;
 
 	sysnet_read_config($1_t)
 	sysnet_write_config($1_t)
@@ -268,16 +279,7 @@ template(`qm_domain_template',`
 	term_use_generic_ptys($1_t)
 	term_setattr_generic_ptys($1_t)
 
-	dev_write_sysfs_dirs($1_t)
-
-	allow $1_t security_t:dir read;
-	allow $1_t hugetlbfs_t:dir relabelfrom;
-
-	dontaudit $1_t security_t:security read_policy;
-	selinux_compute_access_vector($1_t)
-	selinux_compute_create_context($1_t)
-	selinux_get_enforce_mode($1_t)
-	selinux_validate_context($1_t)
+	userdom_use_inherited_user_ptys($1_t)
 
 	allow container_runtime_t $1_t:process { dyntransition transition };
 	allow $1_t container_runtime_t:process sigchld;
