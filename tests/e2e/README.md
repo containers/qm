@@ -16,6 +16,9 @@ Demo:
 ## Requirements
 A recent version of Fedora or CentOS9 with the following packages: bash, selinux and podman. 
 Make sure to enable `cgroupv2`.
+Enable the following on host machine before installing podman
+[hirte_repo](https://github.com/containers/qm/blob/main/tests/e2e/ContainerFile.control#L44-L45)
+
 
 ## Tests executed
 The idea behind the test is: create isolated environments using technologies like containers, podman (quadlet), selinux and cgroupv2. On top of that, make sure all systemd services in the nodes are controlled remotely taking advanced of [hirte](https://github.com/containers/hirte/).
