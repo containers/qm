@@ -1,0 +1,12 @@
+summary: Concise summary describing what the test does
+test:
+    ./test.sh
+
+environment:
+    NODES_FOR_TESTING_ARR: control node1
+    CONTROL_CONTAINER_NAME: "control"
+
+tier: 0
+
+framework:
+    shell

@@ -1,0 +1,40 @@
+summary: Tier 0 - QM Interconnect
+discover:
+    how: fmf
+    filter: tier:0
+
+provision:
+#   how: local
+   how: connect
+   guest: localhost 
+   user: root
+   password: AaVirt123
+   port: 2223
+
+prepare:
+  - name: Prepare Repos
+    how: shell
+    script: |
+        dnf install -y 	dnf-plugin-config-manager epel-release
+        dnf config-manager -y --set-enabled crb
+        dnf -y copr enable rhcontainerbot/qm centos-stream-9
+
+  - name: install repos
+    how: install
+    package:
+      - podman
+
+  - name: Set QM env 
+    how: shell
+    script: |
+        cd tests/e2e
+        bash ./run-test-e2e --skip-tests=yes
+
+context:
+    distro: qm 
+
+execute:
+    how: tmt
+
+report:
+    how: junit

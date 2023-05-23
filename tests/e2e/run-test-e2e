@@ -55,6 +55,7 @@ ARGUMENT_LIST=(
   "branch-qm"
   "build-hirte-from-gh-url"
   "branch-hirte"
+  "skip-tests"
 )
 
 usage() {
@@ -72,6 +73,8 @@ usage() {
 	echo -e "\tBuild HIRTE from a specific GitHub URL, useful for testing new features"
 	echo "--branch-hirte"
 	echo -e "\tSpecify which branch the GitHub repo will be set. Requires --build-hirte-from-gh-url"
+	echo "--skip-tests"
+	echo -e "\tSpecify to avoid testing. --skip-tests"
 	echo
 	echo "Examples:"
 	echo
@@ -123,6 +126,11 @@ while [[ $# -gt 0 ]]; do
           BRANCH_HIRTE="main"
       fi
       BUILD_HIRTE_FROM_GH_URL="${2}"
+      shift 2
+      ;;
+
+    --skip-tests)
+      SKIP_TESTS="${2}"
       shift 2
       ;;
 
@@ -190,6 +198,12 @@ info_message "=============================="
 info_message "Waiting hirte containers be ready..."
 sleep "${WAIT_HIRTE_SERVER_BE_READY_IN_SEC}"
 # see: https://github.com/containers/hirte/issues/281
+
+if [ "${SKIP_TESTS}" == "yes" ]; then
+  info_message "skip tests"
+  info_message "=============================="
+  exit 0
+fi
 
 echo
 info_message "#1- Test scenario: hirte list all units from control to node (vise-versa)"
