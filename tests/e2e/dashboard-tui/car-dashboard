@@ -1,0 +1,581 @@
+#!/usr/bin/python
+# Copyright 2023 The qm Authors
+#
+# This program is free software; you can redistribute it and/or
+# modify it under the terms of the GNU General Public License
+# as published by the Free Software Foundation; either version 2
+# of the License, or (at your option) any later version.
+#
+# This program is distributed in the hope that it will be useful,
+# but WITHOUT ANY WARRANTY; without even the implied warranty of
+# MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+# GNU General Public License for more details.
+#
+# You should have received a copy of the GNU General Public License
+# along with this program; If not, see <http://www.gnu.org/licenses/>.
+#
+from rich import print
+from rich import box
+from rich.align import Align
+from rich.panel import Panel
+from rich.console import Group
+from rich.layout import Layout
+from rich.table import Table
+from rich.prompt import Prompt
+
+from enum import Enum
+
+import subprocess
+import sys
+import re
+
+
+class ServiceState(Enum):
+    ALLGOOD = 1,
+    NO_CRITICAL_CAN_CONTINUE = 2,
+    CRITICAL_MUST_MOVE_TO_GUARDRAIL = 3
+
+
+# ASIL
+CONTROL_SERVICES = [
+    "safety",
+    "cruise_control",
+    "tires",
+    "breaks"
+]
+
+# Quality Management
+QM_SERVICES = [
+    "radio",
+    "store",
+    "stream_audio",
+    "maps"
+]
+
+NODE_SERVICES = [
+    "qm"
+]
+
+CMD_LIST_CONTAINERS_IN_NODE = \
+    "podman" \
+    " exec" \
+    " node1" \
+    " podman" \
+    " ps" \
+    " --format" \
+    " {{.Names}}" \
+
+CMD_LIST_CONTAINERS_IN_CONTROL = \
+    "podman" \
+    " exec" \
+    " control" \
+    " podman" \
+    " ps" \
+    " --format" \
+    " {{.Names}}" \
+
+CMD_LIST_CONTAINERS_IN_QM = \
+    "podman" \
+    " exec" \
+    " node1" \
+    " podman" \
+    " exec" \
+    " qm" \
+    " podman" \
+    " ps" \
+    " --format" \
+    " {{.Names}}" \
+
+EMOJI_GREEN_LIGHT = "\U0001F7E2"
+EMOJI_RED_LIGHT = "\U0001F534"
+EMOJI_STOP_SIGN = "\U0001F6D1"
+EMOJI_LOUD_SPEAKERS = "\U0001F4E2"
+EMOJI_CAR = "\U0001F698"
+EMOJI_CROSS_SIGN = "❌"
+
+
+class Dashboard(object):
+    def __init__(
+        self
+    ):
+        """
+        Init some vars from the class
+
+        Parameters:
+
+        Returns:
+        """
+        self.layout = self.make_layout()
+
+        # FIX-ME: let's make this dynamic, users might use different env
+        # instead of e2e script or just want to use others names
+        self.qm_container = "qm"
+        self.qm_hirte_node_name = "qm-node1"
+
+        self.node_container = "node1"
+        self.node_hirte_node_name = "node1"
+
+        self.manager_container = "control"
+        self.manager_hirte_node_name = "control"
+
+        self.qm_car_state = {}
+        self.node_car_state = {}
+        self.control_car_state = {}
+
+    def execute_cmd(
+        self,
+        command,
+        shell=False
+    ):
+        """
+        Execute command
+
+        Parameters:
+            command - command to be executed, use ['cmd' 'argument']
+            shell - True or False
+                    If shell is True, the specified command will be
+                    executed through the shell
+
+        Returns: return code or exit in case of failure
+        """
+
+        cmd_str = ' '.join(command)
+
+        p = subprocess.Popen(
+            command,
+            shell=shell,
+        )
+        returncode = p.wait()
+
+        if returncode != 0:
+            print(
+                "{cmd} return code {ret}".format(
+                     cmd=cmd_str, ret=returncode
+                )
+            )
+
+        return returncode
+
+    def execute_cmd_check_output(
+        self,
+        command,
+        shell=True
+    ):
+        """
+        Execute command returning output
+
+        Parameters:
+            command - command to be executed
+            shell - True or False
+                    If shell is True, the specified command will be
+                    executed through the shell
+
+        Returns: output from command or exit
+        """
+        try:
+            output = subprocess.check_output(
+                command,
+                shell=shell
+            )
+        except subprocess.CalledProcessError:
+            sys.exit(2)
+
+        return output
+
+    def validate_qm_services(
+        self
+    ) -> Panel:
+        """
+        Validate if QM services are running
+
+        Parameters:
+
+        Returns: output as list to be displayed to users
+        """
+        output = []
+
+        services = self.execute_cmd_check_output(
+            CMD_LIST_CONTAINERS_IN_QM
+        )
+
+        for srv in QM_SERVICES:
+            if srv in str(services):
+                self.qm_car_state[srv] = ServiceState.ALLGOOD
+                output.append(
+                    EMOJI_GREEN_LIGHT + " %s is "
+                    "running fine \n\n" % srv
+                )
+
+            else:
+                self.qm_car_state[srv] = ServiceState.NO_CRITICAL_CAN_CONTINUE
+                output.append(
+                    EMOJI_RED_LIGHT + " %s has "
+                    "an issue, the car can continue \n\n" % srv
+                )
+
+        return ''.join(output)
+
+    def validate_node_services(
+        self
+    ) -> Panel:
+        """
+        Validate if Node services are running
+
+        Parameters:
+
+        Returns: output as list to be displayed to users
+        """
+        output = []
+
+        services = self.execute_cmd_check_output(
+            CMD_LIST_CONTAINERS_IN_NODE
+        )
+
+        for srv in NODE_SERVICES:
+            if srv in str(services):
+                self.node_car_state[srv] = ServiceState.ALLGOOD
+                output.append(
+                    EMOJI_GREEN_LIGHT + " %s is "
+                    "running fine \n\n" % srv
+                )
+            else:
+                self.node_car_state[srv] = \
+                    ServiceState.NO_CRITICAL_CAN_CONTINUE
+
+                output.append(
+                    EMOJI_RED_LIGHT + " %s has "
+                    "an issue, the car can continue \n\n" % srv
+                )
+
+        return ''.join(output)
+
+    def validate_control_services(
+        self
+    ) -> Panel:
+        """
+        Validate if Manager services are running
+
+        Parameters:
+
+        Returns: output as list to be displayed to users
+        """
+        output = []
+
+        services = self.execute_cmd_check_output(
+            CMD_LIST_CONTAINERS_IN_CONTROL
+        )
+
+        for srv in CONTROL_SERVICES:
+            if srv in str(services):
+                self.control_car_state[srv] = ServiceState.ALLGOOD
+                output.append(
+                    EMOJI_GREEN_LIGHT + " %s is "
+                    "running fine \n\n" % srv
+                )
+            else:
+                self.control_car_state[srv] = ServiceState.CRITICAL_MUST_MOVE_TO_GUARDRAIL # noqa E501
+                output.append(
+                    EMOJI_CROSS_SIGN + " %s has a CRITICAL issue, moving to "
+                    "guard rail... \n\n" % srv
+                )
+
+        return ''.join(output)
+
+    def usage(
+        self
+    ) -> Panel:
+        """
+        Usage message to be displayed in the footer
+
+        Parameters:
+
+        Returns:
+        """
+        usage_msg = Table.grid(padding=1)
+        usage_msg.add_row(
+            "Usage:",
+
+            "[b blue ] HELP or ? to show this message | "
+            "exit, q or quit for exittig  |   System Version: 5.0\n"
+
+            "[b blue ] SIGSTART <NODE> <SERVICE> to force start a"
+            "service in the car  |   Rollback versions available: 3.4, "
+            "4.0 and 4.9\n"
+
+            "[b blue ] SIGSTOP <NODE> <SERVICE> to force stop a"
+            "service in the car    |   Filesystem snapshot hash: "
+            "36dc5d16b56819f3266"
+        )
+
+        return usage_msg
+
+    def hirtectl(
+        self,
+        command,
+        node_name,
+        service
+    ):
+
+        # FIX-ME: we need to make sure we look for node type instead of names
+        if "qm" in node_name:
+            node_name = self.qm_hirte_node_name
+
+        if "control" in node_name or "manager" in node_name:
+            node_name = self.manager_hirte_node_name
+
+        if re.search("^node", node_name):
+            node_name = self.node_hirte_node_name
+
+        # FIX-ME: use hirte python api if possible
+        cmd = [
+            "podman",
+            "exec",
+            self.manager_container,
+            "hirtectl",
+            command,
+            node_name,
+            service
+        ]
+
+        self.execute_cmd(
+                cmd
+        )
+
+    def make_layout(self) -> Layout:
+        """ Define Layout """
+        layout = Layout(name="root")
+        layout.split(
+            Layout(
+                name="header",
+                size=5
+            ),
+            Layout(
+                name="body"
+            ),
+            Layout(
+                name="footer",
+                size=5
+            )
+        )
+        return layout
+
+    def report_services_state(self):
+
+        qm_state = ServiceState.ALLGOOD
+        node_state = ServiceState.ALLGOOD
+        control_state = ServiceState.ALLGOOD
+
+        for _, value in self.control_car_state.items():
+            if value != ServiceState.ALLGOOD:
+                control_state = value
+
+        for _, value in self.qm_car_state.items():
+            if value != ServiceState.ALLGOOD:
+                qm_state = value
+
+        for _, value in self.node_car_state.items():
+            if value != ServiceState.ALLGOOD:
+                node_state = value
+
+        # Fatal issues must be reported ASAP
+        if control_state != ServiceState.ALLGOOD:
+            return control_state
+
+        if qm_state != ServiceState.ALLGOOD or \
+                node_state != ServiceState.ALLGOOD:
+            return ServiceState.NO_CRITICAL_CAN_CONTINUE
+
+        return ServiceState.ALLGOOD
+
+    def set_header(self):
+        header_message = ""
+        overall_car_state = self.report_services_state()
+
+        if overall_car_state == ServiceState.CRITICAL_MUST_MOVE_TO_GUARDRAIL:
+            header_message = (
+                EMOJI_STOP_SIGN + " Dashboard: [b red] Attention: "
+                "The system has a CRITICAL issue. MOVING TO "
+                "GUARD HAIL! " + EMOJI_STOP_SIGN
+            )
+
+        elif overall_car_state == ServiceState.ALLGOOD:
+            header_message = (
+                EMOJI_CAR + " Dashboard:[b green] The system "
+                "is running with no issues " + EMOJI_CAR
+            )
+        elif overall_car_state == ServiceState.NO_CRITICAL_CAN_CONTINUE:
+            header_message = (
+                EMOJI_LOUD_SPEAKERS + " Dashboard: [b yellow] Attention: "
+                "The system is running but HAS an issue. " + EMOJI_LOUD_SPEAKERS # noqa E501
+            )
+
+        # Display the header message
+        self.layout['header'].update(
+            Panel(
+                Align.center(
+                    header_message,
+                    vertical="middle",
+                ),
+                box=box.ROUNDED,
+                padding=(1, 2),
+                border_style="bright_blue",
+            )
+        )
+
+    def set_node(
+        self,
+        nodeName,
+        titleName,
+        text
+    ):
+        self.layout[nodeName].update(
+            Panel(
+                Align.center(
+                    Group(
+                        "\n",
+                        Align.center(text)
+                    ),
+                    vertical="middle",
+                ),
+                box=box.ROUNDED,
+                padding=(1, 2),
+                title="[b white] " + titleName,
+                border_style="bright_blue",
+             )
+         )
+
+    def hirtectl_action(
+        self,
+        action,
+        node_name,
+        service
+    ):
+        self.hirtectl(
+            action,
+            node_name,
+            service
+        )
+
+    def process_cpu_commands(self):
+        cmd_central_cpu = Prompt.ask(
+            'Central CPU Simulator> '
+        )
+
+        cmd_central_cpu = cmd_central_cpu.lower()
+
+        if cmd_central_cpu == "q" or \
+                cmd_central_cpu == "quit" or \
+                cmd_central_cpu == "exit":
+            print("Exitting...")
+            sys.exit(0)
+
+        if "sigstop" in cmd_central_cpu:
+            cmd = cmd_central_cpu.split()
+            node_name = cmd[1]
+
+            # show a message to user that sigstop needs 3 args: node and
+            # container name
+            if len(cmd) < 3:
+                return
+
+            # qm service don't use container- in front
+            if re.search("^qm", cmd[2]):
+                service = cmd[2] + ".service"
+            else:
+                service = "container-" + cmd[2] + ".service"
+
+            self.hirtectl_action(
+                "stop",
+                node_name,
+                service
+            )
+            return
+
+        if "sigrun" in cmd_central_cpu or "sigstart" in cmd_central_cpu:
+            cmd = cmd_central_cpu.split()
+            node_name = cmd[1]
+
+            # show a message to user that sigrun needs 3 args: node and
+            # container name
+            if len(cmd) < 3:
+                return
+
+            service = "container-" + cmd[2] + ".service"
+
+            self.layout['footer'].update(
+                Panel(
+                    cmd_central_cpu,
+                    title='Central CPU executed'
+                )
+            )
+
+            self.hirtectl_action(
+                "start",
+                node_name,
+                service
+            )
+            return
+
+        if cmd_central_cpu == "?" or cmd_central_cpu == "help":
+            self.layout['footer'].update(
+                Panel(
+                    self.usage()
+                )
+            )
+            return
+        else:
+            self.layout['footer'].update(
+                Panel(
+                    "unknown command: %s" % cmd_central_cpu,
+                    title='Central CPU executed'
+                )
+            )
+
+    def main(self):
+        count = 0
+
+        while True:
+            count += 1
+
+            self.layout['body'].split_row(
+                Layout(name="control"),
+                Layout(name="node"),
+                Layout(name="qm"),
+            )
+
+            self.set_node(
+                "qm",
+                "services on nested container \[qm] (node1)", # noqa W605
+                self.validate_qm_services()
+            )
+
+            self.set_node(
+                "control",
+                "services on container \[control]", # noqa W605
+                self.validate_control_services()
+            )
+
+            self.set_node(
+                "node",
+                "services on container \[node1]", # noqa W605
+                self.validate_node_services()
+            )
+
+            self.set_header()
+
+            # Print in the footer the usage method
+            self.layout['footer'].update(
+                Panel(
+                    self.usage()
+                )
+            )
+            print(self.layout)
+
+            # Make sure we load the screen before waiting an input
+            if count != 1:
+                self.process_cpu_commands()
+
+
+if __name__ == '__main__':
+    car = Dashboard()
+    car.main()
