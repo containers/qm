@@ -5,6 +5,7 @@ RUN dnf install -y \
 	epel-release
 
 RUN dnf config-manager -y --set-enabled crb
+RUN dnf -y copr enable rhcontainerbot/qm centos-stream-9
 
 RUN dnf install -y \
 	clang-tools-extra \
@@ -14,6 +15,7 @@ RUN dnf install -y \
         meson \
 	hostname \
 	podman \
+        iptables-services \
         selinux-policy-targeted \
         selinux-policy-devel \
 	systemd \
@@ -41,7 +43,6 @@ RUN dnf install -y \
 
 WORKDIR /root
 
-RUN dnf -y copr enable rhcontainerbot/qm centos-stream-9
 RUN dnf -y copr enable mperina/hirte-snapshot centos-stream-9
 RUN dnf -y install hirte hirte-agent hirte-ctl
 
