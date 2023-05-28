@@ -72,7 +72,7 @@ setup_node() {
         nodeID="${1}"
 
         # copy control as template to node${number}
-        cp ContainerFile.control ContainerFile.node"${nodeID}"
+        cp ContainerFile.template ContainerFile.node"${nodeID}"
         if_error_exit "failed to copy ContainerFile control template to node!"
 
         # remove specific code from control mode (template)
@@ -186,7 +186,7 @@ create_asil_node() {
     # Creates the control container - a.k.a ASIL
     info_message "Creating container \033[92m${CONTROL_CONTAINER_NAME}\033[0m [\033[92mASIL mode\033[0m]. It might take some time..."
     create_container \
-        "ContainerFile.control" \
+        "ContainerFile.template" \
         "${CONTROL_CONTAINER_NAME}" \
         "${TAG_CONTROL_MACHINE}"
 }
