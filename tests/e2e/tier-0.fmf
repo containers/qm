@@ -4,12 +4,7 @@ discover:
     filter: tier:0
 
 provision:
-#   how: local
-   how: connect
-   guest: localhost 
-   user: root
-   password: AaVirt123
-   port: 2223
+   how: local
 
 prepare:
   - name: Prepare Repos

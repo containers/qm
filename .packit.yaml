@@ -61,6 +61,14 @@ jobs:
       - centos-stream-9-ppc64le
       - centos-stream-9-x86_64
 
+  - job: tests
+    trigger: pull_request
+    identifier: e2e
+    tmt_plan: /tests/e2e/tier-0
+    skip_build: true
+    targets:
+    - centos-stream-9-x86_64
+
   - job: propose_downstream
     trigger: release
     update_release: false
@@ -84,3 +92,4 @@ jobs:
       # Disable bodhi for epel-9 until hirte and podman 4.5 are available
       # Ref: https://bodhi.fedoraproject.org/updates/FEDORA-EPEL-2023-77d64cf134#comment-3026157
       #- epel-9
+
