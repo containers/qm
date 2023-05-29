@@ -184,24 +184,11 @@ info_message "Preparing QM environment"
 info_message "=============================="
 
 # Creates the node container - a.k.a QM
-
-if [ "${SKIP_TESTS}" == "yes" ]; then
-  echo
-  info_message "skip tests"
-  info_message "=============================="
-  exit 0
-fi
 create_qm_node
 
 # Create pods regarding QM services
 srvs_qm=("radio" "store" "stream_audio" "maps")
 create_stub_systemd_srv "node1" "qm" "${srvs_qm[@]}"
-
-if [ "${SKIP_TESTS}" == "yes" ]; then
-  info_message "skip tests"
-  info_message "=============================="
-  exit 0
-fi
 
 # Tests
 echo
