@@ -167,9 +167,9 @@ if [ -n "${BUILD_HIRTE_FROM_GH_URL}" ]; then
     info_message "\tGH URL: ${BUILD_HIRTE_FROM_GH_URL}"
     info_message "\tBranch: ${BRANCH_HIRTE}"
     echo
-    sed -i -e 's#@BUILD_HIRTE_FROM_GH_URL@#'"${BUILD_HIRTE_FROM_GH_URL}"'#g' ContainerFile.template
-    sed -i -e 's/@BRANCH_HIRTE@/'"${BRANCH_HIRTE}"'/g' ContainerFile.template
-    sed -i -e 's/# \[manually install hirte\] //' ContainerFile.template
+    sed -i -e 's#@BUILD_HIRTE_FROM_GH_URL@#'"${BUILD_HIRTE_FROM_GH_URL}"'#g' ./lib/ContainerFile.template
+    sed -i -e 's/@BRANCH_HIRTE@/'"${BRANCH_HIRTE}"'/g' ./lib/ContainerFile.template
+    sed -i -e 's/# \[manually install hirte\] //' ./lib/ContainerFile.template
 fi
 
 # Creates the control container - a.k.a ASIL
