@@ -1,0 +1,12 @@
+summary: Test is calling e2e/lib/tests as stand alone test
+test:
+    ./test.sh
+
+environment:
+    NODES_FOR_TESTING_ARR: control node1
+    CONTROL_CONTAINER_NAME: "control"
+
+tier: 0
+
+framework:
+    shell
