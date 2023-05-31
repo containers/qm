@@ -87,7 +87,7 @@ RUN sed -e '/^#ManagerPort=/s/^#//g' \
 	-i /etc/hirte/hirte.conf
 # [end] CONTROL - settings
 
-RUN echo 'Foobar!' | passwd --stdin root 
+RUN echo 'Foobar!' | passwd --stdin root
 
 # [start] CONTROL - agent settings
 RUN cp /usr/share/hirte-agent/config/*.conf /etc/hirte/ &> /dev/null

@@ -1,4 +1,4 @@
-summary: Concise summary describing what the test does
+summary: Test is calling e2e/lib/tests as stand alone test
 test:
     ./test.sh
 

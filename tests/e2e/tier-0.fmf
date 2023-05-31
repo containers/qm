@@ -1,4 +1,4 @@
-summary: Tier 0 - QM Interconnect
+summary: Tier 0 - QM Interconnect through hirte
 discover:
     how: fmf
     filter: tier:0
@@ -19,14 +19,14 @@ prepare:
     package:
       - podman
 
-  - name: Set QM env 
+  - name: Set QM env
     how: shell
     script: |
         cd tests/e2e
         bash ./run-test-e2e --skip-tests=yes
 
 context:
-    distro: qm 
+    distro: qm
 
 execute:
     how: tmt

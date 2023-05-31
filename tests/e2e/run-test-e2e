@@ -136,7 +136,6 @@ while [[ $# -gt 0 ]]; do
 
     --help)
       usage
-      shift 2
       ;;
     *)
       break
