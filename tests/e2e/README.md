@@ -1,13 +1,15 @@
-- [e2e](#e2e)
-  - [Requirements](#requirements)
-  - [Tests executed](#tests-executed)
-  - [Running using containers](#running-using-containers)
-  - [Running using virt](#running-using-virt)
-  - [Env variables](#env-variables)
-  - [Demo](#demo)
-  - [Automated tests](#Automated e2e tests)
+# e2e testing
 
-# e2e
+- [Introduction](#introduction)
+- [Requirements](#requirements)
+- [Tests executed](#tests-executed)
+- [Running using containers](#running-using-containers)
+- [Running using virt](#running-using-virt)
+- [Env variables](#env-variables)
+- [Demo](#demo)
+- [Automated tests](#Automated e2e tests)
+
+## Introduction
 
 `run-test-e2e` executes tests for qm software using [podman quadlet](https://www.redhat.com/sysadmin/quadlet-podman) as platform.
 For running the tool is required to run as **root** as the nested containers will need privileges to change limits settings.
@@ -51,7 +53,7 @@ Just call `export VARNAME=foobar` before executing the script.
 
 If your browser doesn't support asciinema, here the demo in text:
 
-```
+``` bash
 [root@dell730 e2e]# #host
 [root@dell730 e2e]# cat /etc/fedora-release
 Fedora release 38 (Thirty Eight)
