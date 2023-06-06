@@ -24,4 +24,4 @@ jobs:
 
       - name: Run precommit check
         run: |
-          pre-commit run --file tests/e2e/*
+          pre-commit run --file tests/* --files demos/*
