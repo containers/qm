@@ -18,3 +18,17 @@ repos:
       - id: markdownlint
         args:
          - --disable=MD013
+
+-   repo: https://github.com/PyCQA/flake8
+    rev: 6.0.0
+    hooks:
+    -   id: flake8
+        additional_dependencies: [
+            'flake8-blind-except',
+            'flake8-docstrings',
+            'flake8-bugbear',
+            'flake8-comprehensions',
+            'flake8-docstrings',
+            'flake8-implicit-str-concat',
+            'pydocstyle>=5.0.0',
+        ]
