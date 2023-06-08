@@ -21,10 +21,10 @@ create_stub_systemd_srv() {
     shift
 
     if [ -n "${creates_on_qm_node}" ]; then
-        command_on_qm_node="podman exec qm" # keep the space before podman 
+        command_on_qm_node="podman exec qm" # keep the space before podman
     else
         shift # remove the "" from qm param to the loop below
-    fi 
+    fi
     services_to_be_stub=("$@")
 
 
@@ -96,7 +96,6 @@ mv container-${srv}.service \
             if_error_exit "cannot move ${srv}-service to systemd dir in ${container_target}"
 	fi
 
-
         # enable the new systemd service (inside pod)
 	cmd_enable_systemd_srv="podman exec ${container_target} \
 ${command_on_qm_node} \
@@ -115,6 +114,9 @@ start \
 container-${srv}"
 	#echo "${cmd_start_systemd_srv}"
 	eval "${cmd_start_systemd_srv}" &> /dev/null
+        container-stat=$(systemctl is-active container-${srv})
+        if [[ "${container-stat}" > "activating" ]]; then
+           wait 5
         if_error_exit "cannot start ${srv}-service in ${container_target}"
     done
 }

@@ -72,7 +72,7 @@ setup_node() {
         nodeID="${1}"
 
         # copy control as template to node${number}
-        cp ContainerFile.template ContainerFile.node"${nodeID}"
+        cp ./lib/ContainerFile.template ContainerFile.node"${nodeID}"
         if_error_exit "failed to copy ContainerFile control template to node!"
 
         # remove specific code from control mode (template)
