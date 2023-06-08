@@ -72,7 +72,7 @@ setup_node() {
         nodeID="${1}"
 
         # copy control as template to node${number}
-        cp ContainerFile.control ContainerFile.node"${nodeID}"
+        cp ./lib/ContainerFile.template ContainerFile.node"${nodeID}"
         if_error_exit "failed to copy ContainerFile control template to node!"
 
         # remove specific code from control mode (template)
@@ -133,7 +133,7 @@ create_qm_node() {
 	)"
 	if_error_exit "unable to execute systemctl start qm"
 
-	# set in the QM container the ManagerHost (Control Machine) and restart hirte-agent	
+	# set in the QM container the ManagerHost (Control Machine) and restart hirte-agent
 	eval "$(podman exec node"${nodeID}" \
 		podman exec qm \
 		cp \
@@ -158,8 +158,8 @@ create_qm_node() {
 		/etc/hirte/agent.conf
 	)"
 	if_error_exit "qm node: unable to sed NodeName in hirte agent.conf"
-	
-        # restarting the qm hirte-agent	
+
+        # restarting the qm hirte-agent
 	eval "$(podman exec node"${nodeID}" \
 		podman exec qm \
 		systemctl restart hirte-agent
@@ -186,7 +186,7 @@ create_asil_node() {
     # Creates the control container - a.k.a ASIL
     info_message "Creating container \033[92m${CONTROL_CONTAINER_NAME}\033[0m [\033[92mASIL mode\033[0m]. It might take some time..."
     create_container \
-        "ContainerFile.control" \
+        "./lib/ContainerFile.template" \
         "${CONTROL_CONTAINER_NAME}" \
         "${TAG_CONTROL_MACHINE}"
 }
