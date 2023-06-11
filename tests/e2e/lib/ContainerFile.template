@@ -29,9 +29,12 @@ RUN dnf install -y \
 	kernel \
 	kernel-modules \
 	passwd \
+	python3-gobject \
+	python3-pip \
         meson \
         rpm-build \
         sed \
+        vim-enhanced \
         systemd-devel \
 	iputils \
         tar \
@@ -45,6 +48,7 @@ WORKDIR /root
 
 RUN dnf -y copr enable mperina/hirte-snapshot centos-stream-9
 RUN dnf -y install hirte hirte-agent hirte-ctl
+RUN alternatives --install /usr/bin/python python /usr/bin/python3 1
 
 # Script will remove the lines before the commands automatically
 # [manually install hirte] RUN rpm -e hirte hirte-agent hirte-ctl hirte-selinux
