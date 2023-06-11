@@ -34,6 +34,7 @@ RUN dnf install -y \
         meson \
         rpm-build \
         sed \
+        vim-enhanced \
         systemd-devel \
 	iputils \
         tar \
