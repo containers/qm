@@ -114,9 +114,10 @@ start \
 container-${srv}"
 	#echo "${cmd_start_systemd_srv}"
 	eval "${cmd_start_systemd_srv}" &> /dev/null
-        container-stat=$(systemctl is-active container-${srv})
-        if [[ "${container-stat}" > "activating" ]]; then
-           wait 5
+        container_stat=$(systemctl is-active container-"${srv}")
+        if [[ "${container_stat}" != "activating" ]]; then
+           sleep 5
+        fi
         if_error_exit "cannot start ${srv}-service in ${container_target}"
     done
 }
