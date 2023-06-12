@@ -7,7 +7,7 @@
 - [Running using virt](#running-using-virt)
 - [Env variables](#env-variables)
 - [Demo](#demo)
-- [Automated tests](#Automated e2e tests)
+- [Automated tests](#Automated-e2e-tests)
 
 ## Introduction
 
