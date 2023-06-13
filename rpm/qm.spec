@@ -132,4 +132,9 @@ fi
 %ghost %{_installscriptdir}/rootfs/*
 
 %changelog
+%if %{with changelog}
+* Wed Nov 30 2022 Daniel J Walsh <dwalsh@redhat.com>
+- Initial Version
+%else
 %autochangelog
+%endif
