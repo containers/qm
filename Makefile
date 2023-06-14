@@ -6,7 +6,7 @@ DATADIR ?= $(PREFIX)/share
 LIBDIR ?= $(PREFIX)/lib
 SYSCONFDIR?=/etc
 QMDIR=/usr/lib/qm
-USER_NAMESPACE="user_namespace exists"
+USER_NAMESPACE="user_namespace"
 ifeq ($(wildcard /sys/fs/selinux/class/user_namespace),)
 	USER_NAMESPACE="user_namespace"
 endif
