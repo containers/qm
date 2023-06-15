@@ -30,6 +30,7 @@ selinux: qm.pp
 	echo "DEBUG========"
 	cat /etc/redhat-release
 	echo ${USER_NAMESPACE}
+	ls /sys/fs/selinux/class/user_namespace
 	echo "DEBUG========"
 	mkdir -p tmp; cp qm.* tmp/
 	sed -i /${USER_NAMESPACE}/d tmp/qm.if
