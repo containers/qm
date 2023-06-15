@@ -7,7 +7,7 @@ LIBDIR ?= $(PREFIX)/lib
 SYSCONFDIR?=/etc
 QMDIR=/usr/lib/qm
 USER_NAMESPACE="user_namespace exists"
-ifeq ($(wildcard /sys/fs/selinux/class/user_namespace),)
+ifeq ("$(wildcard /sys/fs/selinux/class/user_namespace)","")
 	USER_NAMESPACE="user_namespace"
 endif
 
@@ -27,6 +27,10 @@ selinux: qm.pp
 	bzip2 -f -9 $^
 
 %.pp: %.te
+	echo "DEBUG========"
+	cat /etc/redhat-release
+	echo ${USER_NAMESPACE}
+	echo "DEBUG========"
 	mkdir -p tmp; cp qm.* tmp/
 	sed -i /${USER_NAMESPACE}/d tmp/qm.if
 	make -C tmp -f ${DATADIR}/selinux/devel/Makefile $@
