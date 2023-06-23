@@ -6,10 +6,6 @@ DATADIR ?= $(PREFIX)/share
 LIBDIR ?= $(PREFIX)/lib
 SYSCONFDIR?=/etc
 QMDIR=/usr/lib/qm
-USER_NAMESPACE="user_namespace exists"
-ifeq ($(wildcard /sys/fs/selinux/class/user_namespace),)
-	USER_NAMESPACE="user_namespace"
-endif
 
 .PHONY: file_contexts
 file_contexts: qm.fc
@@ -28,7 +24,10 @@ selinux: qm.pp
 
 %.pp: %.te
 	mkdir -p tmp; cp qm.* tmp/
-	sed -i /${USER_NAMESPACE}/d tmp/qm.if
+	@source /etc/os-release && \
+	if [ "$$VERSION_ID" -le 9 ] && ( echo "$$NAME" | tr '[:upper:]' '[:lower:]' | uniq -u | grep -q -i -E "(centos|rhel)" ); then \
+                sed -i /user_namespace/d tmp/qm.if; \
+	fi
 	make -C tmp -f ${DATADIR}/selinux/devel/Makefile $@
 	cp tmp/qm.pp .; rm -rf tmp
 
