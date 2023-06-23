@@ -28,12 +28,11 @@
 %bcond_without hirte_agent
 %endif
 
-%if 0%{?rhel} <= 9
+%if %{defined rhel} && 0%{?rhel} <= 9
 %bcond_without no_user_namespace
 %else
 %bcond_with no_user_namespace
 %endif
-
 
 Name: qm
 # Set different Epochs for copr and koji
