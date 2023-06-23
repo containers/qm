@@ -28,6 +28,12 @@
 %bcond_without hirte_agent
 %endif
 
+%if %{defined rhel} && 0%{?rhel} <= 9
+%bcond_without no_user_namespace
+%else
+%bcond_with no_user_namespace
+%endif
+
 Name: qm
 # Set different Epochs for copr and koji
 %if %{with copr}
@@ -79,6 +85,10 @@ use container tools like Podman.
 %prep
 %autosetup -Sgit -n %{name}-%{version}
 sed -i 's/^install: man all/install:/' Makefile
+%if %{with no_user_namespace}
+sed -i '/user_namespace/d' qm.if
+%endif
+
 
 %build
 %{__make} all
