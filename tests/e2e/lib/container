@@ -58,6 +58,7 @@ podman images failed! name: ${container_name}"
     # Execute the container
     eval "$(podman run -d \
                 --privileged \
+                --network podmanDualStack \
                 --name "${container_name}" \
                 --hostname "${container_name}" \
                 "${IMAGE_ID}" 1> /dev/null
