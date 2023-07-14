@@ -10,7 +10,7 @@ OOMScoreAdjust=500
 Restart=always
 Slice=QM.slice
 Environment=ROOTFS=/usr/lib/qm/rootfs
-ExecPreStart=/usr/share/qm/setup hirte-agent
+ExecStartPre=/usr/share/qm/setup hirte-agent
 
 [Container]
 AddCapability=all
