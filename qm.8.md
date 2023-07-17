@@ -1,9 +1,11 @@
 % QM 8
 
 ## NAME
+
 QM - Set up a Containerized environment for running Functional Safety QM (Quality Management) software.
 
 ## SYNOPSIS
+
 This package allows users to set up an environment that prevents applications
 and container tools from interfering with other processes on the
 system.
@@ -27,7 +29,7 @@ Setup then enables and starts a Podman quadlet service qm.service (qm.container)
 
 This Podman quadlet can be examined with the following command:
 
-```
+```console
 systemctl status qm.service
 ● qm.service
      Loaded: loaded (/etc/containers/systemd/qm.container; generated)
@@ -62,7 +64,7 @@ processes within the QM environment.
 If other packages need to be added into the QM environment, use the `dnf` command
 on the host. For example, the following example installs the dnf command into the QM environment:
 
-```
+```console
 # dnf install --installroot=/usr/lib/qm/rootfs dnf
 Unable to read consumer identity
 
@@ -78,16 +80,17 @@ Installing:
 
 ## Entering the QM
 
-To enter the QM environment, use this Podman command to 
+To enter the QM environment, use this Podman command to
 launch containers within it.
 
-```
+```console
 sh-5.2# podman exec -ti qm sh
 sh-5.2#
 ```
+
 The SELinux label can be checked by executing the following:
 
-```
+```console
 sh-5.2# id -Z
 system_u:system_r:qm_t:s0:c35,c404
 ```
@@ -97,14 +100,14 @@ confined QM process within the QM environment.
 
 Containers can now be run within the QM environment using Podman.
 
-```
+```console
 sh-5.2# podman run --rm ubi9-minimal echo hi
 Resolved "ubi9-minimal" as an alias (/etc/containers/registries.conf.d/000-shortnames.conf)
 Trying to pull registry.access.redhat.com/ubi9-minimal:latest...
 Getting image source signatures
 Checking if image destination supports signatures
-Copying blob 7bffb309b4e8 done  
-Copying config 96179718b4 done  
+Copying blob 7bffb309b4e8 done
+Copying config 96179718b4 done
 Writing manifest to image destination
 Storing signatures
 hi
@@ -127,4 +130,5 @@ If you want permanently modify the hirte agent within the QM you can add config 
 quadlet file to not execute the hirte-agent setup script.
 
 ## SEE ALSO
+
 **[podman(1)](https://github.com/containers/podman/blob/main/docs/source/markdown/podman.1.md)**,**[quadlet(5)](https://github.com/containers/podman/blob/main/docs/source/markdown/podman-systemd.unit.5.md)**, systemctl(1), systemd(1), dnf(8), [hirte-agent(1)](https://github.com/containers/hirte/blob/main/doc/man/hirte-agent.1.md),[hirte-agent.conf.5](https://github.com/containers/hirte/blob/main/doc/man/hirte-agent.conf.5.md)

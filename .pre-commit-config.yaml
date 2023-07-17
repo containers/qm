@@ -16,8 +16,9 @@ repos:
     rev: v0.34.0
     hooks:
       - id: markdownlint
-        args:
-         - --disable=MD013
+        args: ["--disable", "MD013", "MD041", "--"]
+         # MD041 disabled because pandoc requires first line to be a metadata block
+         # while markdownlint want it to be a level 1 header
 
 -   repo: https://github.com/PyCQA/flake8
     rev: 6.0.0
