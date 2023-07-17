@@ -6,6 +6,6 @@
 
 SPEC_FILE=$(pwd)/qm.spec
 LATEST_TAG=$(git tag --sort=creatordate | tail -1)
-LATEST_VERSION=$(echo $LATEST_TAG | sed -e 's/^v//')
+LATEST_VERSION="${LATEST_TAG/#v/}"
 
-sed -i "s/^Version:.*/Version: $LATEST_VERSION/" $SPEC_FILE
+sed -i "s/^Version:.*/Version: $LATEST_VERSION/" "${SPEC_FILE}"
