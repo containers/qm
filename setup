@@ -4,7 +4,7 @@
 # /usr/lib/qm/rootfs and create a Podman quadlet containerized environment
 # running systemd as PID1 inside.
 #
-if [ "$EUID" -ne 0 ];then
+if [ "$(id -u)" -ne 0 ];then
     echo "Please run this script as root"
     exit 1
 fi
@@ -12,33 +12,33 @@ fi
 qmContainerIDs=1000000000:1500000000
 containerIDs=2500000000:1500000000
 replaceIDs() {
-    touch $1
-    grep -q "^$2:" $1 || echo $2:$3 >> $1
+    touch "$1"
+    grep -q "^$2:" "$1" || echo "$2":"$3" >> "$1"
 }
 
 AGENTCONF=/etc/hirte/agent.conf
 INSTALLDIR="$1"
-[ ! -z "${INSTALLDIR}" ] || INSTALLDIR=/usr/share/qm
+[ -n "${INSTALLDIR}" ] || INSTALLDIR=/usr/share/qm
 
 ROOTFS="$2"
-[ ! -z "${ROOTFS}" ] || ROOTFS=/usr/lib/qm/rootfs
+[ -n "${ROOTFS}" ] || ROOTFS=/usr/lib/qm/rootfs
 
 systemctl stop qm.service 2>/dev/null || true
 
 hirteSetup() {
     ROOTFS=$1
-    if test ! -f ${ROOTFS}${AGENTCONF}; then
-	if test -f ${AGENTCONF}; then
-	    sed -e 's,^NodeName=,NodeName=qm.,g' ${AGENTCONF} >  ${ROOTFS}${AGENTCONF}
+    if test ! -f "${ROOTFS}${AGENTCONF}"; then
+	if test -f "${AGENTCONF}"; then
+	    sed -e 's,^NodeName=,NodeName=qm.,g' "${AGENTCONF}" >  "${ROOTFS}${AGENTCONF}"
 	fi
     fi
     hostname=$(hostname)
-    if test -f ${ROOTFS}${AGENTCONF}; then
+    if test -f "${ROOTFS}${AGENTCONF}"; then
 	sed -e "s,^NodeName=qm.$,NodeName=qm.${hostname},g" \
 	    -e "s,^NodeName=$,NodeName=qm.${hostname},g" \
-	    -i ${ROOTFS}${AGENTCONF}
+	    -i "${ROOTFS}${AGENTCONF}"
     else
-	cat > ${ROOTFS}${AGENTCONF} <<EOF
+	cat > "${ROOTFS}${AGENTCONF}" <<EOF
 [hirte-agent]
 NodeName=qm.${hostname}
 EOF
@@ -47,44 +47,45 @@ EOF
 
 storage() {
     ROOTFS=$1
-    if ! test -f ${ROOTFS}/etc/containers/storage.conf; then
-	mkdir -p ${ROOTFS}/var/lib/shared/overlay-images \
-	      ${ROOTFS}/var/lib/shared/overlay-layers
-	touch ${ROOTFS}/var/lib/shared/overlay-images/images.lock \
-	      ${ROOTFS}/var/lib/shared/overlay-layers/layers.lock
+    if ! test -f "${ROOTFS}/etc/containers/storage.conf"; then
+	mkdir -p "${ROOTFS}/var/lib/shared/overlay-images" \
+	      "${ROOTFS}/var/lib/shared/overlay-layers"
+	touch "${ROOTFS}/var/lib/shared/overlay-images/images.lock" \
+	      "${ROOTFS}/var/lib/shared/overlay-layers/layers.lock"
 
 	sed -e '/additionalimage.*/a "/var/lib/shared",' \
             -e 's|^#.*transient_store.*|transient_store=true|g' \
-            ${ROOTFS}/usr/share/containers/storage.conf \
-            > ${ROOTFS}/etc/containers/storage.conf
+            "${ROOTFS}/usr/share/containers/storage.conf" \
+            > "${ROOTFS}/etc/containers/storage.conf"
     fi
 }
 
 install() {
     ROOTFS=$1
+    # shellcheck source=/dev/null
     . /etc/os-release
-    mkdir -Z -p ${ROOTFS}
-    dnf -y install --releasever=${VERSION_ID} --installroot ${ROOTFS} selinux-policy-targeted podman systemd hirte-agent procps-ng
-    dnf -y update --installroot ${ROOTFS}
-    rm -rf ${ROOTFS}/etc/selinux/targeted/contexts/files/file_contexts/*
-    cp ${INSTALLDIR}/containers.conf ${ROOTFS}/etc/containers/
-    cp ${INSTALLDIR}/contexts ${ROOTFS}/usr/share/containers/selinux/
-    cp ${INSTALLDIR}/file_contexts ${ROOTFS}/etc/selinux/targeted/contexts/files/file_contexts
-    replaceIDs ${ROOTFS}/etc/subuid containers ${qmContainerIDs}
-    replaceIDs ${ROOTFS}/etc/subgid containers ${qmContainerIDs}
-    hirteSetup ${ROOTFS}
-    unshare --mount-proc -R ${ROOTFS} -m systemctl enable hirte-agent.service
-    storage ${ROOTFS}
-    restorecon -R ${ROOTFS}
+    mkdir -Z -p "${ROOTFS}"
+    dnf -y install --releasever="${VERSION_ID}" --installroot "${ROOTFS}" selinux-policy-targeted podman systemd hirte-agent procps-ng
+    dnf -y update --installroot "${ROOTFS}"
+    rm -rf "${ROOTFS}"/etc/selinux/targeted/contexts/files/file_contexts/*
+    cp "${INSTALLDIR}/containers.conf" "${ROOTFS}/etc/containers/"
+    cp "${INSTALLDIR}/contexts" "${ROOTFS}/usr/share/containers/selinux/"
+    cp "${INSTALLDIR}/file_contexts" "${ROOTFS}/etc/selinux/targeted/contexts/files/file_contexts"
+    replaceIDs "${ROOTFS}/etc/subuid" containers ${qmContainerIDs}
+    replaceIDs "${ROOTFS}/etc/subgid" containers ${qmContainerIDs}
+    hirteSetup "${ROOTFS}"
+    unshare --mount-proc -R "${ROOTFS}" -m systemctl enable hirte-agent.service
+    storage "${ROOTFS}"
+    restorecon -R "${ROOTFS}"
 }
 
 case "$1" in
     hirte-agent)
-	rm -f ${ROOTFS}${AGENTCONF}
-	hirteSetup ${ROOTFS}
+	rm -f "${ROOTFS}${AGENTCONF}"
+	hirteSetup "${ROOTFS}"
 	;;
     *)
-	install ${ROOTFS}
+	install "${ROOTFS}"
 	replaceIDs /etc/subuid qmcontainers ${qmContainerIDs}
 	replaceIDs /etc/subgid qmcontainers ${qmContainerIDs}
 	replaceIDs /etc/subuid containers   ${containerIDs}
