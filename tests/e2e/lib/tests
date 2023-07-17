@@ -16,19 +16,19 @@
 # along with this program; If not, see <http://www.gnu.org/licenses/>.
 #
 
-if [[ ! -z $NODES_FOR_TESTING_ARR ]]; then
+if [[ -n $NODES_FOR_TESTING_ARR ]]; then
     readarray -d ' ' -t NODES_FOR_TESTING <<< "$NODES_FOR_TESTING_ARR"
 fi
 
 test_hirte_list_all_units() {
-    for node_name in ${NODES_FOR_TESTING[@]}
+    for node_name in "${NODES_FOR_TESTING[@]}"
     do
         info_message "Connected to \033[92m${CONTROL_CONTAINER_NAME}\033[0m, listing few systemd units from \033[92m${node_name}\033[0m"
         hirtectl_cmd=$(podman exec \
-		${CONTROL_CONTAINER_NAME} \
+		"${CONTROL_CONTAINER_NAME}" \
 		hirtectl \
 		list-units \
-		${node_name}
+		"${node_name}"
 	)
 	if_error_exit "unable to execute hirtectl command on ${CONTROL_CONTAINER_NAME}"
 	echo "${hirtectl_cmd}" | head -5
