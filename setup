@@ -83,7 +83,9 @@ case "$1" in
 	hirteSetup "${ROOTFS}"
 	;;
     *)
-	systemctl stop qm.service 2>/dev/null || true
+	if systemctl is-active --quiet "qm.service" ; then
+		systemctl stop qm.service
+	fi
 	install "${ROOTFS}"
 	replaceIDs /etc/subuid qmcontainers ${qmContainerIDs}
 	replaceIDs /etc/subgid qmcontainers ${qmContainerIDs}
