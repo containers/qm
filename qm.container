@@ -1,3 +1,6 @@
+[Install]
+WantedBy=default.target
+
 [Service]
 AllowedCPUs=1
 CPUWeight=50
