@@ -28,5 +28,6 @@ Rootfs=${ROOTFS}
 SecurityLabelFileType=qm_file_t
 SecurityLabelLevel=s0
 SecurityLabelType=qm_t
+Timezone=local
 Volume=${ROOTFS}/etc:/etc
 Volume=${ROOTFS}/var:/var
