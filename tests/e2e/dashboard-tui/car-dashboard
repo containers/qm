@@ -1,4 +1,5 @@
 #!/usr/bin/python
+"""This tool simulates a car CPU to handle ASIL/QM services with containers."""
 # Copyright 2023 The qm Authors
 #
 # This program is free software; you can redistribute it and/or
@@ -31,6 +32,8 @@ import re
 
 
 class ServiceState(Enum):
+    """Define services state."""
+
     ALLGOOD = 1,
     NO_CRITICAL_CAN_CONTINUE = 2,
     CRITICAL_MUST_MOVE_TO_GUARDRAIL = 3
@@ -56,35 +59,38 @@ NODE_SERVICES = [
     "qm"
 ]
 
-CMD_LIST_CONTAINERS_IN_NODE = \
-    "podman" \
-    " exec" \
-    " node1" \
-    " podman" \
-    " ps" \
-    " --format" \
-    " {{.Names}}" \
+CMD_LIST_CONTAINERS_IN_NODE = (
+    "podman"
+    " exec"
+    " node1"
+    " podman"
+    " ps"
+    " --format"
+    " {{.Names}}"
+)
 
-CMD_LIST_CONTAINERS_IN_CONTROL = \
-    "podman" \
-    " exec" \
-    " control" \
-    " podman" \
-    " ps" \
-    " --format" \
-    " {{.Names}}" \
+CMD_LIST_CONTAINERS_IN_CONTROL = (
+    "podman"
+    " exec"
+    " control"
+    " podman"
+    " ps"
+    " --format"
+    " {{.Names}}"
+)
 
-CMD_LIST_CONTAINERS_IN_QM = \
-    "podman" \
-    " exec" \
-    " node1" \
-    " podman" \
-    " exec" \
-    " qm" \
-    " podman" \
-    " ps" \
-    " --format" \
-    " {{.Names}}" \
+CMD_LIST_CONTAINERS_IN_QM = (
+    "podman"
+    " exec"
+    " node1"
+    " podman"
+    " exec"
+    " qm"
+    " podman"
+    " ps"
+    " --format"
+    " {{.Names}}"
+)
 
 EMOJI_GREEN_LIGHT = "\U0001F7E2"
 EMOJI_RED_LIGHT = "\U0001F534"
@@ -95,16 +101,12 @@ EMOJI_CROSS_SIGN = "❌"
 
 
 class Dashboard(object):
+    """Main class for the dashboard tool."""
+
     def __init__(
         self
     ):
-        """
-        Init some vars from the class
-
-        Parameters:
-
-        Returns:
-        """
+        """Init some vars from the class."""
         self.layout = self.make_layout()
 
         # FIX-ME: let's make this dynamic, users might use different env
@@ -127,15 +129,13 @@ class Dashboard(object):
         command,
         shell=False
     ):
+        """Execute command."""
         """
-        Execute command
-
         Parameters:
             command - command to be executed, use ['cmd' 'argument']
             shell - True or False
                     If shell is True, the specified command will be
                     executed through the shell
-
         Returns: return code or exit in case of failure
         """
 
@@ -161,9 +161,8 @@ class Dashboard(object):
         command,
         shell=True
     ):
+        """Execute command returning output."""
         """
-        Execute command returning output
-
         Parameters:
             command - command to be executed
             shell - True or False
@@ -185,13 +184,8 @@ class Dashboard(object):
     def validate_qm_services(
         self
     ) -> Panel:
-        """
-        Validate if QM services are running
-
-        Parameters:
-
-        Returns: output as list to be displayed to users
-        """
+        """Validate if QM services are running."""
+        """Returns: output as list to be displayed to users."""
         output = []
 
         services = self.execute_cmd_check_output(
@@ -218,13 +212,8 @@ class Dashboard(object):
     def validate_node_services(
         self
     ) -> Panel:
-        """
-        Validate if Node services are running
-
-        Parameters:
-
-        Returns: output as list to be displayed to users
-        """
+        """Validate if Node services are running."""
+        """Returns: output as list to be displayed to users"""
         output = []
 
         services = self.execute_cmd_check_output(
@@ -252,13 +241,8 @@ class Dashboard(object):
     def validate_control_services(
         self
     ) -> Panel:
-        """
-        Validate if Manager services are running
-
-        Parameters:
-
-        Returns: output as list to be displayed to users
-        """
+        """Validate if Manager services are running."""
+        """Returns: output as list to be displayed to users"""
         output = []
 
         services = self.execute_cmd_check_output(
@@ -284,13 +268,7 @@ class Dashboard(object):
     def usage(
         self
     ) -> Panel:
-        """
-        Usage message to be displayed in the footer
-
-        Parameters:
-
-        Returns:
-        """
+        """Usage message to be displayed in the footer."""
         usage_msg = Table.grid(padding=1)
         usage_msg.add_row(
             "Usage:",
@@ -315,7 +293,7 @@ class Dashboard(object):
         node_name,
         service
     ):
-
+        """Execute hirtectl tool."""
         # FIX-ME: we need to make sure we look for node type instead of names
         if "qm" in node_name:
             node_name = self.qm_hirte_node_name
@@ -342,7 +320,7 @@ class Dashboard(object):
         )
 
     def make_layout(self) -> Layout:
-        """ Define Layout """
+        """Define Layout."""
         layout = Layout(name="root")
         layout.split(
             Layout(
@@ -360,7 +338,7 @@ class Dashboard(object):
         return layout
 
     def report_services_state(self):
-
+        """Check the status of the services."""
         qm_state = ServiceState.ALLGOOD
         node_state = ServiceState.ALLGOOD
         control_state = ServiceState.ALLGOOD
@@ -388,6 +366,7 @@ class Dashboard(object):
         return ServiceState.ALLGOOD
 
     def set_header(self):
+        """Set TUI header."""
         header_message = ""
         overall_car_state = self.report_services_state()
 
@@ -428,6 +407,7 @@ class Dashboard(object):
         titleName,
         text
     ):
+        """Set node layout."""
         self.layout[nodeName].update(
             Panel(
                 Align.center(
@@ -450,6 +430,7 @@ class Dashboard(object):
         node_name,
         service
     ):
+        """Execute hirtectl."""
         self.hirtectl(
             action,
             node_name,
@@ -457,6 +438,7 @@ class Dashboard(object):
         )
 
     def process_cpu_commands(self):
+        """Execute the CPU commands."""
         cmd_central_cpu = Prompt.ask(
             'Central CPU Simulator> '
         )
@@ -532,6 +514,7 @@ class Dashboard(object):
             )
 
     def main(self):
+        """Execute the main loop."""
         count = 0
 
         while True:

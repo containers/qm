@@ -1,5 +1,7 @@
 #!/bin/bash
 #
+# shellcheck disable=SC2046,SC2116
+#
 # Copyright 2023 The qm Authors
 #
 # This program is free software; you can redistribute it and/or
@@ -28,7 +30,7 @@ test_hirte_list_all_units() {
 		"${CONTROL_CONTAINER_NAME}" \
 		hirtectl \
 		list-units \
-                $(echo "${node_name}")
+		$(echo "${node_name}")
 	)
 	if_error_exit "unable to execute hirtectl command on ${CONTROL_CONTAINER_NAME}"
 	echo "${hirtectl_cmd}" | head -5
