@@ -47,7 +47,8 @@ URL: https://github.com/containers/qm
 Summary: Containerized environment for running Quality Management software
 Source0: %{url}/archive/v%{version}.tar.gz
 BuildArch: noarch
-BuildRequires: %{_bindir}/go-md2man
+# golang-github-cpuguy83-md2man on CentOS Stream 9 is available in CRB repository
+BuildRequires: golang-github-cpuguy83-md2man
 BuildRequires: container-selinux
 BuildRequires: make
 BuildRequires: git-core
