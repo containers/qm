@@ -37,7 +37,11 @@ Epoch: 101
 # to the correct value by Packit for copr and koji builds.
 # IGNORE this comment if you're looking at it in dist-git.
 Version: 0
+%if %{defined autorelease}
 Release: %autorelease
+%else
+Release: 1
+%endif
 License: GPL-2.0-only
 URL: https://github.com/containers/qm
 Summary: Containerized environment for running Quality Management software
@@ -132,4 +136,9 @@ fi
 %ghost %{_installscriptdir}/rootfs/*
 
 %changelog
+%if %{defined autochangelog}
 %autochangelog
+%else
+* Fri Jul 21 2023 RH Container Bot <rhcontainerbot@fedoraproject.org>
+- Placeholder changelog for envs that are not autochangelog-ready
+%endif
