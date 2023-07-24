@@ -137,3 +137,58 @@ to ease the integration of source projects with Fedora Linux, CentOS Stream and 
 Packit tests are running in [TestingFarm](https://packit.dev/docs/testing-farm/) with
 community tool [TMT](https://tmt.readthedocs.io/en/stable/) testing framework
 Refer [FMF](https://fmf.readthedocs.io/en/stable) for tmt test metadata specification
+
+### Run TMT tests framework locally
+
+#### Setup device under test
+
+- Download CentOSStream9 cloud image for [CentOSStream9](https://cloud.centos.org/centos/9-stream/x86_64/images/CentOS-Stream-GenericCloud-9-latest.x86_64.qcow2)
+
+``` bash
+curl --output-dir "/tmp" -O https://cloud.centos.org/centos/9-stream/x86_64/images/CentOS-Stream-GenericCloud-9-latest.x86_64.qcow2
+```
+
+- Increase disk size in +20G
+
+``` bash
+qemu-img resize /tmp/CentOS-Stream-GenericCloud-9-latest.x86_64.qcow2 +20G
+```
+
+- Set root password.
+
+``` bash
+virt-customize -a /tmp/CentOS-Stream-GenericCloud-9-latest.x86_64.qcow2 --root-password password:${PASSWORD}
+```
+
+- Run VM locally
+
+``` bash
+/usr/bin/qemu-system-x86_64  -smp 12 -enable-kvm -m 2G -machine q35 -cpu host -device virtio-net-pci,netdev=n0,mac=FE:30:26:a6:91:2d -netdev user,id=n0,net=10.0.2.0/24,hostfwd=tcp::2222-:22 -drive file=/tmp/CentOS-Stream-GenericCloud-9-latest.x86_64.qcow2,index=0,media=disk,format=qcow2,if=virtio,snapshot=off
+```
+
+#### Install TMT locally (python)
+
+Refer [tmt install](https://tmt.readthedocs.io/en/stable/overview.html#install)
+
+- Install tmt from pip optional
+
+``` bash
+ pip install tmt
+ pip install tmt[junit-report]
+```
+
+- Verify tmt plan/ tests are visible
+
+``` bash
+cd tests && tmt plan ls
+tmt tests ls
+
+```
+
+#### Run TMT against VM
+
+- Run tests
+
+``` bash
+tmt run -a provision --how connect -u root -p ${PASSWORD} -P 2222 -g localhost plans -n /tests/e2e/tier-0
+```
