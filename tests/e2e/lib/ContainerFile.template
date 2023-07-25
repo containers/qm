@@ -15,6 +15,7 @@ RUN dnf install -y \
         meson \
 	hostname \
 	podman \
+	sudo \
         iptables-services \
         selinux-policy-targeted \
         selinux-policy-devel \
