@@ -1,4 +1,5 @@
 #!/usr/bin/env bash
+# shellcheck disable=SC2120
 
 # Setting up some colors for helping read the demo output.
 # Comment out any of the below to turn off that color.
@@ -23,7 +24,19 @@ echo_color() {
     echo "${cyan}$1${reset}"
 }
 
+check_command() {
+    required_cmds=(sudo podman dnf)
+    for required_cmd in "${required_cmds[@]}"; do
+        if ! command -v "${required_cmd}" &> /dev/null
+        then
+            echo "${1} command could not be found. Install ${1} to continue."
+            exit 1
+        fi
+    done
+}
+
 init() {
+    check_command
     sudo systemctl stop qm > /dev/null
     sudo podman rm qm --force -t 0 > /dev/null
     sudo podman volume rm --force qmEtc qmVar > /dev/null
@@ -110,8 +123,8 @@ additional_store() {
 }
 
 asilservice() {
-    exec_color "grep -A 20 -B 20 --color system_u.*s0 asilservice.py"
-    exec_color "sudo python asilservice.py &"
+    exec_color "grep -A 20 -B 20 --color system_u.*s0 asilservice"
+    exec_color "sudo python asilservice &"
     exec_color "sudo systemctl stop qm"
     sudo -u root "podman volume rm --force qmEtc qmVar > /dev/null"
     exec_color "sudo dnf -y install --installroot ${rootfs} nmap-ncat --nogpgcheck"

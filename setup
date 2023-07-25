@@ -1,27 +1,51 @@
-#! /bin/sh -e
+#! /bin/bash -e
 #
 # This setup script will install an OS environment by default into
 # /usr/lib/qm/rootfs and create a Podman quadlet containerized environment
 # running systemd as PID1 inside.
 #
-if [ "$(id -u)" -ne 0 ];then
-    echo "Please run this script as root"
-    exit 1
-fi
 
-qmContainerIDs=1000000000:1500000000
-containerIDs=2500000000:1500000000
+# Globals
+INSTALLDIR="/usr/share/qm"
+ROOTFS="/usr/lib/qm/rootfs"
+AGENTCONF="/etc/hirte/agent.conf"
+QM_CONTAINER_IDS=1000000000:1500000000
+CONTAINER_IDS=2500000000:1500000000
+
+CMDLINE_ARGUMENT_LIST=(
+  "installdir"
+  "rootfs"
+)
+
+root_check() {
+    if [ "$(id -u)" -ne 0 ];then
+        echo "Please run this script as root"
+        exit 1
+    fi
+}
+
+usage()
+{
+   echo "The setup script will install an OS environment by default into"
+   echo "/usr/lib/qm/rootfs and create a Podman quadlet containerized environment"
+   echo "running systemd as PID1 inside."
+   echo
+   echo "Usage: setup [OPTIONS]"
+   echo
+   echo "OPTIONS:"
+   echo
+   echo "--help        Print this message."
+   echo "--installdir  qm install directory (default: /usr/share/qm)"
+   echo "--rootfs      set rootfs (default: /usr/lib/qm/rootfs)"
+   echo
+   echo "Example:"
+   echo "  $ sudo ./setup --installdir=/usr/share/qm --rootfs=/usr/lib/qm/rootfs"
+}
+
 replaceIDs() {
     touch "$1"
     grep -q "^$2:" "$1" || echo "$2":"$3" >> "$1"
 }
-
-AGENTCONF=/etc/hirte/agent.conf
-INSTALLDIR="$1"
-[ -n "${INSTALLDIR}" ] || INSTALLDIR=/usr/share/qm
-
-ROOTFS="$2"
-[ -n "${ROOTFS}" ] || ROOTFS=/usr/lib/qm/rootfs
 
 hirteSetup() {
     ROOTFS=$1
@@ -69,13 +93,54 @@ install() {
     cp "${INSTALLDIR}/containers.conf" "${ROOTFS}/etc/containers/"
     cp "${INSTALLDIR}/contexts" "${ROOTFS}/usr/share/containers/selinux/"
     cp "${INSTALLDIR}/file_contexts" "${ROOTFS}/etc/selinux/targeted/contexts/files/file_contexts"
-    replaceIDs "${ROOTFS}/etc/subuid" containers ${qmContainerIDs}
-    replaceIDs "${ROOTFS}/etc/subgid" containers ${qmContainerIDs}
+    replaceIDs "${ROOTFS}/etc/subuid" containers ${QM_CONTAINER_IDS}
+    replaceIDs "${ROOTFS}/etc/subgid" containers ${QM_CONTAINER_IDS}
     hirteSetup "${ROOTFS}"
     unshare --mount-proc -R "${ROOTFS}" -m systemctl enable hirte-agent.service
     storage "${ROOTFS}"
     restorecon -R "${ROOTFS}"
 }
+
+# read command line arguments
+opts=$(getopt \
+  --longoptions "$(printf "help,%s:," "${CMDLINE_ARGUMENT_LIST[@]}")" \
+  --name "$(basename "$0")" \
+  --options "" \
+  -- "$@"
+)
+
+eval set --"${opts}"
+
+# main()
+root_check
+
+while [[ $# -gt 0 ]]; do
+  case "$1" in
+    --installdir)
+      INSTALLDIR="${2}"
+      shift 2
+      ;;
+
+    --rootfs)
+      ROOTFS="${2}"
+      shift 2
+      ;;
+
+    --help)
+      usage
+      exit 1
+      ;;
+    *)
+      break
+      ;;
+  esac
+done
+
+# Figure out the options, execute setup
+echo "setup has started..."
+echo  "  * rootfs: ${ROOTFS}"
+echo  "  * install dir: ${INSTALLDIR}"
+echo
 
 case "$1" in
     hirte-agent)
@@ -87,10 +152,10 @@ case "$1" in
 		systemctl stop qm.service
 	fi
 	install "${ROOTFS}"
-	replaceIDs /etc/subuid qmcontainers ${qmContainerIDs}
-	replaceIDs /etc/subgid qmcontainers ${qmContainerIDs}
-	replaceIDs /etc/subuid containers   ${containerIDs}
-	replaceIDs /etc/subgid containers   ${containerIDs}
+	replaceIDs /etc/subuid qmcontainers ${QM_CONTAINER_IDS}
+	replaceIDs /etc/subgid qmcontainers ${QM_CONTAINER_IDS}
+	replaceIDs /etc/subuid containers   ${CONTAINER_IDS}
+	replaceIDs /etc/subgid containers   ${CONTAINER_IDS}
 	systemctl daemon-reload
 	systemctl start qm.service
 	;;
