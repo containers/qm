@@ -120,6 +120,7 @@ create_qm_node() {
                 ContainerFile.node"${nodeID}" \
                 "node${nodeID}" \
 		"node${nodeID}:latest"
+	sleep 15
 
 	# qm - after the setup, reload daemon and start qm
 	eval "$(podman exec \
