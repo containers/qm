@@ -67,6 +67,8 @@ podman images failed! name: ${container_name}"
 name: ${container_name} \
 hostname: ${container_name} \
 imageID: ${IMAGE_ID}"
+
+    $(podman ps)
 }
 
 setup_node() {
