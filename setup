@@ -24,6 +24,7 @@ ROOTFS="$2"
 [ -n "${ROOTFS}" ] || ROOTFS=/usr/lib/qm/rootfs
 
 hirteSetup() {
+    echo "test"
     ROOTFS=$1
     if test ! -f "${ROOTFS}${AGENTCONF}"; then
 	if test -f "${AGENTCONF}"; then
