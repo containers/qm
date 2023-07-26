@@ -93,10 +93,10 @@ create_qm_node() {
             "${IP_CONTROL_MACHINE}"
 
         # Add final instructions
-        echo "RUN dnf install qm -y &> /dev/null" >> ContainerFile.node"${nodeID}"
+        echo "RUN dnf install qm -y" >> ContainerFile.node"${nodeID}"
 
 	# Execute qm setup
-	echo "RUN /usr/share/qm/setup 2>&1 > /tmp/qm-setup.log || echo "QM setup failed, please check /tmp/qm-setup.log."" >> ContainerFile.node"${nodeID}"
+	echo "RUN /usr/share/qm/setup || echo "QM setup failed, please check /tmp/qm-setup.log."" >> ContainerFile.node"${nodeID}"
 
 	# HACK: add /dev/fuse to qm.container. It will allow a container set limits inside
 	# another container.
@@ -107,7 +107,7 @@ create_qm_node() {
         echo 'RUN sed -i -e "s/NodeName=/NodeName='"node${nodeID}/"\" \
                 '-e "s/^ManagerHost=/ManagerHost='"${IP_CONTROL_MACHINE}/"\" \
                 ' /etc/hirte/agent.conf' >> ContainerFile.node"${nodeID}"
-        echo "RUN systemctl enable hirte-agent &> /dev/null" >> ContainerFile.node"${nodeID}"
+        echo "RUN systemctl enable hirte-agent" >> ContainerFile.node"${nodeID}"
 
 	# Add systemd as CMD
         echo "CMD [\"/usr/lib/systemd/systemd\"]" >> ContainerFile.node"${nodeID}"
@@ -123,13 +123,13 @@ create_qm_node() {
 	# qm - after the setup, reload daemon and start qm
 	eval "$(podman exec \
 		node"${nodeID}" \
-		systemctl daemon-reload &> /dev/null
+		systemctl daemon-reload
 	)"
 	if_error_exit "unable to execute systemctl daemon-load in node${nodeID}"
 
 	eval "$(podman exec \
 		node"${nodeID}" \
-		systemctl start qm &> /dev/null
+		systemctl start qm
 	)"
 	if_error_exit "unable to execute systemctl start qm"
 
