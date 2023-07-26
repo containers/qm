@@ -1,4 +1,4 @@
-#!/bin/bash
+#!/bin/bash -x
 # shellcheck disable=SC2129
 #
 # Copyright 2023 The qm Authors
@@ -58,7 +58,7 @@ podman images failed! name: ${container_name}"
     # Execute the container
     cmd="podman run -d --privileged --network podmanDualStack --name ${container_name} --hostname ${container_name} ${IMAGE_ID}"
     echo "${cmd}"
-    eval "$(cmd)"
+    eval "$cmd"
     if_error_exit "create_container: podman run failed! \
 name: ${container_name} \
 hostname: ${container_name} \
