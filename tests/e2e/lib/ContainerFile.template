@@ -87,8 +87,8 @@ RUN alternatives --install /usr/bin/python python /usr/bin/python3 1
 RUN cp /usr/share/hirte/config/hirte.conf /etc/hirte/
 RUN cp /usr/share/hirte-agent/config/agent.conf /etc/hirte/
 RUN sed -e '/^#ManagerPort=/s/^#//g' \
-	-e '/LogTarget/s/^#//' \
-	-e "s/^AllowedNodeNames=/AllowedNodeNames=control,node1/" \
+	-e '/#LogTarget/s/^#//' \
+	-e "s/^#AllowedNodeNames=/AllowedNodeNames=control,node1/" \
 	-i /etc/hirte/hirte.conf
 # [end] CONTROL - settings
 
@@ -97,7 +97,7 @@ RUN echo 'Foobar!' | passwd --stdin root
 # [start] CONTROL - agent settings
 RUN cp /usr/share/hirte-agent/config/*.conf /etc/hirte/ &> /dev/null
 RUN IPv4_CONTROL="$(ip -brief address show eth0 | awk '{print $3}' | awk -F/ '{print $1}')" && \
-	sed -e "s/NodeName=/NodeName=control/" \
+	sed -e "s/#NodeName=/NodeName=control/" \
 		-i /etc/hirte/agent.conf
 
 # [end] CONTROL - agent settings
