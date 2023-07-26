@@ -106,8 +106,8 @@ create_qm_node() {
 
 	# Enable hirte-agent
 	echo 'RUN cp /usr/share/hirte-agent/config/*.conf /etc/hirte/' >> ContainerFile.node"${nodeID}"
-        echo 'RUN sed -i -e "s/NodeName=/NodeName='"node${nodeID}/"\" \
-                '-e "s/^ManagerHost=/ManagerHost='"${IP_CONTROL_MACHINE}/"\" \
+        echo 'RUN sed -i -e "s/^#NodeName=/NodeName='"node${nodeID}/"\" \
+                '-e "s/^#ManagerHost=/ManagerHost='"${IP_CONTROL_MACHINE}/"\" \
                 ' /etc/hirte/agent.conf' >> ContainerFile.node"${nodeID}"
         echo "RUN systemctl enable hirte-agent &> /dev/null" >> ContainerFile.node"${nodeID}"
 
@@ -148,14 +148,14 @@ create_qm_node() {
 
 	eval "$(podman exec node"${nodeID}" \
 		podman exec qm \
-		sed -i 's/^ManagerHost=/ManagerHost='"${IP_CONTROL_MACHINE}"'/g' \
+		sed -i 's/^#ManagerHost=/ManagerHost='"${IP_CONTROL_MACHINE}"'/g' \
 		/etc/hirte/agent.conf
 	)"
 	if_error_exit "qm node: unable to sed ManagerHost in hirte agent.conf"
 
 	eval "$(podman exec node"${nodeID}" \
 		podman exec qm \
-		sed -i 's/^NodeName=/NodeName='"${qm_node_name}"'/g' \
+		sed -i 's/^#NodeName=/NodeName='"${qm_node_name}"'/g' \
 		/etc/hirte/agent.conf
 	)"
 	if_error_exit "qm node: unable to sed NodeName in hirte agent.conf"
@@ -169,7 +169,7 @@ create_qm_node() {
 
 	# CONTROL NODE: append QM node into /etc/hirte/agent.conf.din the control node the new qm node name
 	eval "$(podman exec "${CONTROL_CONTAINER_NAME}" \
-		sed -i '/^AllowedNodeNames=/ s/$/,'"${qm_node_name}"'/' \
+		sed -i '/^#AllowedNodeNames=/ s/$/,'"${qm_node_name}"'/' \
 		/etc/hirte/hirte.conf
 	)"
 	if_error_exit "control node: unable to sed AllowedNodeName in hirte.conf"
