@@ -36,6 +36,9 @@ create_container() {
     container_name="${2}"
     container_tag="${3}"
 
+    echo "data -container_file = ${1}"
+    echo "data - container_name = ${2}"
+    echo "data - container_tag = ${3}"
     # Execute build with tag for latest
     eval "$(podman build \
             -q \
@@ -88,6 +91,10 @@ create_qm_node() {
 	eval "IP_CONTROL_MACHINE=\$(get_ip_container \${CONTROL_CONTAINER_NAME} \${NET_INTERFACE_IP_CONTROL})"
 	if_error_exit "unable to get ip from ${CONTROL_CONTAINER_NAME}"
 
+	echo "debug info"
+	echo "nodeID: ${nodeID}"
+	echo "IP_CONTROL_MACHINE: ${IP_CONTROL_MACHINE}"
+	echo "debug info"
         setup_node \
             "${nodeID}" \
             "${IP_CONTROL_MACHINE}"
