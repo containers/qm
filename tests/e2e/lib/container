@@ -64,7 +64,7 @@ name: ${container_name} \
 hostname: ${container_name} \
 imageID: ${IMAGE_ID}"
 
-    $(podman ps)
+    eval $(podman ps)
 }
 
 setup_node() {
