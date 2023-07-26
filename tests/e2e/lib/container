@@ -67,7 +67,8 @@ name: ${container_name} \
 hostname: ${container_name} \
 imageID: ${IMAGE_ID}"
 
-    eval $(podman ps)
+    eval "$(podman ps)"
+
 }
 
 setup_node() {
@@ -139,6 +140,19 @@ create_qm_node() {
 		systemctl start qm
 	)"
 	if_error_exit "unable to execute systemctl start qm"
+
+	# DEBUG data
+	echo "***************** debug data"
+	eval "$(podman exec \
+		node"${nodeID}" \
+		systemctl status -l qm
+	)"
+
+	eval "$(podman exec \
+		node"${nodeID}" \
+		journalctl -xeu qm.service
+	)"
+	echo "***************** debug data"
 
 	# set in the QM container the ManagerHost (Control Machine) and restart hirte-agent
 	eval "$(podman exec node"${nodeID}" \
