@@ -1,5 +1,5 @@
 #!/usr/bin/env bash
-# shellcheck disable=SC2120
+# shellcheck disable=SC2120,SC1091,SC2181
 
 # Setting up some colors for helping read the demo output.
 # Comment out any of the below to turn off that color.
@@ -10,14 +10,21 @@ export qm_quadlet=/etc/containers/systemd/qm.container
 export rootfs=/usr/lib/qm/rootfs
 
 read_color() {
+    echo -e "\n\n[Press enter to continue]"
     read -r -p "${bold}$1${reset}"
 }
 
 exec_color() {
-    echo -n "
-${bold}$ $1${reset}"
-    read -r
-    bash -c "$1"
+    echo -e "\nCommand to be executed:"
+    echo -e "
+\t${bold}$ $1${reset}\n"
+    read -rp "[Press enter to continue]"
+    eval "${1}"
+    if [ "$?" -ne 0 ]; then
+	    echo "command has failed ${1}"
+	    exit 1
+    fi
+
 }
 
 echo_color() {
@@ -36,8 +43,18 @@ check_command() {
 }
 
 init() {
+    clear
     check_command
-    sudo systemctl stop qm > /dev/null
+
+    if [ ! -f "./asilservice" ]; then
+        echo "The asilservice script not found, please check."
+	exit 1
+    fi
+
+    echo_color "Starting demo..."
+    echo -e "  - Removing any previous configuration for qm...\n"
+    rpm -e qm &> /dev/null
+    sudo systemctl stop qm &> /dev/null
     sudo podman rm qm --force -t 0 > /dev/null
     sudo podman volume rm --force qmEtc qmVar > /dev/null
     sudo podman --root /var/lib/shared rmi -i ubi9 > /dev/null
@@ -46,19 +63,32 @@ init() {
 }
 
 install() {
+    cmd_install='sudo dnf -y install qm \
+			hirte hirte-agent hirte-ctl \
+			podman container-selinux; \
+			sudo dnf -y update qm hirte hirte-agent \
+			hirte-ctl podman container-selinux'
+
     echo_color "Installing packages"
-    exec_color "sudo dnf -y install qm hirte hirte-agent hirte-ctl podman container-selinux; sudo dnf -y update qm hirte hirte-agent hirte-ctl podman container-selinux"
+    eval "${cmd_install}"
+    if [ "$?" -ne 0 ]; then
+        echo "fail to install packages."
+    fi
     clear
 }
 
 setup() {
     echo_color "Executing setup"
-    echo_color "Enable hirte on the host system"
+    echo_color "Staring and enabling hirte on the host system"
+    echo_color "============================================="
     exec_color "sudo systemctl start hirte hirte-agent"
+
     echo
-    echo_color "Install and setup /usr/lib/qm/rootfs"
+
+    echo_color "Install and setup: /usr/lib/qm/rootfs"
+    echo_color "============================================="
     exec_color "sudo /usr/share/qm/setup"
-    read -r
+    read -rp "[Press enter to continue]"
     clear
 }
 
@@ -68,20 +98,27 @@ status() {
 }
 
 cpuweight() {
-    sudo systemctl set-property --runtime QM.slice CPUWeight=50
-    sudo systemctl set-property --runtime qm.service CPUWeight=50
-    exec_color "sudo cat /sys/fs/cgroup/QM.slice/cpu.weight"
-    exec_color "sudo cat /sys/fs/cgroup/QM.slice/qm.service/cpu.weight"
+    exec_color "sudo systemctl set-property --runtime QM.slice CPUWeight=50"
+    exec_color "sudo systemctl set-property --runtime qm.service CPUWeight=50"
+
+    echo "Value stored in QM.slice/cpu.weight:"
+    sudo cat /sys/fs/cgroup/QM.slice/cpu.weight
+
+    echo "Value stored in QM.slice/qm.service/cpu.weight:"
+    sudo cat /sys/fs/cgroup/QM.slice/qm.service/cpu.weight
     exec_color "sudo systemctl set-property --runtime QM.slice CPUWeight=10"
-    exec_color "sudo cat /sys/fs/cgroup/QM.slice/cpu.weight"
-    exec_color "sudo cat /sys/fs/cgroup/QM.slice/qm.service/cpu.weight"
+
+    echo "Value stored in QM.slice/cpu.weight:"
+    sudo cat /sys/fs/cgroup/QM.slice/cpu.weight
+    echo "Value stored in QM.slice/qm.service/cpu.weight:"
+    sudo cat /sys/fs/cgroup/QM.slice/qm.service/cpu.weight
+    echo -e "\n\n[Press enter to continue]"
     read -r
 }
 
 podman_ctr() {
     clear
     exec_color "sudo podman exec -ti qm ps -eZ"
-    exec_color "sudo podman exec qm id | grep --color qm_t"
     exec_color "sudo podman exec qm podman run alpine echo hi"
     exec_color "sudo podman run ubi9 echo hi"
     exec_color "sudo podman exec qm podman images"
@@ -95,8 +132,7 @@ podman_ctr() {
 
 hirte() {
     clear
-    exec_color "sudo hirtectl list-units | grep --color running"
-    exec_color "sudo podman exec -ti qm podman pull ubi8/httpd-24"
+    exec_color "sudo podman exec -ti qm podman pull registry.access.redhat.com/ubi8/httpd-24:latest"
     exec_color "echo \"[Container]
 Image=registry.access.redhat.com/ubi8/httpd-24
 Network=host
@@ -104,18 +140,45 @@ Network=host
 
     exec_color "sudo podman cp /tmp/myquadlet.container qm:/etc/containers/systemd/"
     exec_color "sudo podman exec qm systemctl daemon-reload"
-    exec_color "sudo hirtectl restart qm.fedora myquadlet.service"
+
+    # read the actual configuration.. and add the new qm.control
+    source /etc/hirte/hirte.conf
+
+    # Append to the current configuration the new node and restart the service
+    sudo sed -i '/^AllowedNodeNames=/ s/$/,qm.control/' /etc/hirte/hirte.conf
+    exec_color "sudo systemctl restart hirte"
+
+    # get the ip of controller via interface eth0
+    ip_controller=$(ip addr list eth0 |grep "inet " |cut -d' ' -f6|cut -d/ -f1)
+    eval "$(podman exec qm \
+		sed -i 's/^#ManagerHost=/ManagerHost='"${ip_controller}"'/g' \
+		/etc/hirte/agent.conf
+    )"
+    eval "$(podman exec qm \
+                systemctl restart hirte-agent
+    )"
+
+    exec_color "sudo hirtectl restart qm.control myquadlet.service"
     exec_color "sudo hirtectl list-units | grep --color myquadlet"
+
+    # give time to server spin up
+    sleep 3
+
     exec_color "curl 127.0.0.1:8080"
-    exec_color "sudo hirtectl stop qm.fedora myquadlet.service"
-    exec_color "sudo hirtectl list-units | grep --color myquadlet"
+    exec_color "sudo hirtectl stop qm.control myquadlet.service"
+
+    # requires true as return -1 (to show that myquadlet is gonet)
+    exec_color "sudo hirtectl list-units | grep --color myquadlet || true"
 }
 
 additional_store() {
     test -s ${qm_quadlet}.orig || sudo cp ${qm_quadlet} ${qm_quadlet}.orig
     exec_color "sudo podman --root /var/lib/shared pull ubi9"
     exec_color "sudo podman --root /var/lib/shared images | grep -A 10 -B 10 --color ubi9"
-    exec_color "sudo podman exec qm podman images | grep -A 10 -B 10 --color ubi9"
+
+    # requires true as return -1 (to show the image doesn't exist)
+    exec_color "sudo podman exec qm podman images | grep -A 10 -B 10 --color ubi9 || true"
+
     exec_color  "sudo sed -i -e '\$aVolume=/var/lib/shared:/var/lib/shared:ro' /etc/containers/systemd/qm.container"
     exec_color "sudo systemctl daemon-reload"
     exec_color "sudo systemctl restart qm.service"
@@ -123,8 +186,11 @@ additional_store() {
 }
 
 asilservice() {
-    exec_color "grep -A 20 -B 20 --color system_u.*s0 asilservice"
-    exec_color "sudo python asilservice &"
+    # requires true as return -1 (to show that the asilservice is not available)
+    exec_color "grep -A 20 -B 20 --color system_u.*s0 asilservice || true"
+
+    exec_color "sudo mkdir -p /run/asilservice"
+    exec_color "sudo python ./asilservice &"
     exec_color "sudo systemctl stop qm"
     sudo -u root "podman volume rm --force qmEtc qmVar > /dev/null"
     exec_color "sudo dnf -y install --installroot ${rootfs} nmap-ncat --nogpgcheck"
@@ -132,7 +198,10 @@ asilservice() {
     exec_color  "sudo sed -i -e '\$aVolume=/run/asilservice:/run/asilservice' /etc/containers/systemd/qm.container"
     exec_color "sudo systemctl daemon-reload"
     exec_color "sudo systemctl restart qm"
-    exec_color "sudo podman exec -ti qm /usr/bin/nc -U /run/asilservice/asilservice.sock"
+
+    echo_color "Starting asilservice, type any command to get a reply from ASIL service or quit to exit."
+    # requires true as return -1 as users type quit or goodbye
+    exec_color "sudo podman exec -ti qm /usr/bin/nc -U /run/asilservice/asilservice.sock || true"
 }
 
 init
@@ -154,5 +223,3 @@ additional_store
 asilservice
 
 echo "Demo is done"
-
-read -r

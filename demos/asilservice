@@ -19,8 +19,14 @@ socket_path = socket_dir + "/asilservice.sock"
 if os.path.exists(socket_dir):
     shutil.rmtree(socket_dir)
 
-selinux.setfscreatecon("system_u:object_r:qm_file_t:s0")
-selinux.setsockcreatecon("system_u:system_r:qm_t:s0")
+try:
+    selinux.setfscreatecon("system_u:object_r:qm_file_t:s0")
+    selinux.setsockcreatecon("system_u:system_r:qm_t:s0")
+except BaseException:
+    # selinux is disabled
+    print("\nSELinux is disabled, such environment is not recommended\n")
+    pass
+
 server = socket.socket(socket.AF_UNIX, socket.SOCK_STREAM)
 os.mkdir(socket_dir)
 server.bind(socket_path)
@@ -31,7 +37,8 @@ try:
         data = conn.recv(1024)
         conn.send("ASIL reply: ".encode())
         conn.send(data)
-        if data.decode().strip() == "goodby":
+        if data.decode().strip() == "goodbye" or \
+                data.decode().strip() == "quit":
             break
 except Exception as error:
     print("Exception occured:", error)
