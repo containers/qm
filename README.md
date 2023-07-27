@@ -49,3 +49,13 @@ is based on the hosts /etc/hirte/agent.conf file. By default any changes to the
 systems agent.conf file are reflected into the QM /etc/hirte/agent.conf. You can
 further customize the QM hirte agent by adding content to the
 /usr/lib/qm/rootfs/etc/hirte/agent.conf.d/ directory.
+
+## RPM building dependencies
+
+In order to build qm package on CentOS Stream 9 you'll need Code Ready Builder
+repository enabled in order to provide `golang-github-cpuguy83-md2man` package.
+
+```console
+# dnf install -y python3-dnf-plugins-core
+# dnf config-manager --set-enabled crb
+```
