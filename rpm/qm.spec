@@ -5,7 +5,7 @@
 %global moduletype services
 %global modulenames qm
 
-%global _installscriptdir %{_prefix}/lib/qm
+%global _installscriptdir %{_prefix}/%{_lib}/%{modulenames}
 
 # Usage: _format var format
 # Expand 'modulenames' into various formats as needed
@@ -75,7 +75,7 @@ The QM runs its own version of systemd and Podman to isolate not only the
 applications and containers launched by systemd and Podman but systemd and
 Podman themselves.
 
-Software install into the QM environment under /usr/lib/qm/rootfs is
+Software install into the QM environment under `/usr/lib/qm/rootfs` us
 automatically isolated from the host. If developers need to further
 isolate there applications from other processes in the QM they should
 use container tools like Podman.
