@@ -59,3 +59,7 @@ repository enabled in order to provide `golang-github-cpuguy83-md2man` package.
 # dnf install -y python3-dnf-plugins-core
 # dnf config-manager --set-enabled crb
 ```
+
+## Examples
+
+Looking for quadlet examples files? See our [docs dir](docs/quadlet-examples/).
