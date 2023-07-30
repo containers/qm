@@ -141,6 +141,11 @@ Refer [FMF](https://fmf.readthedocs.io/en/stable) for tmt test metadata specific
 ### Run TMT tests framework locally
 
 #### Setup device under test
+- Install required packages
+
+``` bash
+dnf install -y libguestfs-tools-c qemu-kvm python3-pip git tmt tmt-report-junit
+```
 
 - Download CentOSStream9 cloud image for [CentOSStream9](https://cloud.centos.org/centos/9-stream/x86_64/images/CentOS-Stream-GenericCloud-9-latest.x86_64.qcow2)
 
@@ -163,8 +168,9 @@ virt-customize -a /tmp/CentOS-Stream-GenericCloud-9-latest.x86_64.qcow2 --root-p
 - Run VM locally
 
 ``` bash
-/usr/bin/qemu-system-x86_64  -smp 12 -enable-kvm -m 2G -machine q35 -cpu host -device virtio-net-pci,netdev=n0,mac=FE:30:26:a6:91:2d -netdev user,id=n0,net=10.0.2.0/24,hostfwd=tcp::2222-:22 -drive file=/tmp/CentOS-Stream-GenericCloud-9-latest.x86_64.qcow2,index=0,media=disk,format=qcow2,if=virtio,snapshot=off
-```
+/usr/bin/qemu-system-x86_64 -nographic -smp 12 -enable-kvm -m 2G -machine q35 -cpu host -device virtio-net-pci,netdev=n0,mac=FE:30:26:a6:91:2d -netdev user,id=n0,net=10.0.2.0/24,hostfwd=tcp::2222-:22 -drive file=/tmp/CentOS-Stream-GenericCloud-9-latest.x86_64.qcow2,index=0,media=disk,format=qcow2,if=virtio,snapshot=off
+``` 
+**To exit from qemu**: `CTRL-a c` and then `quit` into the qemu terminal
 
 #### Install TMT locally (python)
 
@@ -180,6 +186,7 @@ Refer [tmt install](https://tmt.readthedocs.io/en/stable/overview.html#install)
 - Verify tmt plan/ tests are visible
 
 ``` bash
+git clone https://github.com/containers/qm && cd qm
 cd tests && tmt plan ls
 tmt tests ls
 
@@ -190,5 +197,9 @@ tmt tests ls
 - Run tests
 
 ``` bash
+tmt run plans -n tests/e2e/tier-0
+
+or connecting to VM:
+
 tmt run -a provision --how connect -u root -p ${PASSWORD} -P 2222 -g localhost plans -n /tests/e2e/tier-0
 ```
