@@ -5,7 +5,7 @@
 %global moduletype services
 %global modulenames qm
 
-%global _installscriptdir %{_prefix}/%{_lib}/%{modulenames}
+%global _installscriptdir %{_prefix}/lib/%{modulenames}
 
 # Usage: _format var format
 # Expand 'modulenames' into various formats as needed
