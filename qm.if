@@ -314,6 +314,7 @@ template(`qm_domain_template',`
 	files_mountpoint($1_container_file_t)
 	fs_associate($1_container_file_t)
 	allow $1_container_domain $1_file_type:file { execmod relabelfrom relabelto map entrypoint mounton };
+	allow $1_container_domain $1_file_type:dir search_dir_perms;
 
 	# QM Container kvm - Policy for running kata containers
 	type $1_container_kvm_t,  $1_container_domain;
@@ -458,6 +459,7 @@ template(`qm_domain_template',`
 	allow unconfined_domain_type $1_container_domain:process2 { nnp_transition nosuid_transition };
 	allow unconfined_service_t $1_container_domain:process dyntransition;
 
+	dev_list_sysfs($1_container_domain)
 	dev_dontaudit_mounton_sysfs($1_container_domain)
 	domain_dontaudit_link_all_domains_keyrings($1_container_domain)
 	domain_dontaudit_search_all_domains_keyrings($1_container_domain)
