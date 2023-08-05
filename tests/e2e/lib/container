@@ -169,7 +169,7 @@ create_qm_node() {
 
 	# CONTROL NODE: append QM node into /etc/hirte/agent.conf.din the control node the new qm node name
 	eval "$(podman exec "${CONTROL_CONTAINER_NAME}" \
-		sed -i '/^#AllowedNodeNames=/ s/$/,'"${qm_node_name}"'/' \
+		sed -i '/^AllowedNodeNames=/ s/$/,'"${qm_node_name}"'/' \
 		/etc/hirte/hirte.conf
 	)"
 	if_error_exit "control node: unable to sed AllowedNodeName in hirte.conf"
