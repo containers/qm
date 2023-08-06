@@ -25,6 +25,7 @@ fi
 test_hirte_list_all_units() {
     for node_name in "${NODES_FOR_TESTING[@]}"
     do
+        echo
         info_message "Connected to \033[92m${CONTROL_CONTAINER_NAME}\033[0m, listing few systemd units from \033[92m${node_name}\033[0m"
         hirtectl_cmd=$(podman exec \
 		"${CONTROL_CONTAINER_NAME}" \
