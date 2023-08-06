@@ -170,8 +170,7 @@ podman network \
     --gateway 10.90.0.1 --subnet 10.90.0.0/16 podmanDualStack
 
 info_message "Cleaning any previous e2e files"
-cleanup "${CONTROL_CONTAINER_NAME}"
-cleanup "node1"
+cleanup
 
 echo
 info_message "Preparing ASIL environment"
