@@ -49,12 +49,21 @@ info_message() {
 }
 
 cleanup() {
-    # Make sure we remove previous settings
-    podman rm --storage --force "${1}" &> /dev/null
-    if_error_exit "error removing storage ${1}"
+    output=$(podman ps -a --format "{{.Names}}")
+    IFS=$'\n' # Set the internal field separator to newline
 
-    podman rm "${1}" --force &> /dev/null
-    if_error_exit "error removing container ${1}"
+    # DO NOT use double quotes here
+    for node in ${output}; do
+	if [[ "${node}" == "control" ]] || [[ "${node}" =~ ^node.* ]]; then
+            # Make sure we remove previous settings
+            podman rm --storage --force "${node}" &> /dev/null
+            if_error_exit "error removing storage ${1}"
 
-    rm -f ./*.node*
+            podman rm "${node}" --force 1> /dev/null
+            if_error_exit "error removing container ${1}"
+
+            rm -f ./*.node*
+        fi
+    done
+
 }
