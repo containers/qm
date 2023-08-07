@@ -34,6 +34,6 @@ test_hirte_list_all_units() {
 		$(echo "${node_name}")
 	)
 	if_error_exit "unable to execute hirtectl command on ${CONTROL_CONTAINER_NAME}"
-	echo "${hirtectl_cmd}" | head -5
+	echo "${hirtectl_cmd}" | grep -E "container-|qm.service"
     done
 }
