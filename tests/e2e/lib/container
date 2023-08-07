@@ -84,6 +84,7 @@ setup_node() {
 create_qm_node() {
     # Generates 'N' containers QM nodes as required for the test scale
 
+    AllowedNodeNames=""
     for nodeID in $(seq 1 "${NUMBER_OF_NODES}") ;
     do
         # Generates the Container.node${ID}
@@ -167,20 +168,25 @@ create_qm_node() {
 	)"
 	if_error_exit "qm node: unable to restart hirte-agent service"
 
-	# CONTROL NODE: append QM node into /etc/hirte/agent.conf.din the control node the new qm node name
-	eval "$(podman exec "${CONTROL_CONTAINER_NAME}" \
-		sed -i '/^AllowedNodeNames=/ s/$/,'"${qm_node_name},node${nodeID}"'/' \
-		/etc/hirte/hirte.conf
-	)"
-	if_error_exit "control node: unable to sed AllowedNodeName in hirte.conf"
-
-	# restart the hirte service
-	eval "$(podman exec \
-		"${CONTROL_CONTAINER_NAME}" \
-		systemctl restart hirte
-	)"
-	if_error_exit "control node: unable to restart hirte service"
+	AllowedNodeNames="${AllowedNodeNames}\n  ${qm_node_name},\n  node${nodeID},"
     done
+
+    # Remove the last , from the string, otherwise hirte won't understand
+    AllowedNodeNames="${AllowedNodeNames%?}"
+
+    # CONTROL NODE: append QM node into /etc/hirte/agent.conf.din the control node the new qm node name
+    eval "$(podman exec "${CONTROL_CONTAINER_NAME}" \
+		sed -i '/^AllowedNodeNames=/ s/$/,'"${AllowedNodeNames}"'/' \
+		/etc/hirte/hirte.conf
+    )"
+    if_error_exit "control node: unable to sed AllowedNodeName in hirte.conf"
+
+    # restart the hirte service
+    eval "$(podman exec \
+        "${CONTROL_CONTAINER_NAME}" \
+	systemctl restart hirte
+    )"
+    if_error_exit "control node: unable to restart hirte service"
 }
 
 create_asil_node() {

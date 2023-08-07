@@ -205,7 +205,12 @@ create_qm_node
 
 # Create pods regarding QM services
 srvs_qm=("radio" "store" "stream_audio" "maps")
-create_stub_systemd_srv "node1" "qm" "${srvs_qm[@]}"
+
+echo
+for ((i=1;i<=NUMBER_OF_NODES;i++)); do
+    create_stub_systemd_srv "node${i}" "qm" "${srvs_qm[@]}"
+    echo
+done
 
 # Tests
 echo
