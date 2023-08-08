@@ -30,9 +30,29 @@ jobs:
     branch: main
     owner: rhcontainerbot
     project: podman-next
+    targets:
+      - fedora-rawhide-aarch64
+      - fedora-rawhide-ppc64le
+      - fedora-rawhide-s390x
+      - fedora-rawhide-x86_64
+      - fedora-38-aarch64
+      - fedora-38-ppc64le
+      - fedora-38-s390x
+      - fedora-38-x86_64
+      - centos-stream+epel-next-9-aarch64
+      - centos-stream+epel-next-9-ppc64le
+      - centos-stream+epel-next-9-s390x
+      - centos-stream+epel-next-9-x86_64
 
   - <<: *copr
     project: qm
+    targets:
+      - fedora-38-aarch64
+      - fedora-38-ppc64le
+      - fedora-38-x86_64
+      - centos-stream-9-aarch64
+      - centos-stream-9-ppc64le
+      - centos-stream-9-x86_64
 
   - job: tests
     trigger: pull_request
