@@ -1,0 +1,13 @@
+#!/bin/bash
+
+output=$(podman ps -a --format "{{.Names}}")
+IFS=$'\n' # Set the internal field separator to newline
+
+# DO NOT use double quotes here
+for node in ${output}; do
+    if [[ "${node}" == "control" ]] || [[ "${node}" =~ ^node.* ]]; then
+	echo "Removing container ${node}..."
+        podman rm --storage --force "${node}" &> /dev/null
+        podman rm "${node}" --force 1> /dev/null
+    fi
+done
