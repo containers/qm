@@ -55,6 +55,7 @@ cleanup() {
     # DO NOT use double quotes here
     for node in ${output}; do
 	if [[ "${node}" == "control" ]] || [[ "${node}" =~ ^node.* ]]; then
+	    info_message "  - Removing container: ${node}"
             # Make sure we remove previous settings
             podman rm --storage --force "${node}" &> /dev/null
             if_error_exit "error removing storage ${1}"

@@ -16,6 +16,8 @@
 # You should have received a copy of the GNU General Public License
 # along with this program; If not, see <http://www.gnu.org/licenses/>.
 #
+# Capture the start time
+START_TIME=$(date +%s)
 SCRIPT_DIR=$( cd -- "$( dirname -- "${BASH_SOURCE[0]}" )" &> /dev/null && pwd )
 
 source "${SCRIPT_DIR}"/lib/utils
@@ -213,7 +215,6 @@ for ((i=1;i<=NUMBER_OF_NODES;i++)); do
 done
 
 # Tests
-echo
 info_message "Starting tests"
 info_message "=============================="
 info_message "Waiting hirte containers be ready..."
@@ -230,4 +231,50 @@ echo
 info_message "#1- Test scenario: hirte list all units from control to node (vise-versa)"
 test_hirte_list_all_units
 
+echo
+info_message "\033[92mSummary of tests\033[0m"
+info_message "=============================="
+info_message "\033[92mASIL environment\033[0m"
+info_message "- 1 Controller container with:"
+info_message "\t- hirte service: manager and agent"
+info_message "\t- ${#srvs_asil[@]} systemd generated and running:"
+for srv in "${srvs_asil[@]}"; do
+    info_message "\t\t container-${srv}"
+done
+echo
+
+info_message "\033[92mQM environment\033[0m"
+info_message "  Nodes:"
+info_message "\t- ${NUMBER_OF_NODES} node(s) running as containers"
+info_message "\t- hirte service in each node: agent"
+info_message "\t- 1 nested container running inside each node listed above"
+echo
+info_message "  QM Nodes (nested container):"
+info_message "\t- ${NUMBER_OF_NODES} QM node(s) running inside in the nodes"
+info_message "\t- hirte service in each qm node: agent"
+info_message "\t- ${#srvs_qm[@]} systemd generated and running in each QM node:"
+for srv in "${srvs_qm[@]}"; do
+    info_message "\t\t container-${srv}"
+done
+echo
+
+info_message "\033[92mhirtectl calls\033[0m"
+# 1 = controller node + NUMBER_OF_NODES * 2 (as we need to count the nested containers (qm))
+info_message "\t- $((1+${NUMBER_OF_NODES}*2)) hirtectl calls to nodes"
+
+# Capture the end time
+END_TIME=$(date +%s)
+
+# Calculate the duration in seconds
+DURATION=$((END_TIME - START_TIME))
+
+# Calculate minutes and seconds
+MINUTES=$((DURATION / 60))
+SECONDS=$((DURATION % 60))
+
+echo
+info_message "\033[92mRunning time for this script\033[0m"
+info_message "\t- ${MINUTES} minutes and ${SECONDS} seconds"
+echo
 info_message "All set!"
+echo
