@@ -269,12 +269,14 @@ END_TIME=$(date +%s)
 DURATION=$((END_TIME - START_TIME))
 
 # Calculate minutes and seconds
-MINUTES=$((DURATION / 60))
+DAYS=$((DURATION / 86400))
+HOURS=$(( (DURATION % 86400) / 3600 ))
+MINUTES=$(( (DURATION % 3600) / 60 ))
 SECONDS=$((DURATION % 60))
 
 echo
 info_message "\033[92mRunning time for this script\033[0m"
-info_message "\t- ${MINUTES} minutes and ${SECONDS} seconds"
+info_message "\t- ${DAYS} days, ${HOURS} hours, ${MINUTES} minutes and ${SECONDS} seconds"
 echo
 info_message "All set!"
 echo
