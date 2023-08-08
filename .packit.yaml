@@ -2,43 +2,36 @@
 # See the documentation for more information:
 # https://packit.dev/docs/configuration/
 
-# Build targets can be found at:
-# https://copr.fedorainfracloud.org/coprs/rhcontainerbot/packit-builds/
-
 specfile_path: rpm/qm.spec
 upstream_tag_template: v{version}
 
+srpm_build_deps:
+  - make
+  - rpkg
+
+actions:
+  fix-spec-file:
+    - bash .packit.sh
+
 jobs:
-  - &copr
-    job: copr_build
-    # Run on every PR
+  - job: copr_build
     trigger: pull_request
-    owner: rhcontainerbot
-    project: packit-builds
-    enable_net: true
     # x86_64 is assumed by default
     # qm is noarch so we only need to test on one arch
     targets:
       - fedora-rawhide
-      - fedora-38
+      - fedora-latest
       - centos-stream-9
-    srpm_build_deps:
-      - make
-      - rpkg
-    actions:
-      fix-spec-file:
-        - bash .packit.sh
 
-  - <<: *copr
-    # Run on commit to main branch
+  # Run on commit to main branch
+  - &copr
+    job: copr_build
     trigger: commit
     branch: main
+    owner: rhcontainerbot
     project: podman-next
 
   - <<: *copr
-    # Run on commit to main branch
-    trigger: commit
-    branch: main
     project: qm
 
   - job: tests
