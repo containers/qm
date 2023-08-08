@@ -89,7 +89,7 @@ jobs:
     dist_git_branches:
       # rawhide updates are created automatically
       - fedora-38
-      # Disable bodhi for epel-9 until hirte and podman 4.5 are available
+      # Disable bodhi for epel-9 until hirte and podman 4.5 are available in RHEL 9.
+      # Please note it's already available in CentOS Stream.
       # Ref: https://bodhi.fedoraproject.org/updates/FEDORA-EPEL-2023-77d64cf134#comment-3026157
       #- epel-9
-
