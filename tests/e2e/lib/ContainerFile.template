@@ -15,6 +15,9 @@ RUN dnf install -y \
         meson \
 	hostname \
 	podman \
+	python3-podman \
+	python3-pytest \
+	python3-pytest-timeout \
 	sudo \
         iptables-services \
         selinux-policy-targeted \
@@ -26,6 +29,8 @@ RUN dnf install -y \
         git \
         gzip \
         jq \
+        tmt \
+        tmt-report-junit \
 	container-selinux \
 	kernel \
 	kernel-modules \
