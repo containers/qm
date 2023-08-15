@@ -12,6 +12,9 @@ RUN dnf install -y \
         codespell \
         bzip2 \
         gcc \
+	g++ \
+	fpaste \
+	lcov \
         meson \
 	hostname \
 	podman \
