@@ -6,6 +6,7 @@ RUN dnf install -y \
 
 RUN dnf config-manager -y --set-enabled crb
 RUN dnf -y copr enable rhcontainerbot/qm centos-stream-9
+RUN dnf config-manager --add-repo https://cli.github.com/packages/rpm/gh-cli.repo
 
 RUN dnf install -y \
 	clang-tools-extra \
@@ -13,6 +14,7 @@ RUN dnf install -y \
         bzip2 \
         gcc \
 	g++ \
+	gh \
 	fpaste \
 	lcov \
         meson \
