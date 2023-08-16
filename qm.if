@@ -313,8 +313,11 @@ template(`qm_domain_template',`
 	files_type($1_container_file_t)
 	files_mountpoint($1_container_file_t)
 	fs_associate($1_container_file_t)
-	allow $1_container_domain $1_file_type:file { execmod relabelfrom relabelto map entrypoint mounton };
+	allow $1_container_domain $1_file_type:file { execmod relabelfrom relabelto map entrypoint mounton};
 	allow $1_container_domain $1_file_type:dir search_dir_perms;
+	exec_files_pattern($1_container_domain, $1_file_type, $1_file_type)
+	list_dirs_pattern($1_container_domain, $1_file_type, $1_file_type)
+	read_files_pattern($1_container_domain, $1_file_type, $1_file_type)
 
 	# QM Container kvm - Policy for running kata containers
 	type $1_container_kvm_t,  $1_container_domain;
