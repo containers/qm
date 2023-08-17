@@ -35,6 +35,10 @@ jobs:
       - fedora-rawhide-ppc64le
       - fedora-rawhide-s390x
       - fedora-rawhide-x86_64
+      - fedora-39-aarch64
+      - fedora-39-ppc64le
+      - fedora-39-s390x
+      - fedora-39-x86_64
       - fedora-38-aarch64
       - fedora-38-ppc64le
       - fedora-38-s390x
@@ -47,6 +51,9 @@ jobs:
   - <<: *copr
     project: qm
     targets:
+      - fedora-39-aarch64
+      - fedora-39-ppc64le
+      - fedora-39-x86_64
       - fedora-38-aarch64
       - fedora-38-ppc64le
       - fedora-38-x86_64
@@ -67,6 +74,7 @@ jobs:
     update_release: false
     dist_git_branches:
       - fedora-rawhide
+      - fedora-39
       - fedora-38
       - epel-9
 
@@ -74,6 +82,7 @@ jobs:
     trigger: commit
     dist_git_branches:
       - fedora-rawhide
+      - fedora-39
       - fedora-38
       - epel-9
 
@@ -81,8 +90,6 @@ jobs:
     trigger: commit
     dist_git_branches:
       # rawhide updates are created automatically
+      - fedora-39
       - fedora-38
-      # Disable bodhi for epel-9 until hirte and podman 4.5 are available in RHEL 9.
-      # Please note it's already available in CentOS Stream.
-      # Ref: https://bodhi.fedoraproject.org/updates/FEDORA-EPEL-2023-77d64cf134#comment-3026157
-      #- epel-9
+      - epel-9
