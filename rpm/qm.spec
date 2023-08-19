@@ -30,7 +30,7 @@
 
 %if 0%{?rhel} && 0%{?centos} == 0
 # podman 4.5 is not available in RHEL 9 but it's available in CentOS Stream 9.
-# hirte-agent is available in EPEL 9.
+# bluechi-agent is available in EPEL 9.
 %bcond_with podman_45
 %else
 %bcond_without podman_45
@@ -71,7 +71,7 @@ Requires(post): libselinux-utils
 %if %{with podman_45}
 Requires: podman >= %{podman_epoch}:4.5
 %endif
-Requires: hirte-agent
+Requires: bluechi-agent
 
 %description
 This package allow users to setup an environment which prevents applications

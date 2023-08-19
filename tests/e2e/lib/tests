@@ -22,18 +22,18 @@ if [[ -n $NODES_FOR_TESTING_ARR ]]; then
     readarray -d ' ' -t NODES_FOR_TESTING <<< "$NODES_FOR_TESTING_ARR"
 fi
 
-test_hirte_list_all_units() {
+test_bluechi_list_all_units() {
     for node_name in "${NODES_FOR_TESTING[@]}"
     do
         echo
         info_message "Connected to \033[92m${CONTROL_CONTAINER_NAME}\033[0m, listing few systemd units from \033[92m${node_name}\033[0m"
-        hirtectl_cmd=$(podman exec \
+        bluechictl_cmd=$(podman exec \
 		"${CONTROL_CONTAINER_NAME}" \
-		hirtectl \
+		bluechictl \
 		list-units \
 		$(echo "${node_name}")
 	)
-	if_error_exit "unable to execute hirtectl command on ${CONTROL_CONTAINER_NAME}"
-	echo "${hirtectl_cmd}" | grep -E "container-|qm.service"
+	if_error_exit "unable to execute bluechictl command on ${CONTROL_CONTAINER_NAME}"
+	echo "${bluechictl_cmd}" | grep -E "container-|qm.service"
     done
 }

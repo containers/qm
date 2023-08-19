@@ -22,17 +22,17 @@ Demo:
 A recent version of Fedora or CentOS9 with the following packages: bash, selinux and podman.
 Make sure to enable `cgroupv2`.
 Enable the following on host machine before installing podman
-[hirte_repo](https://github.com/containers/qm/blob/main/tests/e2e/ContainerFile.control#L44-L45)
+[bluechi_repo](https://github.com/containers/qm/blob/main/tests/e2e/ContainerFile.control#L44-L45)
 
 ## Tests executed
 
-The idea behind the test is: create isolated environments using technologies like containers, podman (quadlet), selinux and cgroupv2. On top of that, make sure all systemd services in the nodes are controlled remotely taking advanced of [hirte](https://github.com/containers/hirte/).
+The idea behind the test is: create isolated environments using technologies like containers, podman (quadlet), selinux and cgroupv2. On top of that, make sure all systemd services in the nodes are controlled remotely taking advanced of [bluechi](https://github.com/containers/bluechi/).
 
 ## Running using containers
 
 By default the tool will create three containers, `control`, `node1` (both running on the host) and the third container will be running on top of `node1` which is called `qm`. In other words, this will be a **nested container environment**.
 
-In a short description, the container control is the **hirte controller**, `node1` and `qm` are the **hirte agents**. After the three nodes are installed and properly configured will be executed several tests scenarios focused in managing systemd remotely using hirte.
+In a short description, the container control is the **bluechi controller**, `node1` and `qm` are the **bluechi agents**. After the three nodes are installed and properly configured will be executed several tests scenarios focused in managing systemd remotely using bluechi.
 
 ## Running using virt
 
@@ -82,11 +82,11 @@ Enforcing
 
 [ INFO  ] Starting tests
 [ INFO  ] ==============================
-[ INFO  ] Waiting hirte containers be ready...
+[ INFO  ] Waiting bluechi containers be ready...
 
-[ INFO  ] #1- Test scenario: hirte list all units from control to node (vise-versa)
+[ INFO  ] #1- Test scenario: bluechi list all units from control to node (vise-versa)
 [ INFO  ] Connected to control, listing few systemd units from control
-[ INFO  ] Executing: podman exec control hirtectl list-units control | head -5
+[ INFO  ] Executing: podman exec control bluechictl list-units control | head -5
 ID                                                                              |   ACTIVE|      SUB
 ====================================================================================================
 console-getty.service                                                           | inactive|     dead
@@ -94,7 +94,7 @@ dev-ttyS7.device                                                                
 sys-devices-pci0000:00-0000:00:1f.2-ata10-host9-target9:0:0-9:0:0:0-block-sda-sd|   active|  plugged
 
 [ INFO  ] Connected to control, listing few systemd units from node1
-[ INFO  ] Executing: podman exec control hirtectl list-units node1 | head -5
+[ INFO  ] Executing: podman exec control bluechictl list-units node1 | head -5
 ID                                                                              |   ACTIVE|      SUB
 ====================================================================================================
 dracut-shutdown.service                                                         |   active|   exited
@@ -102,7 +102,7 @@ systemd-journald.service                                                        
 dev-hugepages.mount                                                             |   active|  mounted
 
 [ INFO  ] Connected to control, listing few systemd units from qm.544fac352098
-[ INFO  ] Executing: podman exec control hirtectl list-units qm.544fac352098 | head -5
+[ INFO  ] Executing: podman exec control bluechictl list-units qm.544fac352098 | head -5
 ID                                                                              |   ACTIVE|      SUB
 ====================================================================================================
 systemd-udevd.service                                                           | inactive|     dead

@@ -60,35 +60,35 @@ RUN dnf install -y \
 WORKDIR /root
 
 RUN dnf -y copr enable mperina/hirte-snapshot centos-stream-9
-RUN dnf -y install hirte hirte-agent hirte-ctl
+RUN dnf -y install bluechi bluechi-agent bluechi-ctl
 RUN alternatives --install /usr/bin/python python /usr/bin/python3 1
 
 # Script will remove the lines before the commands automatically
-# [manually install hirte] RUN rpm -e hirte hirte-agent hirte-ctl hirte-selinux
-# [manually install hirte] RUN git clone @BUILD_HIRTE_FROM_GH_URL@
-# [manually install hirte] WORKDIR /root/hirte
+# [manually install bluechi] RUN rpm -e bluechi bluechi-agent bluechi-ctl bluechi-selinux
+# [manually install bluechi] RUN git clone @BUILD_BLUECHI_FROM_GH_URL@
+# [manually install bluechi] WORKDIR /root/bluechi
 
 
 # Look for remote branches
-# [manually install hirte] RUN if git branch -a | grep "remotes/origin/@BRANCH_HIRTE@" &> /dev/null; then \
-# [manually install hirte] git checkout @BRANCH_HIRTE@ &> /dev/null; \
-# [manually install hirte] else \
+# [manually install bluechi] RUN if git branch -a | grep "remotes/origin/@BRANCH_BLUECHI@" &> /dev/null; then \
+# [manually install bluechi] git checkout @BRANCH_BLUECHI@ &> /dev/null; \
+# [manually install bluechi] else \
 # Look to see if the branch already exists, like main branch
-# [manually install hirte] if git branch -a | grep -w @BRANCH_HIRTE@ &> /dev/null; then \
-# [manually install hirte] git checkout @BRANCH_HIRTE@ || true &> /dev/null; \
+# [manually install bluechi] if git branch -a | grep -w @BRANCH_BLUECHI@ &> /dev/null; then \
+# [manually install bluechi] git checkout @BRANCH_BLUECHI@ || true &> /dev/null; \
 # The Branch doesn't exist, create one using -b
-# [manually install hirte] else \
-# [manually install hirte] git checkout -b @BRANCH_HIRTE@ || true &> /dev/null; \
-# [manually install hirte] fi \
-# [manually install hirte] fi
+# [manually install bluechi] else \
+# [manually install bluechi] git checkout -b @BRANCH_BLUECHI@ || true &> /dev/null; \
+# [manually install bluechi] fi \
+# [manually install bluechi] fi
 
 # Execute the build after selecting the branch
-# [manually install hirte] RUN ./build-scripts/build-rpm.sh || true
+# [manually install bluechi] RUN ./build-scripts/build-rpm.sh || true
 
-# Upgrade the current hirte using the new rpm packages but exclude src.rpm
-# [manually install hirte] RUN find . -not -name *.src* -name *.rpm | xargs dnf install -y
-# RUN cp /usr/share/hirte/config/hirte.conf /etc/hirte/hirte.conf.d/hirte.conf
-# [manually install hirte] RUN cp /usr/share/hirte/config/hirte.conf /etc/hirte/hirte.conf
+# Upgrade the current bluechi using the new rpm packages but exclude src.rpm
+# [manually install bluechi] RUN find . -not -name *.src* -name *.rpm | xargs dnf install -y
+# RUN cp /usr/share/bluechi/config/bluechi.conf /etc/bluechi/bluechi.conf.d/bluechi.conf
+# [manually install bluechi] RUN cp /usr/share/bluechi/config/bluechi.conf /etc/bluechi/bluechi.conf
 
 # [start] CONTROL - settings
 # Setting configuration, uncommenting:
@@ -96,26 +96,26 @@ RUN alternatives --install /usr/bin/python python /usr/bin/python3 1
 #	- Use journal for logging
 #	- Set AllowedNodeNames as control and node1
 # TODO: remove the static node1 here, dynamic by rune2e script via sed
-RUN cp /usr/share/hirte/config/hirte.conf /etc/hirte/
-RUN cp /usr/share/hirte-agent/config/agent.conf /etc/hirte/
+RUN cp /usr/share/bluechi/config/bluechi.conf /etc/bluechi/
+RUN cp /usr/share/bluechi-agent/config/agent.conf /etc/bluechi/
 RUN sed -e '/^#ManagerPort=/s/^#//g' \
 	-e '/#LogTarget/s/^#//' \
 	-e "s/^#AllowedNodeNames=/AllowedNodeNames=control,node1/" \
-	-i /etc/hirte/hirte.conf
+	-i /etc/bluechi/bluechi.conf
 # [end] CONTROL - settings
 
 RUN echo 'Foobar!' | passwd --stdin root
 
 # [start] CONTROL - agent settings
-RUN cp /usr/share/hirte-agent/config/*.conf /etc/hirte/ &> /dev/null
+RUN cp /usr/share/bluechi-agent/config/*.conf /etc/bluechi/ &> /dev/null
 RUN IPv4_CONTROL="$(ip -brief address show eth0 | awk '{print $3}' | awk -F/ '{print $1}')" && \
 	sed -e "s/^#NodeName=/NodeName=control/" \
-		-i /etc/hirte/agent.conf
+		-i /etc/bluechi/agent.conf
 
 # [end] CONTROL - agent settings
 
 # [start] CONTROL - enable services and systemd
-RUN systemctl enable hirte &> /dev/null
-RUN systemctl enable hirte-agent &> /dev/null
+RUN systemctl enable bluechi &> /dev/null
+RUN systemctl enable bluechi-agent &> /dev/null
 CMD ["/usr/lib/systemd/systemd"]
 # [end] CONTROL - enable services and systemd

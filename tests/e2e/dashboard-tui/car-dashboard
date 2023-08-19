@@ -112,13 +112,13 @@ class Dashboard(object):
         # FIX-ME: let's make this dynamic, users might use different env
         # instead of e2e script or just want to use others names
         self.qm_container = "qm"
-        self.qm_hirte_node_name = "qm-node1"
+        self.qm_bluechi_node_name = "qm-node1"
 
         self.node_container = "node1"
-        self.node_hirte_node_name = "node1"
+        self.node_bluechi_node_name = "node1"
 
         self.manager_container = "control"
-        self.manager_hirte_node_name = "control"
+        self.manager_bluechi_node_name = "control"
 
         self.qm_car_state = {}
         self.node_car_state = {}
@@ -287,29 +287,29 @@ class Dashboard(object):
 
         return usage_msg
 
-    def hirtectl(
+    def bluechictl(
         self,
         command,
         node_name,
         service
     ):
-        """Execute hirtectl tool."""
+        """Execute bluechictl tool."""
         # FIX-ME: we need to make sure we look for node type instead of names
         if "qm" in node_name:
-            node_name = self.qm_hirte_node_name
+            node_name = self.qm_bluechi_node_name
 
         if "control" in node_name or "manager" in node_name:
-            node_name = self.manager_hirte_node_name
+            node_name = self.manager_bluechi_node_name
 
         if re.search("^node", node_name):
-            node_name = self.node_hirte_node_name
+            node_name = self.node_bluechi_node_name
 
-        # FIX-ME: use hirte python api if possible
+        # FIX-ME: use bluechi python api if possible
         cmd = [
             "podman",
             "exec",
             self.manager_container,
-            "hirtectl",
+            "bluechictl",
             command,
             node_name,
             service
@@ -424,14 +424,14 @@ class Dashboard(object):
              )
          )
 
-    def hirtectl_action(
+    def bluechictl_action(
         self,
         action,
         node_name,
         service
     ):
-        """Execute hirtectl."""
-        self.hirtectl(
+        """Execute bluechictl."""
+        self.bluechictl(
             action,
             node_name,
             service
@@ -466,7 +466,7 @@ class Dashboard(object):
             else:
                 service = "container-" + cmd[2] + ".service"
 
-            self.hirtectl_action(
+            self.bluechictl_action(
                 "stop",
                 node_name,
                 service
@@ -491,7 +491,7 @@ class Dashboard(object):
                 )
             )
 
-            self.hirtectl_action(
+            self.bluechictl_action(
                 "start",
                 node_name,
                 service
