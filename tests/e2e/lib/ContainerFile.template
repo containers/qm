@@ -10,50 +10,50 @@ RUN dnf config-manager --add-repo https://cli.github.com/packages/rpm/gh-cli.rep
 
 RUN dnf install -y \
 	clang-tools-extra \
-        codespell \
-        bzip2 \
-        gcc \
+	codespell \
+	bzip2 \
+	gcc \
 	g++ \
 	gh \
 	fpaste \
 	lcov \
-        meson \
 	hostname \
 	podman \
 	python3-podman \
+	python3-flake8 \
 	python3-pytest \
 	python3-pytest-timeout \
 	sudo \
-        iptables-services \
-        selinux-policy-targeted \
-        selinux-policy-devel \
+	iptables-services \
+	selinux-policy-targeted \
+	selinux-policy-devel \
+	ShellCheck \
 	systemd \
-        valgrind \
+	valgrind \
 	createrepo_c \
-        dnf-utils \
-        git \
-        gzip \
-        jq \
-        tmt \
-        tmt-report-junit \
+	dnf-utils \
+	git \
+	gzip \
+	jq \
+	tmt \
+	tmt-report-junit \
 	container-selinux \
 	kernel \
 	kernel-modules \
 	passwd \
 	python3-gobject \
 	python3-pip \
-        meson \
-        rpm-build \
-        sed \
-        vim-enhanced \
-        systemd-devel \
+	meson \
+	rpm-build \
+	sed \
+	vim-enhanced \
+	systemd-devel \
 	iputils \
-        tar \
-        golang-github-cpuguy83-md2man \
+	tar \
+	golang-github-cpuguy83-md2man \
 	telnet \
 	net-tools \
 	iproute
-
 
 WORKDIR /root
 
