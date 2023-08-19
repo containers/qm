@@ -23,6 +23,7 @@ RUN dnf install -y \
 	python3-flake8 \
 	python3-pytest \
 	python3-pytest-timeout \
+	pre-commit \
 	sudo \
 	iptables-services \
 	selinux-policy-targeted \
