@@ -24,7 +24,7 @@ use container tools like Podman.
 After the QM software package is installed, execute the
 /usr/share/qm/setup script to setup and install the /usr/lib/qm/rootfs
 with packages to run an isolated environment. The setup script installs the
-**selinux-policy-targeted**, **podman**, **systemd**, and **hirte** packages.
+**selinux-policy-targeted**, **podman**, **systemd**, and **bluechi** packages.
 Setup then enables and starts a Podman quadlet service qm.service (qm.container).
 
 This Podman quadlet can be examined with the following command:
@@ -118,17 +118,17 @@ applications within the QM. All applications within the QM environment are
 prevented from interfering with applications running outside of the QM
 environment.
 
-## Configuring hirte agent in the QM
+## Configuring bluechi agent in the QM
 
-The configuration of the hosts /etc/hirte/agent.conf file is copied into the QM every time the
+The configuration of the hosts /etc/bluechi/agent.conf file is copied into the QM every time the
 qm.service is started, with the nodename of the hosts agent.conf modified by prepending `qm.`
-on the front of the nodename. If the hosts /etc/hirte/agent.conf does not exists, then the
-QM hirte agent will default to `qm.`$(hostname).
+on the front of the nodename. If the hosts /etc/bluechi/agent.conf does not exists, then the
+QM bluechi agent will default to `qm.`$(hostname).
 
-If you want permanently modify the hirte agent within the QM you can add config to
-/usr/lib/qm/rootfs/etc/hirte/agent.conf.d/ directory or modify the /etc/containers/systemd/qm.container
-quadlet file to not execute the hirte-agent setup script.
+If you want permanently modify the bluechi agent within the QM you can add config to
+/usr/lib/qm/rootfs/etc/bluechi/agent.conf.d/ directory or modify the /etc/containers/systemd/qm.container
+quadlet file to not execute the bluechi-agent setup script.
 
 ## SEE ALSO
 
-**[podman(1)](https://github.com/containers/podman/blob/main/docs/source/markdown/podman.1.md)**,**[quadlet(5)](https://github.com/containers/podman/blob/main/docs/source/markdown/podman-systemd.unit.5.md)**, systemctl(1), systemd(1), dnf(8), [hirte-agent(1)](https://github.com/containers/hirte/blob/main/doc/man/hirte-agent.1.md),[hirte-agent.conf.5](https://github.com/containers/hirte/blob/main/doc/man/hirte-agent.conf.5.md)
+**[podman(1)](https://github.com/containers/podman/blob/main/docs/source/markdown/podman.1.md)**,**[quadlet(5)](https://github.com/containers/podman/blob/main/docs/source/markdown/podman-systemd.unit.5.md)**, systemctl(1), systemd(1), dnf(8), [bluechi-agent(1)](https://github.com/containers/bluechi/blob/main/doc/man/bluechi-agent.1.md),[bluechi-agent.conf.5](https://github.com/containers/bluechi/blob/main/doc/man/bluechi-agent.conf.5.md)

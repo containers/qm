@@ -105,12 +105,12 @@ create_qm_node() {
 	# another container.
 	echo 'RUN echo "AddDevice=-/dev/fuse" >> /usr/share/containers/systemd/qm.container' >> ContainerFile.node"${nodeID}"
 
-	# Enable hirte-agent
-	echo 'RUN cp /usr/share/hirte-agent/config/*.conf /etc/hirte/' >> ContainerFile.node"${nodeID}"
+	# Enable bluechi-agent
+	echo 'RUN cp /usr/share/bluechi-agent/config/*.conf /etc/bluechi/' >> ContainerFile.node"${nodeID}"
         echo 'RUN sed -i -e "s/^#NodeName=/NodeName='"node${nodeID}/"\" \
                 '-e "s/^#ManagerHost=/ManagerHost='"${IP_CONTROL_MACHINE}/"\" \
-                ' /etc/hirte/agent.conf' >> ContainerFile.node"${nodeID}"
-        echo "RUN systemctl enable hirte-agent &> /dev/null" >> ContainerFile.node"${nodeID}"
+                ' /etc/bluechi/agent.conf' >> ContainerFile.node"${nodeID}"
+        echo "RUN systemctl enable bluechi-agent &> /dev/null" >> ContainerFile.node"${nodeID}"
 
 	# Add systemd as CMD
         echo "CMD [\"/usr/lib/systemd/systemd\"]" >> ContainerFile.node"${nodeID}"
@@ -135,12 +135,12 @@ create_qm_node() {
 	)"
 	if_error_exit "unable to execute systemctl start qm"
 
-	# set in the QM container the ManagerHost (Control Machine) and restart hirte-agent
+	# set in the QM container the ManagerHost (Control Machine) and restart bluechi-agent
 	eval "$(podman exec node"${nodeID}" \
 		podman exec qm \
 		cp \
-		/usr/share/hirte-agent/config/agent.conf \
-		/etc/hirte/agent.conf
+		/usr/share/bluechi-agent/config/agent.conf \
+		/etc/bluechi/agent.conf
 	)"
 	if_error_exit "unable to copy agent.conf template to agent.conf.d dir"
 
@@ -150,43 +150,43 @@ create_qm_node() {
 	eval "$(podman exec node"${nodeID}" \
 		podman exec qm \
 		sed -i 's/^#ManagerHost=/ManagerHost='"${IP_CONTROL_MACHINE}"'/g' \
-		/etc/hirte/agent.conf
+		/etc/bluechi/agent.conf
 	)"
-	if_error_exit "qm node: unable to sed ManagerHost in hirte agent.conf"
+	if_error_exit "qm node: unable to sed ManagerHost in bluechi agent.conf"
 
 	eval "$(podman exec node"${nodeID}" \
 		podman exec qm \
 		sed -i 's/^#NodeName=/NodeName='"${qm_node_name}"'/g' \
-		/etc/hirte/agent.conf
+		/etc/bluechi/agent.conf
 	)"
-	if_error_exit "qm node: unable to sed NodeName in hirte agent.conf"
+	if_error_exit "qm node: unable to sed NodeName in bluechi agent.conf"
 
-        # restarting the qm hirte-agent
+        # restarting the qm bluechi-agent
 	eval "$(podman exec node"${nodeID}" \
 		podman exec qm \
-		systemctl restart hirte-agent
+		systemctl restart bluechi-agent
 	)"
-	if_error_exit "qm node: unable to restart hirte-agent service"
+	if_error_exit "qm node: unable to restart bluechi-agent service"
 
 	AllowedNodeNames="${AllowedNodeNames}\n  ${qm_node_name},\n  node${nodeID},"
     done
 
-    # Remove the last , from the string, otherwise hirte won't understand
+    # Remove the last , from the string, otherwise bluechi won't understand
     AllowedNodeNames="${AllowedNodeNames%?}"
 
-    # CONTROL NODE: append QM node into /etc/hirte/agent.conf.din the control node the new qm node name
+    # CONTROL NODE: append QM node into /etc/bluechi/agent.conf.din the control node the new qm node name
     eval "$(podman exec "${CONTROL_CONTAINER_NAME}" \
 		sed -i '/^AllowedNodeNames=/ s/$/,'"${AllowedNodeNames}"'/' \
-		/etc/hirte/hirte.conf
+		/etc/bluechi/bluechi.conf
     )"
-    if_error_exit "control node: unable to sed AllowedNodeName in hirte.conf"
+    if_error_exit "control node: unable to sed AllowedNodeName in bluechi.conf"
 
-    # restart the hirte service
+    # restart the bluechi service
     eval "$(podman exec \
         "${CONTROL_CONTAINER_NAME}" \
-	systemctl restart hirte
+	systemctl restart bluechi
     )"
-    if_error_exit "control node: unable to restart hirte service"
+    if_error_exit "control node: unable to restart bluechi service"
 }
 
 create_asil_node() {

@@ -64,10 +64,10 @@ init() {
 
 install() {
     cmd_install='sudo dnf -y install qm \
-			hirte hirte-agent hirte-ctl \
+			bluechi bluechi-agent bluechi-ctl \
 			podman container-selinux; \
-			sudo dnf -y update qm hirte hirte-agent \
-			hirte-ctl podman container-selinux'
+			sudo dnf -y update qm bluechi bluechi-agent \
+			bluechi-ctl podman container-selinux'
 
     echo_color "Installing packages"
     eval "${cmd_install}"
@@ -79,9 +79,9 @@ install() {
 
 setup() {
     echo_color "Executing setup"
-    echo_color "Staring and enabling hirte on the host system"
+    echo_color "Staring and enabling bluechi on the host system"
     echo_color "============================================="
-    exec_color "sudo systemctl start hirte hirte-agent"
+    exec_color "sudo systemctl start bluechi bluechi-agent"
 
     echo
 
@@ -130,7 +130,7 @@ podman_ctr() {
     exec_color "sudo podman run --userns=auto ubi9 cat /proc/self/uid_map"
 }
 
-hirte() {
+bluechi() {
     clear
     exec_color "sudo podman exec -ti qm podman pull registry.access.redhat.com/ubi8/httpd-24:latest"
     exec_color "echo \"[Container]
@@ -142,33 +142,33 @@ Network=host
     exec_color "sudo podman exec qm systemctl daemon-reload"
 
     # read the actual configuration.. and add the new qm.control
-    source /etc/hirte/hirte.conf
+    source /etc/bluechi/bluechi.conf
 
     # Append to the current configuration the new node and restart the service
-    sudo sed -i '/^AllowedNodeNames=/ s/$/,qm.control/' /etc/hirte/hirte.conf
-    exec_color "sudo systemctl restart hirte"
+    sudo sed -i '/^AllowedNodeNames=/ s/$/,qm.control/' /etc/bluechi/bluechi.conf
+    exec_color "sudo systemctl restart bluechi"
 
     # get the ip of controller via interface eth0
     ip_controller=$(ip addr list eth0 |grep "inet " |cut -d' ' -f6|cut -d/ -f1)
     eval "$(podman exec qm \
 		sed -i 's/^#ManagerHost=/ManagerHost='"${ip_controller}"'/g' \
-		/etc/hirte/agent.conf
+		/etc/bluechi/agent.conf
     )"
     eval "$(podman exec qm \
-                systemctl restart hirte-agent
+                systemctl restart bluechi-agent
     )"
 
-    exec_color "sudo hirtectl restart qm.control myquadlet.service"
-    exec_color "sudo hirtectl list-units | grep --color myquadlet"
+    exec_color "sudo bluechictl restart qm.control myquadlet.service"
+    exec_color "sudo bluechictl list-units | grep --color myquadlet"
 
     # give time to server spin up
     sleep 3
 
     exec_color "curl 127.0.0.1:8080"
-    exec_color "sudo hirtectl stop qm.control myquadlet.service"
+    exec_color "sudo bluechictl stop qm.control myquadlet.service"
 
     # requires true as return -1 (to show that myquadlet is gonet)
-    exec_color "sudo hirtectl list-units | grep --color myquadlet || true"
+    exec_color "sudo bluechictl list-units | grep --color myquadlet || true"
 }
 
 additional_store() {
@@ -216,7 +216,7 @@ cpuweight
 
 podman_ctr
 
-hirte
+bluechi
 
 additional_store
 

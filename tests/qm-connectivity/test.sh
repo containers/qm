@@ -8,4 +8,4 @@
 # shellcheck source=tests/e2e/lib/utils
 . ../e2e/lib/tests
 
-test_hirte_list_all_units
+test_bluechi_list_all_units

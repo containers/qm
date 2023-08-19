@@ -38,7 +38,7 @@ After that, you can just run the dashboard-tui with the same user run-test-e2e w
 
 ## Technologies
 
-containers, nested containers, podman, qm, hirte, cgroupv2, python, Fedora and much more!
+containers, nested containers, podman, qm, bluechi, cgroupv2, python, Fedora and much more!
 
 ## Want to contribute?
 

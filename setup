@@ -8,7 +8,7 @@
 # Globals
 INSTALLDIR="/usr/share/qm"
 ROOTFS="/usr/lib/qm/rootfs"
-AGENTCONF="/etc/hirte/agent.conf"
+AGENTCONF="/etc/bluechi/agent.conf"
 QM_CONTAINER_IDS=1000000000:1500000000
 CONTAINER_IDS=2500000000:1500000000
 
@@ -47,7 +47,7 @@ replaceIDs() {
     grep -q "^$2:" "$1" || echo "$2":"$3" >> "$1"
 }
 
-hirteSetup() {
+bluechiSetup() {
     ROOTFS=$1
     if test ! -f "${ROOTFS}${AGENTCONF}"; then
 	if test -f "${AGENTCONF}"; then
@@ -61,7 +61,7 @@ hirteSetup() {
 	    -i "${ROOTFS}${AGENTCONF}"
     else
 	cat > "${ROOTFS}${AGENTCONF}" <<EOF
-[hirte-agent]
+[bluechi-agent]
 NodeName=qm.${hostname}
 EOF
     fi
@@ -87,7 +87,7 @@ install() {
     # shellcheck source=/dev/null
     . /etc/os-release
     mkdir -Z -p "${ROOTFS}"
-    dnf -y install --releasever="${VERSION_ID}" --installroot "${ROOTFS}" selinux-policy-targeted podman systemd hirte-agent procps-ng
+    dnf -y install --releasever="${VERSION_ID}" --installroot "${ROOTFS}" selinux-policy-targeted podman systemd bluechi-agent procps-ng
     dnf -y update --installroot "${ROOTFS}"
     rm -rf "${ROOTFS}"/etc/selinux/targeted/contexts/files/file_contexts/*
     cp "${INSTALLDIR}/containers.conf" "${ROOTFS}/etc/containers/"
@@ -95,8 +95,8 @@ install() {
     cp "${INSTALLDIR}/file_contexts" "${ROOTFS}/etc/selinux/targeted/contexts/files/file_contexts"
     replaceIDs "${ROOTFS}/etc/subuid" containers ${QM_CONTAINER_IDS}
     replaceIDs "${ROOTFS}/etc/subgid" containers ${QM_CONTAINER_IDS}
-    hirteSetup "${ROOTFS}"
-    unshare --mount-proc -R "${ROOTFS}" -m systemctl enable hirte-agent.service
+    bluechiSetup "${ROOTFS}"
+    unshare --mount-proc -R "${ROOTFS}" -m systemctl enable bluechi-agent.service
     storage "${ROOTFS}"
     restorecon -R "${ROOTFS}"
 }
@@ -143,9 +143,9 @@ echo  "  * install dir: ${INSTALLDIR}"
 echo
 
 case "$1" in
-    hirte-agent)
+    bluechi-agent)
 	rm -f "${ROOTFS}${AGENTCONF}"
-	hirteSetup "${ROOTFS}"
+	bluechiSetup "${ROOTFS}"
 	;;
     *)
 	if systemctl is-active --quiet "qm.service" ; then
