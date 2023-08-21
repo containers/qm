@@ -24,6 +24,7 @@ RUN dnf install -y \
 	python3-pytest \
 	python3-pytest-timeout \
 	pre-commit \
+	pcp \
 	sudo \
 	iptables-services \
 	selinux-policy-targeted \
