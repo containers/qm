@@ -34,9 +34,10 @@ usage()
    echo
    echo "OPTIONS:"
    echo
-   echo "--help        Print this message."
-   echo "--installdir  qm install directory (default: /usr/share/qm)"
-   echo "--rootfs      set rootfs (default: /usr/lib/qm/rootfs)"
+   echo "--help                Print this message."
+   echo "--installdir          qm install directory (default: /usr/share/qm)"
+   echo "--rootfs              set rootfs (default: /usr/lib/qm/rootfs)"
+   echo "--skip-systemctl      skip systemctl daemon commands (default: false)"
    echo
    echo "Example:"
    echo "  $ sudo ./setup --installdir=/usr/share/qm --rootfs=/usr/lib/qm/rootfs"
@@ -96,7 +97,13 @@ install() {
     replaceIDs "${ROOTFS}/etc/subuid" containers ${QM_CONTAINER_IDS}
     replaceIDs "${ROOTFS}/etc/subgid" containers ${QM_CONTAINER_IDS}
     bluechiSetup "${ROOTFS}"
-    unshare --mount-proc -R "${ROOTFS}" -m systemctl enable bluechi-agent.service
+    
+    if [ -z "$SYSTEMCTL_SKIP" ]; then
+        unshare --mount-proc -R "${ROOTFS}" -m systemctl enable bluechi-agent.service
+    else
+        systemctl enable bluechi-agent.service
+    fi
+
     storage "${ROOTFS}"
     restorecon -R "${ROOTFS}"
 }
@@ -125,7 +132,10 @@ while [[ $# -gt 0 ]]; do
       ROOTFS="${2}"
       shift 2
       ;;
-
+    --skip-systemctl)
+      SYSTEMCTL_SKIP="Y"
+      shift 2
+      ;;
     --help)
       usage
       exit 1
@@ -148,15 +158,24 @@ case "$1" in
 	bluechiSetup "${ROOTFS}"
 	;;
     *)
-	if systemctl is-active --quiet "qm.service" ; then
-		systemctl stop qm.service
-	fi
+
+    if [ -z "$SYSTEMCTL_SKIP" ]; then
+	    if systemctl is-active --quiet "qm.service" ; then
+	    	systemctl stop qm.service
+	    fi
+    fi
+
 	install "${ROOTFS}"
 	replaceIDs /etc/subuid qmcontainers ${QM_CONTAINER_IDS}
 	replaceIDs /etc/subgid qmcontainers ${QM_CONTAINER_IDS}
 	replaceIDs /etc/subuid containers   ${CONTAINER_IDS}
 	replaceIDs /etc/subgid containers   ${CONTAINER_IDS}
-	systemctl daemon-reload
-	systemctl start qm.service
+    
+    if [ -z "$SYSTEMCTL_SKIP" ]; then
+	    systemctl daemon-reload
+	    systemctl start qm.service
+    else
+      /usr/libexec/podman/quadlet /run/systemd/generator/ 
+    fi
 	;;
 esac
