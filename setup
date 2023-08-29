@@ -9,6 +9,7 @@
 SYSTEMCTL_SKIP="N"
 INSTALLDIR="/usr/share/qm"
 ROOTFS="/usr/lib/qm/rootfs"
+AGENT_HOSTNAME="$(hostname)"
 AGENTCONF="/etc/bluechi/agent.conf"
 QM_CONTAINER_IDS=1000000000:1500000000
 CONTAINER_IDS=2500000000:1500000000
@@ -16,6 +17,7 @@ CONTAINER_IDS=2500000000:1500000000
 CMDLINE_ARGUMENT_LIST=(
   "installdir"
   "rootfs"
+  "hostname"
 )
 
 root_check() {
@@ -39,6 +41,7 @@ usage()
    echo "--installdir          qm install directory (default: /usr/share/qm)"
    echo "--rootfs              set rootfs (default: /usr/lib/qm/rootfs)"
    echo "--skip-systemctl      skip systemctl daemon commands (default: false)"
+   echo "--hostname            custom agent hostname to use (default: \$\(hostname\))"
    echo
    echo "Example:"
    echo "  $ sudo ./setup --installdir=/usr/share/qm --rootfs=/usr/lib/qm/rootfs"
@@ -56,7 +59,7 @@ bluechiSetup() {
 	    sed -e 's,^NodeName=,NodeName=qm.,g' "${AGENTCONF}" >  "${ROOTFS}${AGENTCONF}"
 	fi
     fi
-    hostname=$(hostname)
+    hostname=$AGENT_HOSTNAME
     if test -f "${ROOTFS}${AGENTCONF}"; then
 	sed -e "s,^NodeName=qm.$,NodeName=qm.${hostname},g" \
 	    -e "s,^NodeName=$,NodeName=qm.${hostname},g" \
@@ -135,6 +138,10 @@ while [[ $# -gt 0 ]]; do
     --skip-systemctl)
       SYSTEMCTL_SKIP="Y"
       shift
+      ;;
+    --hostname)
+      AGENT_HOSTNAME="${2}"
+      shift 2
       ;;
     --help)
       usage
