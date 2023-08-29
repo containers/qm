@@ -6,6 +6,7 @@
 #
 
 # Globals
+SYSTEMCTL_SKIP="N"
 INSTALLDIR="/usr/share/qm"
 ROOTFS="/usr/lib/qm/rootfs"
 AGENTCONF="/etc/bluechi/agent.conf"
@@ -98,7 +99,7 @@ install() {
     replaceIDs "${ROOTFS}/etc/subgid" containers ${QM_CONTAINER_IDS}
     bluechiSetup "${ROOTFS}"
     
-    if [ -z "$SYSTEMCTL_SKIP" ]; then
+    if [ "$SYSTEMCTL_SKIP" == "N" ]; then
         unshare --mount-proc -R "${ROOTFS}" -m systemctl enable bluechi-agent.service
     else
         systemctl enable bluechi-agent.service
@@ -110,7 +111,7 @@ install() {
 
 # read command line arguments
 opts=$(getopt \
-  --longoptions "$(printf "help,%s:," "${CMDLINE_ARGUMENT_LIST[@]}")" \
+  --longoptions "$(printf "help,skip-systemctl,%s:," "${CMDLINE_ARGUMENT_LIST[@]}")" \
   --name "$(basename "$0")" \
   --options "" \
   -- "$@"
@@ -127,14 +128,13 @@ while [[ $# -gt 0 ]]; do
       INSTALLDIR="${2}"
       shift 2
       ;;
-
     --rootfs)
       ROOTFS="${2}"
       shift 2
       ;;
     --skip-systemctl)
       SYSTEMCTL_SKIP="Y"
-      shift 2
+      shift
       ;;
     --help)
       usage
@@ -159,7 +159,7 @@ case "$1" in
 	;;
     *)
 
-    if [ -z "$SYSTEMCTL_SKIP" ]; then
+    if [ "$SYSTEMCTL_SKIP" == "N" ]; then
 	    if systemctl is-active --quiet "qm.service" ; then
 	    	systemctl stop qm.service
 	    fi
@@ -171,7 +171,7 @@ case "$1" in
 	replaceIDs /etc/subuid containers   ${CONTAINER_IDS}
 	replaceIDs /etc/subgid containers   ${CONTAINER_IDS}
     
-    if [ -z "$SYSTEMCTL_SKIP" ]; then
+    if [ "$SYSTEMCTL_SKIP" == "N" ]; then
 	    systemctl daemon-reload
 	    systemctl start qm.service
     else
