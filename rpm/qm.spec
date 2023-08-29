@@ -71,7 +71,7 @@ Requires(post): libselinux-utils
 %if %{with podman_45}
 Requires: podman >= %{podman_epoch}:4.5
 %endif
-Requires: bluechi-agent
+Requires: hirte-agent
 
 %description
 This package allow users to setup an environment which prevents applications
