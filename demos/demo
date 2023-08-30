@@ -63,6 +63,13 @@ init() {
 }
 
 install() {
+    clear
+    bluechi_snapshot='dnf copr enable mperina/hirte-snapshot -y &> /dev/null'
+    eval "${bluechi_snapshot}"
+    if [ "$?" -ne 0 ]; then
+        echo "fail to enable copr."
+    fi
+
     cmd_install='sudo dnf -y install qm \
 			bluechi bluechi-agent bluechi-ctl \
 			podman container-selinux; \
