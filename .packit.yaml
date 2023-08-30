@@ -7,7 +7,6 @@ upstream_tag_template: v{version}
 
 srpm_build_deps:
   - make
-  - rpkg
 
 actions:
   fix-spec-file:
