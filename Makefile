@@ -24,9 +24,8 @@ selinux: qm.pp
 
 %.pp: %.te
 	mkdir -p tmp; cp qm.* tmp/
-	@source /etc/os-release && \
-	if [ "$$VERSION_ID" -le 9 ] && ( echo "$$ID" | tr '[:upper:]' '[:lower:]' | uniq -u | grep -q -i -E "(centos|rhel|autosd)" ); then \
-                sed -i /user_namespace/d tmp/qm.if; \
+	@if ./build-aux/validations ; then \
+		sed -i /user_namespace/d tmp/qm.if; \
 	fi
 	make -C tmp -f ${DATADIR}/selinux/devel/Makefile $@
 	cp tmp/qm.pp .; rm -rf tmp

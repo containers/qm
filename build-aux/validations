@@ -1,0 +1,12 @@
+#!/bin/bash
+source /etc/os-release
+
+versionid=$(echo $VERSION_ID | awk -F. '{print $1}')
+id_os=$(echo $ID | grep -i -E "(centos|rhel|autosd)")
+
+if [ "${versionid}" -le 9 ] && [ -n ${id_os} ] ; then
+    # the sed command is required for the selinux
+    exit 0
+fi
+
+exit 1
