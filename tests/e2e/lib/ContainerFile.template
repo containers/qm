@@ -15,6 +15,7 @@ RUN dnf install -y \
 	gcc \
 	g++ \
 	gh \
+	go-toolset \
 	fpaste \
 	lcov \
 	hostname \
