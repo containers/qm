@@ -48,6 +48,7 @@ RUN dnf install -y \
 	python3-pip \
 	meson \
 	rpm-build \
+	ruby \
 	sed \
 	vim-enhanced \
 	systemd-devel \
@@ -60,6 +61,7 @@ RUN dnf install -y \
 
 WORKDIR /root
 
+RUN gem install ruby-dbus
 RUN dnf -y copr enable mperina/hirte-snapshot centos-stream-9
 RUN dnf -y install bluechi bluechi-agent bluechi-ctl
 RUN alternatives --install /usr/bin/python python /usr/bin/python3 1
