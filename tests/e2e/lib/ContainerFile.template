@@ -12,6 +12,8 @@ RUN dnf install -y \
 	clang-tools-extra \
 	codespell \
 	bzip2 \
+	cargo \
+	rust \
 	gcc \
 	g++ \
 	gh \
