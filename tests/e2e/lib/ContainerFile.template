@@ -15,6 +15,7 @@ RUN dnf install -y \
 	cargo \
 	rust \
 	gcc \
+	dbus-devel \ 
 	g++ \
 	gh \
 	go-toolset \
