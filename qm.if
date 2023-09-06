@@ -446,6 +446,7 @@ template(`qm_domain_template',`
 	allow $1_t $1_container_domain:process { dyntransition transition };
 	allow $1_t $1_container_domain:process2 { nnp_transition nosuid_transition };
 	allow $1_t $1_container_domain:tun_socket relabelfrom;
+	allow $1_container_domain $1_t:unix_dgram_socket sendto;
 
 	allow $1_container_domain container_runtime_t:unix_dgram_socket sendto;
 	allow $1_container_domain container_runtime_tmpfs_t:dir mounton;
