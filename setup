@@ -105,9 +105,9 @@ install() {
     if [ "$SYSTEMCTL_SKIP" == "N" ]; then
         unshare --mount-proc -R "${ROOTFS}" -m systemctl enable bluechi-agent.service
     else
-        ln -s \
-            ${ROOTFS}/usr/lib/systemd/system/bluechi-agent.service \
-            ${ROOTFS}/etc/systemd/system/multi-user.target.wants/bluechi-agent.service
+        chroot $ROOTFS ln -fs \
+            /usr/lib/systemd/system/bluechi-agent.service \
+            /etc/systemd/system/multi-user.target.wants/bluechi-agent.service
     fi
 
     storage "${ROOTFS}"
