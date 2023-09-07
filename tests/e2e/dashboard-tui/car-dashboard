@@ -374,7 +374,7 @@ class Dashboard(object):
             header_message = (
                 EMOJI_STOP_SIGN + " Dashboard: [b red] Attention: "
                 "The system has a CRITICAL issue. MOVING TO "
-                "GUARD HAIL! " + EMOJI_STOP_SIGN
+                "GUARD RAIL! " + EMOJI_STOP_SIGN
             )
 
         elif overall_car_state == ServiceState.ALLGOOD:
