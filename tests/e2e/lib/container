@@ -36,23 +36,20 @@ create_container() {
     container_name="${2}"
     container_tag="${3}"
 
-    # Execute build with tag for latest
-    eval "$(podman build \
-            -q \
-            -f "${container_file}" \
-	    --tag "${container_tag}" 1> /dev/null
-    )"
-    if_error_exit "create_container: \
+    image_name=$(podman images \
+            "${container_tag}" -n
+    )
+    if [ -z "${image_name}"]; then
+      # Execute build with tag for latest
+      eval "$(podman build \
+              -q \
+              -f "${container_file}" \
+              --tag "${container_tag}" 1> /dev/null
+      )"
+      if_error_exit "create_container: \
 podman build failed! \
 file: ${container_file} tag: ${container_tag}"
-
-    # Get the image id
-    image_name=$(podman images \
-	    "${container_name}" -n
-    )
-    if_error_exit "create_container: \
-podman images failed! name: ${container_name}"
-
+    fi
     IMAGE_ID=$(echo "${image_name}" | awk '{print $3}' | uniq)
 
     # Execute the container
@@ -120,7 +117,7 @@ create_qm_node() {
         create_container \
                 ContainerFile.node"${nodeID}" \
                 "node${nodeID}" \
-		"node${nodeID}:latest"
+		"node:latest" \
 
 	# qm - after the setup, reload daemon and start qm
 	eval "$(podman exec \
