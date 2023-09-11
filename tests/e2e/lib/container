@@ -49,6 +49,9 @@ create_container() {
       if_error_exit "create_container: \
 podman build failed! \
 file: ${container_file} tag: ${container_tag}"
+      image_name=$(podman images \
+         "${container_tag}" -n
+      )
     fi
     IMAGE_ID=$(echo "${image_name}" | awk '{print $3}' | uniq)
 
