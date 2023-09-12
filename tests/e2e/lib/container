@@ -112,6 +112,10 @@ create_qm_node() {
                 ' /etc/bluechi/agent.conf' >> ContainerFile.node"${nodeID}"
         echo "RUN systemctl enable bluechi-agent &> /dev/null" >> ContainerFile.node"${nodeID}"
 
+        echo "RUN mkdir -p /usr/lib/qm/rootfs/root/tests/FFI" >> ContainerFile.node"${nodeID}"
+        echo "COPY tools/FFI/memory/QM/90_percent_memory_eat.c /usr/lib/qm/rootfs/root/tests/FFI" >> ContainerFile.node"${nodeID}"
+        echo "RUN cd /usr/lib/qm/rootfs/root/tests/FFI && gcc -o 90_percent_memory_eat 90_percent_memory_eat.c" >> ContainerFile.node"${nodeID}"
+
 	# Add systemd as CMD
         echo "CMD [\"/usr/lib/systemd/systemd\"]" >> ContainerFile.node"${nodeID}"
 
@@ -192,8 +196,9 @@ create_qm_node() {
 create_asil_node() {
     # Creates the control container - a.k.a ASIL
     info_message "Creating container \033[92m${CONTROL_CONTAINER_NAME}\033[0m [\033[92mASIL mode\033[0m]. It might take some time..."
+    cp ./lib/ContainerFile.template ContainerFile.ASIL
     create_container \
-        "./lib/ContainerFile.template" \
+        "./ContainerFile.ASIL" \
         "${CONTROL_CONTAINER_NAME}" \
         "${TAG_CONTROL_MACHINE}"
 }

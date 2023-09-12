@@ -37,6 +37,7 @@ export BUILD_QM_FROM_GH_URL=""
 export BUILD_BLUECHI_FROM_GH_URL=""
 export BRANCH_BLUECHI=""
 export BRANCH_QM=""
+export FFI_TESTS=""
 
 # If no additional nodes are required, use 1
 if [ -z "${NUMBER_OF_NODES}" ]; then
@@ -56,6 +57,7 @@ ARGUMENT_LIST=(
   "build-qm-from-gh-url"
   "branch-qm"
   "build-bluechi-from-gh-url"
+  "ffi-tests",
   "branch-bluechi"
   "skip-tests"
   "number-of-nodes"
@@ -81,6 +83,9 @@ usage() {
 	echo -e "\tSpecify which branch the GitHub repo will be set. Requires --build-bluechi-from-gh-url"
 	echo "--skip-tests"
 	echo -e "\tSpecify to avoid testing. --skip-tests"
+	echo
+	echo "--ffi-tests"
+	echo -e "\tFredom From Interference (FFI) tests."
 	echo
 	echo "Examples:"
 	echo
@@ -132,6 +137,11 @@ while [[ $# -gt 0 ]]; do
           BRANCH_BLUECHI="main"
       fi
       BUILD_BLUECHI_FROM_GH_URL="${2}"
+      shift 2
+      ;;
+
+    --ffi-tests)
+      FFI_TESTS="${2}"
       shift 2
       ;;
 

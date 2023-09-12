@@ -110,6 +110,10 @@ RUN sed -e '/^#ManagerPort=/s/^#//g' \
 	-e '/#LogTarget/s/^#//' \
 	-e "s/^#AllowedNodeNames=/AllowedNodeNames=control,node1/" \
 	-i /etc/bluechi/bluechi.conf
+
+RUN mkdir -p /root/tests/FFI
+COPY tools/FFI/memory/ASIL/20_percent_memory_eat.c /root/tests/FFI
+RUN cd /root/tests/FFI && gcc -o 20_percent_memory_eat 20_percent_memory_eat.c
 # [end] CONTROL - settings
 
 RUN echo 'Foobar!' | passwd --stdin root
