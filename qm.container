@@ -13,15 +13,18 @@ OOMScoreAdjust=500
 Restart=always
 Slice=QM.slice
 Environment=ROOTFS=/usr/lib/qm/rootfs
+LimitNOFILE=65536
+TasksMax=50%
 
 [Container]
 AddCapability=all
+DropCapability=sys_resource
 AddDevice=-/dev/kvm
 AddDevice=-/dev/fuse
 ContainerName=qm
 Exec=/sbin/init
 Network=host
-PodmanArgs=--security-opt label=nested --security-opt unmask=all
+PodmanArgs=--pids-limit=-1 --security-opt label=nested --security-opt unmask=all
 ReadOnly=true
 Rootfs=${ROOTFS}
 SecurityLabelFileType=qm_file_t
