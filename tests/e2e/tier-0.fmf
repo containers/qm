@@ -1,4 +1,5 @@
 summary: Tier 0 - QM Interconnect through bluechi
+
 discover:
     how: fmf
     filter: tier:0
@@ -6,8 +7,8 @@ discover:
 provision:
    how: local
 
-when: distro == centos-stream-9
-prepare:
+adjust:
+   prepare+:
       - name: Prepare Repos
         how: shell
         script: |
@@ -18,16 +19,14 @@ prepare:
       - name: install repos
         how: install
         package:
-          - podman
+           - podman
 
       - name: Set QM env
         how: shell
         script: |
            cd tests/e2e
            ./run-test-e2e --skip-tests=yes
-
-context:
-    distro: qm
+   when: distro == centos-stream-9 or distro == fedora
 
 execute:
     how: tmt
