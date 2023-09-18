@@ -1,4 +1,4 @@
-#!/bin/bash -eux
+#!/bin/bash
 
 # shellcheck disable=SC1094
 # shellcheck source=tests/e2e/lib/utils

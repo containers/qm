@@ -137,7 +137,7 @@ setup_qm_services() {
   # Curl files into here,
   # Fix: default setup:main should be removed on next qm release
   /usr/share/qm/setup --hostname localrootfs
-  cat > /etc/bluechi/controller.conf.d/00-default.conf << 'EOF'
+  cat > /etc/bluechi/controller.conf << 'EOF'
 [bluechi-controller]
 AllowedNodeNames=qm.localrootfs,localrootfs
 ManagerPort=842
