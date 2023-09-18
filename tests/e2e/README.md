@@ -141,6 +141,7 @@ Refer [FMF](https://fmf.readthedocs.io/en/stable) for tmt test metadata specific
 ### Run TMT tests framework locally
 
 #### Setup device under test
+
 - Install required packages
 
 ``` bash
@@ -169,7 +170,8 @@ virt-customize -a /tmp/CentOS-Stream-GenericCloud-9-latest.x86_64.qcow2 --root-p
 
 ``` bash
 /usr/bin/qemu-system-x86_64 -nographic -smp 12 -enable-kvm -m 2G -machine q35 -cpu host -device virtio-net-pci,netdev=n0,mac=FE:30:26:a6:91:2d -netdev user,id=n0,net=10.0.2.0/24,hostfwd=tcp::2222-:22 -drive file=/tmp/CentOS-Stream-GenericCloud-9-latest.x86_64.qcow2,index=0,media=disk,format=qcow2,if=virtio,snapshot=off
-``` 
+```
+
 **To exit from qemu**: `CTRL-a c` and then `quit` into the qemu terminal
 
 #### Install TMT locally (python)
@@ -201,5 +203,24 @@ tmt run plans -n tests/e2e/tier-0
 
 or connecting to VM:
 
-tmt run -a provision --how connect -u root -p ${PASSWORD} -P 2222 -g localhost plans -n /tests/e2e/tier-0
+tmt run -c distro=centos-stream-9 -a \
+        provision --how connect -u root -p ${PASSWORD} -P ${PORT} -g localhost \
+        plans -n /tests/e2e/tier-0
+```
+
+##### Other tmt configurations
+
+In case of running against prepared image, such as AutoSD, use the following tmt comman
+Where there is already running:
+
+- qm container with bluechi agent running under systemd.
+
+- host is running bluechi and bluechi agent.
+
+Override the context distro and CONTROL_CONTAINER_NAME and NODES_FOR_TESTING_ARR
+
+``` bash
+tmt  -c distro=automotive-stream-distribution-9 run -e CONTROL_CONTAINER_NAME="host" \
+     -e NODES_FOR_TESTING_ARR="\"host qm.host\""  -a \
+     provision --how connect -u root -p ${PASSWORD} -P {PORT} -g localhost plans -n /tests/e2e/tier-0
 ```
