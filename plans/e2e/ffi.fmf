@@ -21,7 +21,7 @@ adjust:
         script: |
            cd tests/e2e
            ./set-ffi-env-e2e --qm-setup-from-gh-url=https://raw.githubusercontent.com/containers
-   when: scenario == ffi
+   when: scenario == ffi and distro == centos-stream-9, fedora
 
 execute:
     how: tmt

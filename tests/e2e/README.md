@@ -203,7 +203,7 @@ tmt run plans -n /plans/e2e/tier-0
 
 or connecting to VM:
 
-tmt run -c distro=centos-stream-9 -a \
+tmt -c distro=centos-stream-9 run -a \
         provision --how connect -u root -p ${PASSWORD} -P ${PORT} -g localhost \
         plans -n /plans/e2e/tier-0
 ```
