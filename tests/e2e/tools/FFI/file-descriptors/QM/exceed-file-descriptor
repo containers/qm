@@ -1,0 +1,30 @@
+#!/usr/bin/python3
+
+import resource
+import os
+
+# Get the soft and hard limits for file descriptors
+soft_limit, hard_limit = resource.getrlimit(resource.RLIMIT_NOFILE)
+
+fd_limit = soft_limit
+
+description = "Description: Exceed the number " \
+    "of file descriptions (fd) in the QM system"
+
+expect_result = "Result: Should not affect ASIL" \
+    " environment when achieving \"Too many files opened\""
+
+print(f"\n{description}")
+print(f"{expect_result}\n")
+
+print(f"- Detected the number of fd in the system: {soft_limit} (soft limit)")
+print("- Trying to open as many file descriptors as possible...")
+
+# Attempt to open files until we reach/exceed the limit
+file_descriptors = []
+
+while len(file_descriptors) < fd_limit:
+    fd = os.open('/dev/null', os.O_RDONLY)
+    file_descriptors.append(fd)
+
+print(f"Opened {len(file_descriptors)} file descriptors.")
