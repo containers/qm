@@ -15,7 +15,7 @@ RUN dnf install -y \
 	cargo \
 	rust \
 	gcc \
-	dbus-devel \ 
+	dbus-devel \
 	g++ \
 	gh \
 	go-toolset \
@@ -95,8 +95,8 @@ RUN npm install markdownlint-cli2 --global
 
 # Upgrade the current bluechi using the new rpm packages but exclude src.rpm
 # [manually install bluechi] RUN find . -not -name *.src* -name *.rpm | xargs dnf install -y
-# RUN cp /usr/share/bluechi/config/bluechi.conf /etc/bluechi/bluechi.conf.d/bluechi.conf
-# [manually install bluechi] RUN cp /usr/share/bluechi/config/bluechi.conf /etc/bluechi/bluechi.conf
+# RUN cp /usr/share/bluechi/config/controller.conf /etc/bluechi/controller.conf.d/controller.conf
+# [manually install bluechi] RUN cp /usr/share/bluechi/config/controller.conf /etc/bluechi/controller.conf
 
 # [start] CONTROL - settings
 # Setting configuration, uncommenting:
@@ -104,12 +104,12 @@ RUN npm install markdownlint-cli2 --global
 #	- Use journal for logging
 #	- Set AllowedNodeNames as control and node1
 # TODO: remove the static node1 here, dynamic by rune2e script via sed
-RUN cp /usr/share/bluechi/config/bluechi.conf /etc/bluechi/
+RUN cp /usr/share/bluechi/config/controller.conf /etc/bluechi/
 RUN cp /usr/share/bluechi-agent/config/agent.conf /etc/bluechi/
 RUN sed -e '/^#ManagerPort=/s/^#//g' \
 	-e '/#LogTarget/s/^#//' \
 	-e "s/^#AllowedNodeNames=/AllowedNodeNames=control,node1/" \
-	-i /etc/bluechi/bluechi.conf
+	-i /etc/bluechi/controller.conf
 # [end] CONTROL - settings
 
 RUN echo 'Foobar!' | passwd --stdin root
@@ -123,7 +123,7 @@ RUN IPv4_CONTROL="$(ip -brief address show eth0 | awk '{print $3}' | awk -F/ '{p
 # [end] CONTROL - agent settings
 
 # [start] CONTROL - enable services and systemd
-RUN systemctl enable bluechi &> /dev/null
+RUN systemctl enable bluechi-controller &> /dev/null
 RUN systemctl enable bluechi-agent &> /dev/null
 CMD ["/usr/lib/systemd/systemd"]
 # [end] CONTROL - enable services and systemd
