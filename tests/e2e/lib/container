@@ -177,16 +177,16 @@ create_qm_node() {
     # CONTROL NODE: append QM node into /etc/bluechi/agent.conf.din the control node the new qm node name
     eval "$(podman exec "${CONTROL_CONTAINER_NAME}" \
 		sed -i '/^AllowedNodeNames=/ s/$/,'"${AllowedNodeNames}"'/' \
-		/etc/bluechi/bluechi.conf
+		/etc/bluechi/controller.conf
     )"
-    if_error_exit "control node: unable to sed AllowedNodeName in bluechi.conf"
+    if_error_exit "control node: unable to sed AllowedNodeName in controller.conf"
 
-    # restart the bluechi service
+    # restart the bluechi-controller service
     eval "$(podman exec \
         "${CONTROL_CONTAINER_NAME}" \
-	systemctl restart bluechi
+	systemctl restart bluechi-controller
     )"
-    if_error_exit "control node: unable to restart bluechi service"
+    if_error_exit "control node: unable to restart bluechi-controller service"
 }
 
 create_asil_node() {
