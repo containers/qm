@@ -53,109 +53,110 @@ fi
 
 # ====================== Start - int main {} ;-)
 ARGUMENT_LIST=(
-  "build-qm-from-gh-url"
-  "branch-qm"
-  "build-bluechi-from-gh-url"
-  "branch-bluechi"
-  "skip-tests"
-  "number-of-nodes"
+    "build-qm-from-gh-url"
+    "branch-qm"
+    "build-bluechi-from-gh-url"
+    "branch-bluechi"
+    "skip-tests"
+    "number-of-nodes"
 )
 
 usage() {
-	echo "Usage: $0 [OPTIONS]"
-	echo
-	echo "--help"
-        echo -e "\tThis message"
-	echo
-	echo "--build-qm-from-gh-url"
-	echo -e "\tBuild QM from a specific GitHub URL, useful for testing new features"
-	echo "--branch-qm"
-	echo -e "\tSpecify which branch the GitHub repo will be set. Requires --build-qm-from-gh-url"
-	echo
-	echo "--number-of-nodes"
-	echo -e "\tSpecify number of nodes. (default 1)"
-	echo
-	echo "--build-bluechi-from-gh-url"
-	echo -e "\tBuild BLUECHI from a specific GitHub URL, useful for testing new features"
-	echo "--branch-bluechi"
-	echo -e "\tSpecify which branch the GitHub repo will be set. Requires --build-bluechi-from-gh-url"
-	echo "--skip-tests"
-	echo -e "\tSpecify to avoid testing. --skip-tests"
-	echo
-	echo "Examples:"
-	echo
-	echo -e "\tNo args, it will install latest qm and bluechi from copr rpm repository"
-	echo -e "\t\t${0}"
-	echo
-	echo -e "\tBuild qm and bluechi from a specific github url and select the branches"
-	echo -e "\t\t${0} \\"
-	echo -e "\t\t\t--branch-qm=superfeature \\"
-	echo -e	"\t\t\t--build-qm-from-gh-url=https://github.com/MYUSER/qm.git \\"
-	echo -e "\t\t\t--branch-bluechi=superfeature"
-	echo -e	"\t\t\t--build-bluechi-from-gh-url=https://github.com/MYUSER/bluechi.git \\"
-	echo
-	exit 0
+    echo "Usage: $0 [OPTIONS]"
+    echo
+    echo "--help"
+    echo -e "\tThis message"
+    echo
+    echo "--build-qm-from-gh-url"
+    echo -e "\tBuild QM from a specific GitHub URL, useful for testing new features"
+    echo "--branch-qm"
+    echo -e "\tSpecify which branch the GitHub repo will be set. Requires --build-qm-from-gh-url"
+    echo
+    echo "--number-of-nodes"
+    echo -e "\tSpecify number of nodes. (default 1)"
+    echo
+    echo "--build-bluechi-from-gh-url"
+    echo -e "\tBuild BLUECHI from a specific GitHub URL, useful for testing new features"
+    echo "--branch-bluechi"
+    echo -e "\tSpecify which branch the GitHub repo will be set. Requires --build-bluechi-from-gh-url"
+    echo "--skip-tests"
+    echo -e "\tSpecify to avoid testing. --skip-tests"
+    echo
+    echo "Examples:"
+    echo
+    echo -e "\tNo args, it will install latest qm and bluechi from copr rpm repository"
+    echo -e "\t\t${0}"
+    echo
+    echo -e "\tBuild qm and bluechi from a specific github url and select the branches"
+    echo -e "\t\t${0} \\"
+    echo -e "\t\t\t--branch-qm=superfeature \\"
+    echo -e "\t\t\t--build-qm-from-gh-url=https://github.com/MYUSER/qm.git \\"
+    echo -e "\t\t\t--branch-bluechi=superfeature"
+    echo -e "\t\t\t--build-bluechi-from-gh-url=https://github.com/MYUSER/bluechi.git \\"
+    echo
+    exit 0
 }
 
 # read arguments
 opts=$(getopt \
-  --longoptions "$(printf "help,%s:," "${ARGUMENT_LIST[@]}")" \
-  --name "$(basename "$0")" \
-  --options "" \
-  -- "$@"
+    --longoptions "$(printf "help,%s:," "${ARGUMENT_LIST[@]}")" \
+    --name "$(basename "$0")" \
+    --options "" \
+    -- "$@"
 )
 
 eval set --"${opts}"
 
 while [[ $# -gt 0 ]]; do
-  case "$1" in
-    --branch-qm)
-      BRANCH_QM="${2}"
-      shift 2
-      ;;
+    case "$1" in
+        --branch-qm)
+            BRANCH_QM="${2}"
+            shift 2
+            ;;
 
-    --branch-bluechi)
-      BRANCH_BLUECHI="${2}"
-      shift 2
+        --branch-bluechi)
+            BRANCH_BLUECHI="${2}"
+            shift 2
+            ;;
 
-      ;;
-    --build-qm-from-gh-url)
-      if [ -z "${BRANCH_QM}" ]; then
-          BRANCH_QM="main"
-      fi
-      BUILD_QM_FROM_GH_URL="${2}"
-      shift 2
-      ;;
+        --build-qm-from-gh-url)
+            if [ -z "${BRANCH_QM}" ]; then
+                BRANCH_QM="main"
+            fi
+            BUILD_QM_FROM_GH_URL="${2}"
+            shift 2
+            ;;
 
-    --build-bluechi-from-gh-url)
-      if [ -z "${BRANCH_BLUECHI}" ]; then
-          BRANCH_BLUECHI="main"
-      fi
-      BUILD_BLUECHI_FROM_GH_URL="${2}"
-      shift 2
-      ;;
+        --build-bluechi-from-gh-url)
+            if [ -z "${BRANCH_BLUECHI}" ]; then
+                BRANCH_BLUECHI="main"
+            fi
+            BUILD_BLUECHI_FROM_GH_URL="${2}"
+            shift 2
+            ;;
 
-    --skip-tests)
-      SKIP_TESTS="${2}"
-      shift 2
-      ;;
+        --skip-tests)
+            SKIP_TESTS="${2}"
+            shift 2
+            ;;
 
-    --number-of-nodes)
-      NUMBER_OF_NODES="${2}"
+        --number-of-nodes)
+            NUMBER_OF_NODES="${2}"
 
-      # avoid "too many files opened"
-      sysctl fs.inotify.max_user_instances=$((${2}*100)) 1> /dev/null
+            # avoid "too many files opened"
+            sysctl fs.inotify.max_user_instances=$((${2}*100)) 1> /dev/null
 
-      shift 2
-      ;;
+            shift 2
+            ;;
 
-    --help)
-      usage
-      ;;
-    *)
-      break
-      ;;
-  esac
+        --help)
+            usage
+            ;;
+
+        *)
+            break
+            ;;
+    esac
 done
 
 info_message "Starting setup"
@@ -222,9 +223,9 @@ sleep "${WAIT_BLUECHI_SERVER_BE_READY_IN_SEC}"
 # see: https://github.com/containers/bluechi/issues/281
 
 if [ "${SKIP_TESTS}" == "yes" ]; then
-  info_message "skip tests"
-  info_message "=============================="
-  exit 0
+    info_message "skip tests"
+    info_message "=============================="
+    exit 0
 fi
 
 echo
