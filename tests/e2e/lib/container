@@ -17,8 +17,9 @@
 # along with this program; If not, see <http://www.gnu.org/licenses/>.
 
 get_ip_container() {
-    container_name="${1}"
-    container_interface="${2}"
+    local container_name="${1}"
+    local container_interface="${2}"
+    local ip_output
 
     ip_output=$(podman exec \
             "${container_name}" \
@@ -32,9 +33,10 @@ get_ip_container() {
 }
 
 create_container() {
-    container_file="${1}"
-    container_name="${2}"
-    container_tag="${3}"
+    local container_file="${1}"
+    local container_name="${2}"
+    local container_tag="${3}"
+    local image_name
 
     image_name=$(podman images \
             "${container_tag}" -n
@@ -70,7 +72,7 @@ imageID: ${IMAGE_ID}"
 }
 
 setup_node() {
-        nodeID="${1}"
+        local nodeID="${1}"
 
         # copy control as template to node${number}
         cp ./lib/ContainerFile.template ContainerFile.node"${nodeID}"
