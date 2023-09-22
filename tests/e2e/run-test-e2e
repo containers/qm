@@ -92,7 +92,7 @@ Examples:
 		./run-test-e2e \\
 			--branch-qm=superfeature \\
 			--build-qm-from-gh-url=https://github.com/MYUSER/qm.git \\
-			--branch-bluechi=superfeature
+			--branch-bluechi=superfeature \\
 			--build-bluechi-from-gh-url=https://github.com/MYUSER/bluechi.git \\
 
 EOF
