@@ -30,90 +30,90 @@ create_stub_systemd_srv() {
 
     for srv in "${services_to_be_stub[@]}"
     do
-	if [ "${srv}" = "qm" ]; then
-	     continue
-	fi
+        if [ "${srv}" = "qm" ]; then
+             continue
+        fi
 
         if [ -n "${creates_on_qm_node}" ]; then
             info_message "Creating stub systemd service: \033[92mcontainer-${srv}\033[0m in \033[92m${container_target}\033[0m and moving it to container \033[92mqm\033[0m inside \033[92m${container_target}\033[0m"
-	else
+        else
             info_message "Creating stub systemd service: \033[92mcontainer-${srv}\033[0m in container \033[92m${container_target}\033[0m. It might take some time..."
-	fi
+        fi
 
         # create stub pod for the service
         cmd_create_pod="podman exec ${container_target} \
 podman create --name ${srv} \
 ${REGISTRY_UBI8_MINIMAL} \
 sleep infinity"
-	#echo "${cmd_create_pod}"
-	eval "${cmd_create_pod}" &> /dev/null
-	if_error_exit "cannot create container ${srv} in target ${container_target}"
+        #echo "${cmd_create_pod}"
+        eval "${cmd_create_pod}" &> /dev/null
+        if_error_exit "cannot create container ${srv} in target ${container_target}"
 
         if [ -n "${creates_on_qm_node}" ]; then
-	    # FIXME: podman generate systemd --files generates the systemd file in the dir it's running. As we are running in a read-only FS in QM container, we must generate
-	    # in node1 and copy later to /etc/systemd/system
-	    cmd_gen_systemd_srv="podman exec ${container_target} \
+            # FIXME: podman generate systemd --files generates the systemd file in the dir it's running. As we are running in a read-only FS in QM container, we must generate
+            # in node1 and copy later to /etc/systemd/system
+            cmd_gen_systemd_srv="podman exec ${container_target} \
 podman generate systemd \
 --new \
 --files \
 --name ${srv}"
-	    #echo "${cmd_gen_systemd_srv}"
-	    eval "${cmd_gen_systemd_srv}" &> /dev/null
+            #echo "${cmd_gen_systemd_srv}"
+            eval "${cmd_gen_systemd_srv}" &> /dev/null
             if_error_exit "cannot generate systemd srv: ${srv} in container ${container_target}"
 
- 	    cmd_cp_systemd_srv="podman exec ${container_target} \
+            cmd_cp_systemd_srv="podman exec ${container_target} \
 podman \
 cp \
 container-${srv}.service \
 qm:/etc/systemd/system"
-	    #echo "${cmd_cp_systemd_srv}"
-	    eval "${cmd_cp_systemd_srv}" &> /dev/null
+            #echo "${cmd_cp_systemd_srv}"
+            eval "${cmd_cp_systemd_srv}" &> /dev/null
             if_error_exit "cannot copy container-${srv} service to qm container"
 
-	    cmd_rm_systemd_srv="podman exec ${container_target} \
+            cmd_rm_systemd_srv="podman exec ${container_target} \
 rm \
 container-${srv}.service"
-	    #echo "${cmd_rm_systemd_srv}"
-	    eval "${cmd_rm_systemd_srv}" &> /dev/null
+            #echo "${cmd_rm_systemd_srv}"
+            eval "${cmd_rm_systemd_srv}" &> /dev/null
             if_error_exit "cannot remove temporary systemd service generated"
-	else
+        else
             # generate systemd service from the stub just created (reminder: inside the pod)
-   	    cmd_generate_systemd_srv="podman exec ${container_target} \
+            cmd_generate_systemd_srv="podman exec ${container_target} \
 podman generate systemd \
 --new \
 --files \
 --name ${srv}"
-	    #echo "${cmd_generate_systemd_srv}"
-	    eval "${cmd_generate_systemd_srv}" &> /dev/null
+            #echo "${cmd_generate_systemd_srv}"
+            eval "${cmd_generate_systemd_srv}" &> /dev/null
             if_error_exit "cannot generate systemd service ${srv} in ${container_target}"
             # move the new systemd file to /etc/systemd/system
-	    cmd_move_systemd_files="podman exec ${container_target} \
+            cmd_move_systemd_files="podman exec ${container_target} \
 ${command_on_qm_node} \
 mv container-${srv}.service \
 /usr/lib/systemd/system"
             #echo "${cmd_move_systemd_files}"
-	    eval "${cmd_move_systemd_files}" &> /dev/null
+            eval "${cmd_move_systemd_files}" &> /dev/null
             if_error_exit "cannot move ${srv}-service to systemd dir in ${container_target}"
-	fi
+        fi
 
         # enable the new systemd service (inside pod)
-	cmd_enable_systemd_srv="podman exec ${container_target} \
+        cmd_enable_systemd_srv="podman exec ${container_target} \
 ${command_on_qm_node} \
 systemctl \
 enable \
 container-${srv}"
-	#echo "${cmd_enable_systemd_srv}"
-	eval "${cmd_enable_systemd_srv}" &> /dev/null
+        #echo "${cmd_enable_systemd_srv}"
+        eval "${cmd_enable_systemd_srv}" &> /dev/null
         if_error_exit "cannot enable ${srv}-service in ${container_target}"
 
         # start the service (inside pod)
-	cmd_start_systemd_srv="podman exec ${container_target} \
+        cmd_start_systemd_srv="podman exec ${container_target} \
 ${command_on_qm_node} \
 systemctl \
 start \
 container-${srv}"
-	#echo "${cmd_start_systemd_srv}"
-	eval "${cmd_start_systemd_srv}" &> /dev/null
+        #echo "${cmd_start_systemd_srv}"
+        eval "${cmd_start_systemd_srv}" &> /dev/null
         container_stat=$(systemctl is-active container-"${srv}")
         if [[ "${container_stat}" != "activating" ]]; then
            sleep 5
