@@ -62,38 +62,40 @@ ARGUMENT_LIST=(
 )
 
 usage() {
-    echo "Usage: $0 [OPTIONS]"
-    echo
-    echo "--help"
-    echo -e "\tThis message"
-    echo
-    echo "--build-qm-from-gh-url"
-    echo -e "\tBuild QM from a specific GitHub URL, useful for testing new features"
-    echo "--branch-qm"
-    echo -e "\tSpecify which branch the GitHub repo will be set. Requires --build-qm-from-gh-url"
-    echo
-    echo "--number-of-nodes"
-    echo -e "\tSpecify number of nodes. (default 1)"
-    echo
-    echo "--build-bluechi-from-gh-url"
-    echo -e "\tBuild BLUECHI from a specific GitHub URL, useful for testing new features"
-    echo "--branch-bluechi"
-    echo -e "\tSpecify which branch the GitHub repo will be set. Requires --build-bluechi-from-gh-url"
-    echo "--skip-tests"
-    echo -e "\tSpecify to avoid testing. --skip-tests"
-    echo
-    echo "Examples:"
-    echo
-    echo -e "\tNo args, it will install latest qm and bluechi from copr rpm repository"
-    echo -e "\t\t${0}"
-    echo
-    echo -e "\tBuild qm and bluechi from a specific github url and select the branches"
-    echo -e "\t\t${0} \\"
-    echo -e "\t\t\t--branch-qm=superfeature \\"
-    echo -e "\t\t\t--build-qm-from-gh-url=https://github.com/MYUSER/qm.git \\"
-    echo -e "\t\t\t--branch-bluechi=superfeature"
-    echo -e "\t\t\t--build-bluechi-from-gh-url=https://github.com/MYUSER/bluechi.git \\"
-    echo
+cat <<EOF
+Usage: ./run-test-e2e [OPTIONS]
+
+--help
+	This message
+
+--build-qm-from-gh-url
+	Build QM from a specific GitHub URL, useful for testing new features
+--branch-qm
+	Specify which branch the GitHub repo will be set. Requires --build-qm-from-gh-url
+
+--number-of-nodes
+	Specify number of nodes. (default 1)
+
+--build-bluechi-from-gh-url
+	Build BLUECHI from a specific GitHub URL, useful for testing new features
+--branch-bluechi
+	Specify which branch the GitHub repo will be set. Requires --build-bluechi-from-gh-url
+--skip-tests
+	Specify to avoid testing. --skip-tests
+
+Examples:
+
+	No args, it will install latest qm and bluechi from copr rpm repository
+		./run-test-e2e
+
+	Build qm and bluechi from a specific github url and select the branches
+		./run-test-e2e \\
+			--branch-qm=superfeature \\
+			--build-qm-from-gh-url=https://github.com/MYUSER/qm.git \\
+			--branch-bluechi=superfeature
+			--build-bluechi-from-gh-url=https://github.com/MYUSER/bluechi.git \\
+
+EOF
     exit 0
 }
 
