@@ -21,12 +21,12 @@ get_ip_container() {
     container_interface="${2}"
 
     ip_output=$(podman exec \
-	    "${container_name}" \
-	    ip \
-	    --brief \
-	    address \
-	    show \
-	    "${container_interface}") || exit 1
+            "${container_name}" \
+            ip \
+            --brief \
+            address \
+            show \
+            "${container_interface}") || exit 1
 
     echo "${ip_output}" | awk '{print $3}' | awk -F/ '{print $1}'
 }
@@ -88,8 +88,8 @@ create_qm_node() {
     for nodeID in $(seq 1 "${NUMBER_OF_NODES}") ;
     do
         # Generates the Container.node${ID}
-	eval "IP_CONTROL_MACHINE=\$(get_ip_container \${CONTROL_CONTAINER_NAME} \${NET_INTERFACE_IP_CONTROL})"
-	if_error_exit "unable to get ip from ${CONTROL_CONTAINER_NAME}"
+        eval "IP_CONTROL_MACHINE=\$(get_ip_container \${CONTROL_CONTAINER_NAME} \${NET_INTERFACE_IP_CONTROL})"
+        if_error_exit "unable to get ip from ${CONTROL_CONTAINER_NAME}"
 
         setup_node \
             "${nodeID}" \
@@ -98,21 +98,21 @@ create_qm_node() {
         # Add final instructions
         echo "RUN dnf install qm -y &> /dev/null" >> ContainerFile.node"${nodeID}"
 
-	# Execute qm setup
-	echo "RUN /usr/share/qm/setup 2>&1 > /tmp/qm-setup.log || echo "QM setup failed, please check /tmp/qm-setup.log."" >> ContainerFile.node"${nodeID}"
+        # Execute qm setup
+        echo "RUN /usr/share/qm/setup 2>&1 > /tmp/qm-setup.log || echo "QM setup failed, please check /tmp/qm-setup.log."" >> ContainerFile.node"${nodeID}"
 
-	# HACK: add /dev/fuse to qm.container. It will allow a container set limits inside
-	# another container.
-	echo 'RUN echo "AddDevice=-/dev/fuse" >> /usr/share/containers/systemd/qm.container' >> ContainerFile.node"${nodeID}"
+        # HACK: add /dev/fuse to qm.container. It will allow a container set limits inside
+        # another container.
+        echo 'RUN echo "AddDevice=-/dev/fuse" >> /usr/share/containers/systemd/qm.container' >> ContainerFile.node"${nodeID}"
 
-	# Enable bluechi-agent
-	echo 'RUN cp /usr/share/bluechi-agent/config/*.conf /etc/bluechi/' >> ContainerFile.node"${nodeID}"
+        # Enable bluechi-agent
+        echo 'RUN cp /usr/share/bluechi-agent/config/*.conf /etc/bluechi/' >> ContainerFile.node"${nodeID}"
         echo 'RUN sed -i -e "s/^#NodeName=/NodeName='"node${nodeID}/"\" \
                 '-e "s/^#ManagerHost=/ManagerHost='"${IP_CONTROL_MACHINE}/"\" \
                 ' /etc/bluechi/agent.conf' >> ContainerFile.node"${nodeID}"
         echo "RUN systemctl enable bluechi-agent &> /dev/null" >> ContainerFile.node"${nodeID}"
 
-	# Add systemd as CMD
+        # Add systemd as CMD
         echo "CMD [\"/usr/lib/systemd/systemd\"]" >> ContainerFile.node"${nodeID}"
 
         # create the container ${nodeID}
@@ -120,55 +120,55 @@ create_qm_node() {
         create_container \
                 ContainerFile.node"${nodeID}" \
                 "node${nodeID}" \
-		"node:latest" \
+                "node:latest" \
 
-	# qm - after the setup, reload daemon and start qm
-	eval "$(podman exec \
-		node"${nodeID}" \
-		systemctl daemon-reload &> /dev/null
-	)"
-	if_error_exit "unable to execute systemctl daemon-load in node${nodeID}"
+        # qm - after the setup, reload daemon and start qm
+        eval "$(podman exec \
+                node"${nodeID}" \
+                systemctl daemon-reload &> /dev/null
+        )"
+        if_error_exit "unable to execute systemctl daemon-load in node${nodeID}"
 
-	eval "$(podman exec \
-		node"${nodeID}" \
-		systemctl start qm &> /dev/null
-	)"
-	if_error_exit "unable to execute systemctl start qm"
+        eval "$(podman exec \
+                node"${nodeID}" \
+                systemctl start qm &> /dev/null
+        )"
+        if_error_exit "unable to execute systemctl start qm"
 
-	# set in the QM container the ManagerHost (Control Machine) and restart bluechi-agent
-	eval "$(podman exec node"${nodeID}" \
-		podman exec qm \
-		cp \
-		/usr/share/bluechi-agent/config/agent.conf \
-		/etc/bluechi/agent.conf
-	)"
-	if_error_exit "unable to copy agent.conf template to agent.conf.d dir"
+        # set in the QM container the ManagerHost (Control Machine) and restart bluechi-agent
+        eval "$(podman exec node"${nodeID}" \
+                podman exec qm \
+                cp \
+                /usr/share/bluechi-agent/config/agent.conf \
+                /etc/bluechi/agent.conf
+        )"
+        if_error_exit "unable to copy agent.conf template to agent.conf.d dir"
 
-	qm_node_name="qm-node${nodeID}"
-	NODES_FOR_TESTING+=("${qm_node_name}")
+        qm_node_name="qm-node${nodeID}"
+        NODES_FOR_TESTING+=("${qm_node_name}")
 
-	eval "$(podman exec node"${nodeID}" \
-		podman exec qm \
-		sed -i 's/^#ManagerHost=/ManagerHost='"${IP_CONTROL_MACHINE}"'/g' \
-		/etc/bluechi/agent.conf
-	)"
-	if_error_exit "qm node: unable to sed ManagerHost in bluechi agent.conf"
+        eval "$(podman exec node"${nodeID}" \
+                podman exec qm \
+                sed -i 's/^#ManagerHost=/ManagerHost='"${IP_CONTROL_MACHINE}"'/g' \
+                /etc/bluechi/agent.conf
+        )"
+        if_error_exit "qm node: unable to sed ManagerHost in bluechi agent.conf"
 
-	eval "$(podman exec node"${nodeID}" \
-		podman exec qm \
-		sed -i 's/^#NodeName=/NodeName='"${qm_node_name}"'/g' \
-		/etc/bluechi/agent.conf
-	)"
-	if_error_exit "qm node: unable to sed NodeName in bluechi agent.conf"
+        eval "$(podman exec node"${nodeID}" \
+                podman exec qm \
+                sed -i 's/^#NodeName=/NodeName='"${qm_node_name}"'/g' \
+                /etc/bluechi/agent.conf
+        )"
+        if_error_exit "qm node: unable to sed NodeName in bluechi agent.conf"
 
         # restarting the qm bluechi-agent
-	eval "$(podman exec node"${nodeID}" \
-		podman exec qm \
-		systemctl restart bluechi-agent
-	)"
-	if_error_exit "qm node: unable to restart bluechi-agent service"
+        eval "$(podman exec node"${nodeID}" \
+                podman exec qm \
+                systemctl restart bluechi-agent
+        )"
+        if_error_exit "qm node: unable to restart bluechi-agent service"
 
-	AllowedNodeNames="${AllowedNodeNames}\n  ${qm_node_name},\n  node${nodeID},"
+        AllowedNodeNames="${AllowedNodeNames}\n  ${qm_node_name},\n  node${nodeID},"
     done
 
     # Remove the last , from the string, otherwise bluechi won't understand
@@ -176,15 +176,15 @@ create_qm_node() {
 
     # CONTROL NODE: append QM node into /etc/bluechi/agent.conf.din the control node the new qm node name
     eval "$(podman exec "${CONTROL_CONTAINER_NAME}" \
-		sed -i '/^AllowedNodeNames=/ s/$/,'"${AllowedNodeNames}"'/' \
-		/etc/bluechi/controller.conf
+                sed -i '/^AllowedNodeNames=/ s/$/,'"${AllowedNodeNames}"'/' \
+                /etc/bluechi/controller.conf
     )"
     if_error_exit "control node: unable to sed AllowedNodeName in controller.conf"
 
     # restart the bluechi-controller service
     eval "$(podman exec \
         "${CONTROL_CONTAINER_NAME}" \
-	systemctl restart bluechi-controller
+        systemctl restart bluechi-controller
     )"
     if_error_exit "control node: unable to restart bluechi-controller service"
 }
