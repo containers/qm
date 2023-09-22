@@ -51,6 +51,12 @@ if [ -z "${NET_INTERFACE_IP_CONTROL}" ]; then
     export NET_INTERFACE_IP_CONTROL="eth0"
 fi
 
+if [ -t 1 ]; then
+    RED='\033[91m'
+    GRN='\033[92m'
+    CLR='\033[0m'
+fi
+
 # ====================== Start - int main {} ;-)
 ARGUMENT_LIST=(
     "build-qm-from-gh-url"
@@ -165,7 +171,7 @@ info_message "Starting setup"
 info_message "=============================="
 if [ "$EUID" -ne 0 ]
 then
-    echo -e "[\033[91m ERROR\033[0m ] Please run as root this script. It requires to set limits inside a container which is not allowed by root."
+    echo -e "[${RED} ERROR ${CLR}] Please run as root this script. It requires to set limits inside a container which is not allowed by root."
     exit
 fi
 
@@ -235,9 +241,9 @@ info_message "#1- Test scenario: bluechi list all units from control to node (vi
 test_bluechi_list_all_units
 
 echo
-info_message "\033[92mSummary of tests\033[0m"
+info_message "${GRN}Summary of tests${CLR}"
 info_message "=============================="
-info_message "\033[92mASIL environment\033[0m"
+info_message "${GRN}ASIL environment${CLR}"
 info_message "- 1 Controller container with:"
 info_message "\t- bluechi service: manager and agent"
 info_message "\t- ${#srvs_asil[@]} systemd generated and running:"
@@ -246,7 +252,7 @@ for srv in "${srvs_asil[@]}"; do
 done
 echo
 
-info_message "\033[92mQM environment\033[0m"
+info_message "${GRN}QM environment${CLR}"
 info_message "  Nodes:"
 info_message "\t- ${NUMBER_OF_NODES} node(s) running as containers"
 info_message "\t- bluechi service in each node: agent"
@@ -261,7 +267,7 @@ for srv in "${srvs_qm[@]}"; do
 done
 echo
 
-info_message "\033[92mbluechictl calls\033[0m"
+info_message "${GRN}bluechictl calls${CLR}"
 # 1 = controller node + NUMBER_OF_NODES * 2 (as we need to count the nested containers (qm))
 info_message "\t- $((1+${NUMBER_OF_NODES}*2)) bluechictl calls to nodes"
 
@@ -278,7 +284,7 @@ MINUTES=$(( (DURATION % 3600) / 60 ))
 SECONDS=$((DURATION % 60))
 
 echo
-info_message "\033[92mRunning time for this script\033[0m"
+info_message "${GRN}Running time for this script${CLR}"
 info_message "\t- ${DAYS} days, ${HOURS} hours, ${MINUTES} minutes and ${SECONDS} seconds"
 echo
 info_message "All set!"
