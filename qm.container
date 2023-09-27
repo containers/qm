@@ -13,6 +13,8 @@ OOMScoreAdjust=500
 Restart=always
 Slice=QM.slice
 Environment=ROOTFS=/usr/lib/qm/rootfs
+Environment=RWETCFS=/etc/qm
+Environment=RWVARFS=/var/qm
 LimitNOFILE=65536
 TasksMax=50%
 
@@ -27,9 +29,10 @@ Network=host
 PodmanArgs=--pids-limit=-1 --security-opt label=nested --security-opt unmask=all
 ReadOnly=true
 Rootfs=${ROOTFS}
+SecurityLabelNested=true
 SecurityLabelFileType=qm_file_t
 SecurityLabelLevel=s0
 SecurityLabelType=qm_t
 Timezone=local
-Volume=${ROOTFS}/etc:/etc
-Volume=${ROOTFS}/var:/var
+Volume=${RWETCFS}:/etc
+Volume=${RWVARFS}:/var

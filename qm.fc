@@ -6,3 +6,5 @@
 /usr/lib/qm/rootfs/var/lib/containers/storage/overlay2-layers(/.*)?	gen_context(system_u:object_r:qm_container_ro_file_t,s0)
 /usr/lib/qm/rootfs/var/lib/containers/storage/overlay-images(/.*)?	gen_context(system_u:object_r:qm_container_ro_file_t,s0)
 /usr/lib/qm/rootfs/var/lib/containers/storage/overlay2-images(/.*)?	gen_context(system_u:object_r:qm_container_ro_file_t,s0)
+/var/qm(/.*)?	gen_context(system_u:object_r:qm_file_t,s0)
+/etc/qm(/.*)?	gen_context(system_u:object_r:qm_file_t,s0)
