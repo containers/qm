@@ -41,7 +41,7 @@ create_container() {
     image_name=$(podman images \
             "${container_tag}" -n
     )
-    if [ -z "${image_name}"]; then
+    if [ -z "${image_name}" ]; then
       # Execute build with tag for latest
       eval "$(podman build \
               -q \
