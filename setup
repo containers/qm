@@ -20,6 +20,9 @@ CMDLINE_ARGUMENT_LIST=(
   "installdir"
   "rootfs"
   "hostname"
+  "rwetcfs"
+  "rwvarfs"
+  "skip-systemctl"
 )
 
 root_check() {
@@ -157,7 +160,7 @@ install() {
 
 # read command line arguments
 opts=$(getopt \
-  --longoptions "$(printf "help,skip-systemctl,%s:," "${CMDLINE_ARGUMENT_LIST[@]}")" \
+  --longoptions "$(printf "help,%s:," "${CMDLINE_ARGUMENT_LIST[@]}")" \
   --name "$(basename "$0")" \
   --options "" \
   -- "$@"
@@ -210,6 +213,7 @@ echo  "  * rootfs: ${ROOTFS}"
 echo  "  * rwetcfs: ${RWETCFS}"
 echo  "  * rwvarfs: ${RWVARFS}"
 echo  "  * install dir: ${INSTALLDIR}"
+echo  "  * skip-systemctl: ${SYSTEMCTL_SKIP}"
 echo
 
 case "$1" in
