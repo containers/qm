@@ -30,6 +30,8 @@ RUN dnf install -y \
 	pre-commit \
 	pcp \
 	sudo \
+	gpgme-devel \
+	libseccomp-devel \
 	iptables-services \
 	selinux-policy-targeted \
 	selinux-policy-devel \
