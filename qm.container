@@ -20,7 +20,10 @@ TasksMax=50%
 
 [Container]
 AddCapability=all
+
+# Comment DropCapability this will allow FFI Tools to surpass their defaults.
 DropCapability=sys_resource
+
 AddDevice=-/dev/kvm
 AddDevice=-/dev/fuse
 ContainerName=qm
@@ -29,7 +32,11 @@ Network=host
 PodmanArgs=--pids-limit=-1 --security-opt label=nested --security-opt unmask=all
 ReadOnly=true
 Rootfs=${ROOTFS}
-SecurityLabelNested=true
+
+# FIXME: QM is failing to start if SecurityLabelNested is enabled.
+# Add back as soon podman 4.7 is released.
+# SecurityLabelNested=true
+
 SecurityLabelFileType=qm_file_t
 SecurityLabelLevel=s0
 SecurityLabelType=qm_t
