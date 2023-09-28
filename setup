@@ -105,6 +105,23 @@ setupRW() {
     mount --bind "${RWVARFS}" "${ROOTFS}/var"
 }
 
+create_rootfs_required_dirs() {
+    # List of directories required for rootfs
+    directories=(
+	    "${ROOTFS}/etc/containers/"
+	    "${ROOTFS}/usr/share/containers/selinux/"
+	    "${ROOTFS}/etc/selinux/targeted/contexts/files/"
+    )
+
+    for dir in "${directories[@]}"; do
+        if [ ! -d "$dir" ]; then
+            mkdir -Z -p "$dir"
+            echo "Created directory: $dir"
+        fi
+    done
+
+}
+
 install() {
     ROOTFS=$1
     RWETCFS=$2
@@ -115,6 +132,9 @@ install() {
     dnf -y install --releasever="${VERSION_ID}" --installroot "${ROOTFS}" selinux-policy-targeted podman systemd bluechi-agent procps-ng
     dnf -y update --installroot "${ROOTFS}"
     rm -rf "${ROOTFS}"/etc/selinux/targeted/contexts/files/file_contexts/*
+
+    create_rootfs_required_dirs
+
     cp "${INSTALLDIR}/containers.conf" "${ROOTFS}/etc/containers/"
     cp "${INSTALLDIR}/contexts" "${ROOTFS}/usr/share/containers/selinux/"
     cp "${INSTALLDIR}/file_contexts" "${ROOTFS}/etc/selinux/targeted/contexts/files/file_contexts"
@@ -125,7 +145,7 @@ install() {
     if [ "$SYSTEMCTL_SKIP" == "N" ]; then
 	unshare --mount-proc -R "${ROOTFS}" -m systemctl enable bluechi-agent.service
     else
-	chroot $ROOTFS ln -fs \
+	chroot "${ROOTFS}" ln -fs \
 	    /usr/lib/systemd/system/bluechi-agent.service \
 	    /etc/systemd/system/multi-user.target.wants/bluechi-agent.service
     fi
