@@ -20,7 +20,6 @@ TasksMax=50%
 
 [Container]
 AddCapability=all
-DropCapability=sys_resource
 AddDevice=-/dev/kvm
 AddDevice=-/dev/fuse
 ContainerName=qm
@@ -29,7 +28,6 @@ Network=host
 PodmanArgs=--pids-limit=-1 --security-opt label=nested --security-opt unmask=all
 ReadOnly=true
 Rootfs=${ROOTFS}
-SecurityLabelNested=true
 SecurityLabelFileType=qm_file_t
 SecurityLabelLevel=s0
 SecurityLabelType=qm_t

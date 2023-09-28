@@ -101,7 +101,7 @@ create_qm_node() {
         echo "RUN dnf install qm -y &> /dev/null" >> ContainerFile.node"${nodeID}"
 
         # Execute qm setup
-        echo "RUN /usr/share/qm/setup 2>&1 > /tmp/qm-setup.log || echo "QM setup failed, please check /tmp/qm-setup.log."" >> ContainerFile.node"${nodeID}"
+        echo "RUN /usr/share/qm/setup --skip-systemctl true 2>&1 > /tmp/qm-setup.log || echo "QM setup failed, please check /tmp/qm-setup.log."" >> ContainerFile.node"${nodeID}"
 
         # HACK: add /dev/fuse to qm.container. It will allow a container set limits inside
         # another container.
