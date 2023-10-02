@@ -36,6 +36,7 @@ create_container() {
     local container_file="${1}"
     local container_name="${2}"
     local container_tag="${3}"
+    local build_caps_add="${4}"
     local image_name
 
     image_name=$(podman images \
@@ -43,11 +44,12 @@ create_container() {
     )
     if [ -z "${image_name}" ]; then
       # Execute build with tag for latest
-      eval "$(podman build \
-              -q \
-              -f "${container_file}" \
-              --tag "${container_tag}" 1> /dev/null
-      )"
+      if [ -z "${build_caps_add}" ]; then
+         podman_build="podman build -q -f ${container_file} --tag ${container_tag} 1> /dev/null"
+      else
+         podman_build="podman build --cap-add ${build_caps_add} -q -f ${container_file} --tag ${container_tag} 1> /dev/null"
+      fi
+      eval "$podman_build"
       if_error_exit "create_container: \
 podman build failed! \
 file: ${container_file} tag: ${container_tag}"
@@ -101,7 +103,7 @@ create_qm_node() {
         echo "RUN dnf install qm -y &> /dev/null" >> ContainerFile.node"${nodeID}"
 
         # Execute qm setup
-        echo "RUN /usr/share/qm/setup 2>&1 > /tmp/qm-setup.log || echo "QM setup failed, please check /tmp/qm-setup.log."" >> ContainerFile.node"${nodeID}"
+        echo "RUN /usr/share/qm/setup --skip-systemctl true 2>&1 > /tmp/qm-setup.log || echo "QM setup failed, please check /tmp/qm-setup.log."" >> ContainerFile.node"${nodeID}"
 
         # HACK: add /dev/fuse to qm.container. It will allow a container set limits inside
         # another container.
@@ -123,6 +125,7 @@ create_qm_node() {
                 ContainerFile.node"${nodeID}" \
                 "node${nodeID}" \
                 "node:latest" \
+                "SYS_ADMIN /tmp/"
 
         # qm - after the setup, reload daemon and start qm
         eval "$(podman exec \
