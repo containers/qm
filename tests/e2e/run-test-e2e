@@ -32,6 +32,7 @@ export WAIT_BLUECHI_SERVER_BE_READY_IN_SEC=5
 export CONTROL_CONTAINER_NAME="control"
 export NODES_FOR_TESTING=("control" "node1")
 export IP_CONTROL_MACHINE=""
+export CONTAINER_CAP_ADD=""
 
 export BUILD_QM_FROM_GH_URL=""
 export BUILD_BLUECHI_FROM_GH_URL=""
@@ -269,7 +270,7 @@ echo
 
 info_message "${GRN}bluechictl calls${CLR}"
 # 1 = controller node + NUMBER_OF_NODES * 2 (as we need to count the nested containers (qm))
-info_message "\t- $((1+${NUMBER_OF_NODES}*2)) bluechictl calls to nodes"
+info_message "\t- $((1+NUMBER_OF_NODES*2)) bluechictl calls to nodes"
 
 # Capture the end time
 END_TIME=$(date +%s)
