@@ -36,7 +36,7 @@ create_container() {
     local container_file="${1}"
     local container_name="${2}"
     local container_tag="${3}"
-    local build_caps_add="${4}"
+    local container_add_caps="${4}"
     local image_name
 
     image_name=$(podman images \
@@ -44,10 +44,10 @@ create_container() {
     )
     if [ -z "${image_name}" ]; then
       # Execute build with tag for latest
-      if [ -z "${build_caps_add}" ]; then
+      if [ -z "${container_add_caps}" ]; then
          podman_build="podman build -q -f ${container_file} --tag ${container_tag} 1> /dev/null"
       else
-         podman_build="podman build --cap-add ${build_caps_add} -q -f ${container_file} --tag ${container_tag} 1> /dev/null"
+         podman_build="podman build --cap-add ${container_add_caps} -q -f ${container_file} --tag ${container_tag} 1> /dev/null"
       fi
       eval "$podman_build"
       if_error_exit "create_container: \
@@ -103,11 +103,9 @@ create_qm_node() {
         echo "RUN dnf install qm -y &> /dev/null" >> ContainerFile.node"${nodeID}"
 
         # Execute qm setup
+        # Use --skip-systemctl true in podman build, systemd is not running
+        # Do not set --skip-systemctl inside running container with systemd in it.
         echo "RUN /usr/share/qm/setup --skip-systemctl true 2>&1 > /tmp/qm-setup.log || echo "QM setup failed, please check /tmp/qm-setup.log."" >> ContainerFile.node"${nodeID}"
-
-        # HACK: add /dev/fuse to qm.container. It will allow a container set limits inside
-        # another container.
-        echo 'RUN echo "AddDevice=-/dev/fuse" >> /usr/share/containers/systemd/qm.container' >> ContainerFile.node"${nodeID}"
 
         # Enable bluechi-agent
         echo 'RUN cp /usr/share/bluechi-agent/config/*.conf /etc/bluechi/' >> ContainerFile.node"${nodeID}"
@@ -121,11 +119,13 @@ create_qm_node() {
 
         # create the container ${nodeID}
         info_message "Creating container \033[92mnode${nodeID}\033[0m [\033[92mQM mode\033[0m]"
+
+        CONTAINER_ADD_CAPS="SYS_ADMIN /tmp/"
         create_container \
                 ContainerFile.node"${nodeID}" \
                 "node${nodeID}" \
                 "node:latest" \
-                "SYS_ADMIN /tmp/"
+                "${CONTAINER_ADD_CAPS}"
 
         # qm - after the setup, reload daemon and start qm
         eval "$(podman exec \
