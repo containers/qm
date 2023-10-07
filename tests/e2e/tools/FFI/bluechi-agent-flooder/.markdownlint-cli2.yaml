@@ -1,0 +1,20 @@
+# Documentation for available configuration options can be found at
+# https://github.com/DavidAnson/markdownlint/tree/main/doc
+config:
+  MD010:
+    # Ignore tab characters in code blocks
+    code_blocks: false
+  MD013:
+    # Ignore line length in code blocks
+    code_blocks: false
+    # Maximum line length
+    line_length: 120
+    # Ignore line length for tables
+    tables: false
+
+globs:
+  - "**/*.md"
+
+ignores:
+  - "doc/man/*.md"
+  - "subprojects/*/*.md"

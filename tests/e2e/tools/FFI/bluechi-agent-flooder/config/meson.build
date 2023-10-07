@@ -1,0 +1,15 @@
+# SPDX-License-Identifier: LGPL-2.1-or-later
+
+install_data(
+  install_dir : get_option('sysconfdir') / 'bluechi'
+)
+
+install_data(
+  'agent/agent.conf',
+  install_dir : join_paths(get_option('datadir'), 'bluechi-agent', 'config')
+)
+
+install_data(
+  'agent.conf.d/README.md',
+  install_dir :  join_paths(get_option('sysconfdir') / 'bluechi' / 'agent.conf.d')
+)

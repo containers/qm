@@ -1,0 +1,46 @@
+.PHONY: build fmt check-fmt lint lint-c-fix codespell rpm srpm
+
+DESTDIR ?=
+BUILDDIR=builddir
+
+CODESPELL_PARAMS=\
+	-S Makefile,imgtype,copy,AUTHORS,bin,.git,CHANGELOG.md,changelog.txt,.cirrus.yml,"*.xz,*.gz,*.tar,*.tgz,*ico,*.png,*.1,*.5,*.orig,*.rej,*.xml,*xsl",build.ninja,intro-targets.json,./tests/tests/tier0/proxy-service-fails-on-typo-in-file/systemd/simple.service,tags,./builddir,./subprojects,\
+	-L keypair,flate,uint,iff,od,ERRO
+
+build:
+	meson setup $(BUILDDIR)
+	meson compile -C $(BUILDDIR)
+
+install: build
+	meson install -C $(BUILDDIR) --destdir "$(DESTDIR)"
+
+fmt: build
+	ninja -C $(BUILDDIR) clang-format
+
+check-fmt: build
+	ninja -C $(BUILDDIR) clang-format-check
+
+lint-c: build
+	ninja -C $(BUILDDIR) clang-tidy
+
+lint-c-fix: build
+	ninja -C $(BUILDDIR) clang-tidy-fix
+
+lint-markdown:
+	markdownlint-cli2 | echo "markdownlint-cli2 not found, skipping markdown lint"
+
+lint: lint-c lint-markdown
+
+codespell:
+	codespell  $(CODESPELL_PARAMS) -w
+
+check-codespell:
+	codespell  $(CODESPELL_PARAMS)
+
+clean:
+	find . -name \*~ -delete
+	find . -name \*# -delete
+	meson setup --wipe $(BUILDDIR)
+
+distclean: clean
+	rm -rf $(BUILDDIR)

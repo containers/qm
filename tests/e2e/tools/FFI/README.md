@@ -14,3 +14,7 @@ Example:
 
 ## Disk
 Try to allocate as maximum possible disk space.
+
+## BlueChi Agent Flooder
+This is a modified BlueChi agent to flood the communication with controller.
+

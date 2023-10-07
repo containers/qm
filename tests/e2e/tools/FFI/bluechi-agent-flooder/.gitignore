@@ -1,0 +1,21 @@
+# IDE
+.vscode/
+
+# Build
+tags
+builddir/
+bluechi.spec
+rpmbuild/
+artifacts/
+## python build artifacts
+build/
+dist/
+bluechi.egg-info/
+
+# Integration test
+bluechi-rpms/
+__pycache__/
+## virtual env directories
+env/
+.venv/
+venv/

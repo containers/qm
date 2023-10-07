@@ -1,0 +1,12 @@
+#  SPDX-License-Identifier: LGPL-2.1-or-later
+#
+#  This file is part of bluechi-agent.
+#
+[Unit]
+Description=BlueChi systemd service controller agent daemon
+Documentation=man:bluechi-agent(1) man:bluechi-agent.conf(5)
+After=network.target
+
+[Service]
+Type=simple
+ExecStart=/usr/libexec/bluechi-agent --user

@@ -1,0 +1,35 @@
+---
+Checks: >
+    *,
+    -llvm-header-guard,
+    -llvmlibc-restrict-system-libc-headers,
+    -cert-err33-c,
+    -cert-dcl37-c,
+    -cert-dcl51-cpp,
+    -bugprone-reserved-identifier,
+    -readability-identifier-length,
+    -concurrency-mt-unsafe,
+    -google-readability-todo,
+    -clang-analyzer-security.insecureAPI.DeprecatedOrUnsafeBufferHandling,
+    -altera-unroll-loops,
+    -altera-id-dependent-backward-branch,
+    -bugprone-easily-swappable-parameters,
+    -altera-struct-pack-align,
+    -readability-isolate-declaration,
+    -bugprone-assignment-in-if-condition,
+    -clang-analyzer-unix.Malloc,
+    -cppcoreguidelines-interfaces-global-init,
+    -cppcoreguidelines-avoid-non-const-global-variables,
+    -readability-function-cognitive-complexity,
+    -modernize-macro-to-enum,
+    -llvm-else-after-return,
+    -readability-else-after-return
+
+CheckOptions:
+    - key: readability-function-cognitive-complexity.Threshold
+      value: 50
+    
+
+# Turn all the warnings from the checks above into errors.,
+WarningsAsErrors: "*"
+HeaderFilterRegex: ""

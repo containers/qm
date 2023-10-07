@@ -1,0 +1,24 @@
+<!DOCTYPE busconfig PUBLIC "-//freedesktop//DTD D-BUS Bus Configuration 1.0//EN"
+ "http://www.freedesktop.org/standards/dbus/1.0/busconfig.dtd">
+<busconfig>
+
+  <policy user="@dbus_srv_user@">
+    <allow own="org.eclipse.bluechi.Agent"/>
+    <allow send_destination="org.eclipse.bluechi.Agent"/>
+    <allow receive_sender="org.eclipse.bluechi.Agent"/>
+  </policy>
+
+  <policy context="default">
+    <deny send_destination="org.eclipse.bluechi.Agent"/>
+
+    <!-- Completely open to anyone: org.freedesktop.DBus.* introspaction  -->
+    <allow send_destination="org.eclipse.bluechi.Agent"
+           send_interface="org.freedesktop.DBus.Introspectable"/>
+
+    <allow send_destination="org.eclipse.bluechi.Agent"
+           send_interface="org.freedesktop.DBus.Peer"/>
+
+    <allow receive_sender="org.eclipse.bluechi.Agent"/>
+  </policy>
+
+</busconfig>
