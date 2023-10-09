@@ -6,6 +6,7 @@
 #
 
 # Globals
+MOUNT_SKIP="N"
 SYSTEMCTL_SKIP="N"
 INSTALLDIR="/usr/share/qm"
 ROOTFS="/usr/lib/qm/rootfs"
@@ -23,6 +24,7 @@ CMDLINE_ARGUMENT_LIST=(
   "rwetcfs"
   "rwvarfs"
   "skip-systemctl"
+  "skip-mount"
 )
 
 root_check() {
@@ -49,6 +51,7 @@ usage()
    echo "--rwvarfs             set rwvarfs (default: /var/qm)"
    echo "--skip-systemctl      skip systemctl daemon commands (default: false)"
    echo "--hostname            custom agent hostname to use (default: \$\(hostname\))"
+   echo "--skip-mount          skip mount commands (default: false)"
    echo
    echo "Example:"
    echo "  $ sudo ./setup --installdir=/usr/share/qm --rootfs=/usr/lib/qm/rootfs"
@@ -80,7 +83,10 @@ bluechiSetup() {
 NodeName=qm.${hostname}
 EOF
     fi
-    umount "${ROOTFS}/var" "${ROOTFS}/etc"
+
+    if [ "$MOUNT_SKIP" == "N" ]; then
+        umount "${ROOTFS}/var" "${ROOTFS}/etc"
+    fi
 }
 
 storage() {
@@ -104,8 +110,11 @@ setupRW() {
     RWVARFS=$3
     mkdir -Z -p "${ROOTFS}/etc" "${ROOTFS}/var"
     mkdir -Z -p "${RWETCFS}" "${RWVARFS}"
-    mount --bind "${RWETCFS}" "${ROOTFS}/etc"
-    mount --bind "${RWVARFS}" "${ROOTFS}/var"
+
+    if [ "$MOUNT_SKIP" == "N" ]; then
+        mount --bind "${RWETCFS}" "${ROOTFS}/etc"
+        mount --bind "${RWVARFS}" "${ROOTFS}/var"
+    fi
 }
 
 create_rootfs_required_dirs() {
@@ -155,7 +164,10 @@ install() {
 
     storage "${ROOTFS}"
     restorecon -R "${ROOTFS}"
-    umount "${ROOTFS}/var" "${ROOTFS}/etc"
+
+    if [ "$MOUNT_SKIP" == "N" ]; then
+        umount "${ROOTFS}/var" "${ROOTFS}/etc"
+    fi
 }
 
 # read command line arguments
@@ -197,6 +209,10 @@ while [[ $# -gt 0 ]]; do
       AGENT_HOSTNAME="${2}"
       shift 2
       ;;
+    --skip-mount)
+      MOUNT_SKIP="Y"
+      shift
+      ;;
     --help)
       usage
       exit 1
@@ -214,6 +230,7 @@ echo  "  * rwetcfs: ${RWETCFS}"
 echo  "  * rwvarfs: ${RWVARFS}"
 echo  "  * install dir: ${INSTALLDIR}"
 echo  "  * skip-systemctl: ${SYSTEMCTL_SKIP}"
+echo  "  * skip-mount: ${MOUNT_SKIP}"
 echo
 
 case "$1" in
