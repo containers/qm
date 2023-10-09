@@ -43,7 +43,7 @@ test_bluechi_list_all_units() {
         fi
         if_error_exit "unable to execute bluechictl command on ${CONTROL_CONTAINER_NAME}"
 
-        if [ "${CONTROL_CONTAINER_NAME}" = "host" ]; then
+        if [ "${CONTROL_CONTAINER_NAME}" = "host" -o "${CONTROL_CONTAINER_NAME}" = "autosd" ]; then
            grep -E  "bluechi|qm" <<< ${bluechictl_cmd}
         else
            grep -E  "container-|qm.service" <<< ${bluechictl_cmd}

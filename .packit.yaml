@@ -63,7 +63,7 @@ jobs:
   - job: tests
     trigger: pull_request
     identifier: e2e
-    tmt_plan: /tests/e2e/tier-0
+    tmt_plan: /tests/e2e
     skip_build: true
     targets:
     - centos-stream-9-x86_64
