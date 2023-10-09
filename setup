@@ -214,6 +214,7 @@ echo  "  * rwetcfs: ${RWETCFS}"
 echo  "  * rwvarfs: ${RWVARFS}"
 echo  "  * install dir: ${INSTALLDIR}"
 echo  "  * skip-systemctl: ${SYSTEMCTL_SKIP}"
+echo  "  * agent hostname: ${AGENT_HOSTNAME}"
 echo
 
 case "$1" in
