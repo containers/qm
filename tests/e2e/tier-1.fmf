@@ -1,0 +1,29 @@
+summary: Tier 0 - QM Interconnect through bluechi
+
+discover:
+    how: fmf
+    filter: tier:1
+
+provision:
+   # Can not use provision no podman args
+   how: local
+
+adjust:
+   prepare+:
+      - name: Install rpms
+        how: install
+        package: podman
+      - name: Setp AutoSD env
+        how: shell
+        script: |
+           # Currently option passing c9s
+           podman run --replace -d --name autosd \
+                  --privileged -it \
+                  quay.io/centos-sig-automotive/autosd:latest
+   when: distro == centos-stream-9 or distro == fedora
+
+execute:
+    how: tmt
+
+report:
+    how: junit
