@@ -108,7 +108,7 @@ EOF
 
 # read arguments
 opts=$(getopt \
-    --longoptions "$(printf "help,%s:," "${ARGUMENT_LIST[@]}")" \
+    --longoptions "$(printf "help,skip-systemctl,%s:," "${ARGUMENT_LIST[@]}")" \
     --name "$(basename "$0")" \
     --options "" \
     -- "$@"
