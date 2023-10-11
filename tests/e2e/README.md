@@ -199,19 +199,20 @@ tmt tests ls
 - Run tests
 
 ``` bash
-tmt run plans -n tests/e2e/tier-0
+tmt run plans -n /plans/e2e/tier-0
 
 or connecting to VM:
 
 tmt run -c distro=centos-stream-9 -a \
         provision --how connect -u root -p ${PASSWORD} -P ${PORT} -g localhost \
-        plans -n /tests/e2e/tier-0
+        plans -n /plans/e2e/tier-0
 ```
 
 ##### Other tmt configurations
 
-In case of running against prepared image, such as AutoSD, use the following tmt comman
-Where there is already running:
+In case of running against prepared image, such as AutoSD, use the following tmt command
+Where there is already running vm set with:
+Set test with comtext `-c distro=automotive-stream-distribution-9`
 
 - qm container with bluechi agent running under systemd.
 
@@ -222,5 +223,5 @@ Override the context distro and CONTROL_CONTAINER_NAME and NODES_FOR_TESTING_ARR
 ``` bash
 tmt  -c distro=automotive-stream-distribution-9 run -e CONTROL_CONTAINER_NAME="host" \
      -e NODES_FOR_TESTING_ARR="\"host qm.host\""  -a \
-     provision --how connect -u root -p ${PASSWORD} -P {PORT} -g localhost plans -n /tests/e2e/tier-0
+     provision --how connect -u root -p ${PASSWORD} -P {PORT} -g localhost plans -n /plans/e2e/tier-0
 ```
