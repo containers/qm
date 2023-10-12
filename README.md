@@ -1,9 +1,8 @@
 # QM is a containerized environment for running Functional Safety qm (Quality Management) software
 
 The main purpose of this package is allow users to setup an environment which
-prevents applications and container tools from interfering with other all
-other processes on the system. For example ASIL (Automotive Safety Integrity Level)
-environments.
+prevents applications and container tools from interfering with other processes 
+on the system. For example ASIL (Automotive Safety Integrity Level) environments.
 
 The QM environment uses containerization tools like cgroups, namespaces, and
 security isolation to prevent accidental interference by processes in the qm.
