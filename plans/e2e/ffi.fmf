@@ -1,0 +1,30 @@
+summary: FFI - QM FreedomFromInterference
+
+environment:
+    CONTROL_CONTAINER_NAME: host
+
+discover:
+    how: fmf
+    filter: tag:ffi
+
+provision:
+   how: local
+
+adjust:
+   prepare+:
+      - name: Install rpms
+        how: install
+        package: podman
+
+      - name: Set QM env
+        how: shell
+        script: |
+           cd tests/e2e
+           ./set-ffi-env-e2e --qm-setup-from-gh-url=https://raw.githubusercontent.com/containers
+   when: scenario == ffi
+
+execute:
+    how: tmt
+
+report:
+    how: junit
