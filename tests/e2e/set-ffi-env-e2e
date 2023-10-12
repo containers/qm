@@ -1,0 +1,196 @@
+#!/bin/bash
+# shellcheck disable=SC1091
+#
+# Copyright 2023 The qm Authors
+#
+# This program is free software; you can redistribute it and/or
+# modify it under the terms of the GNU General Public License
+# as published by the Free Software Foundation; either version 2
+# of the License, or (at your option) any later version.
+#
+# This program is distributed in the hope that it will be useful,
+# but WITHOUT ANY WARRANTY; without even the implied warranty of
+# MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+# GNU General Public License for more details.
+#
+# You should have received a copy of the GNU General Public License
+# along with this program; If not, see <http://www.gnu.org/licenses/>.
+#
+# Capture the start time
+START_TIME=$(date +%s)
+SCRIPT_DIR=$( cd -- "$( dirname -- "${BASH_SOURCE[0]}" )" &> /dev/null && pwd )
+
+source "${SCRIPT_DIR}"/lib/utils
+source "${SCRIPT_DIR}"/lib/container
+source "${SCRIPT_DIR}"/lib/systemd
+source "${SCRIPT_DIR}"/lib/tests
+
+# GLOBALS
+export CONFIG_NODE_AGENT_PATH="/etc/bluechi/agent.conf.d/agent.conf"
+export REGISTRY_UBI8_MINIMAL="registry.access.redhat.com/ubi8/ubi-minimal"
+export WAIT_BLUECHI_SERVER_BE_READY_IN_SEC=5
+export CONTROL_CONTAINER_NAME="control"
+export NODES_FOR_TESTING=("control" "node1")
+export IP_CONTROL_MACHINE=""
+export CONTAINER_CAP_ADD=""
+export ARCH=""
+
+export BUILD_BLUECHI_FROM_GH_URL=""
+export QM_GH_URL=""
+export BRANCH_QM=""
+export BLUECHI_OVERRIDE_CONF="https://gitlab.com/CentOS/automotive/container-images/"
+       BLUECHI_OVERRIDE_CONF+="-/raw/main/images/autosd/files/etc/bluechi"
+
+if [ -t 1 ]; then
+    RED='\033[91m'
+    GRN='\033[92m'
+    CLR='\033[0m'
+fi
+
+# ====================== Start - int main {} ;-)
+ARGUMENT_LIST=(
+    "qm-setup-from-gh-url"
+    "branch-qm"
+)
+
+usage() {
+cat <<EOF
+Usage: ./set-ffi-env-e2e [OPTIONS]
+
+--help
+	This message
+
+--qm-setup-from-gh-url
+        Override QM setup QM from a specific GitHub URL, useful for testing new features
+
+--branch-qm
+        Specify which branch the GitHub repo will be set. Requires --qm-setup-from-gh-url
+
+
+Examples:
+
+	No args, it will install latest qm and bluechi from copr rpm repository
+		./set-ffi-env-e2e
+
+        Usee qm setup specific github url and select the branches
+                ./set-ffi-env-e2e \\
+                        --branch-qm=superfeature \\
+                        --qm-setup-from-gh-url=https://raw.githubusercontent.com/MYUSER/ \\
+
+EOF
+    exit 0
+}
+
+# read arguments
+opts=$(getopt \
+    --longoptions "$(printf "help,%s:," "${ARGUMENT_LIST[@]}")" \
+    --name "$(basename "$0")" \
+    --options "" \
+    -- "$@"
+)
+
+eval set --"${opts}"
+
+while [ $# -gt 0 ]; do
+    case "$1" in
+        --branch-qm)
+            BRANCH_QM="${2}"
+            shift 2
+            ;;
+
+        --qm-setup-from-gh-url)
+            if [ -z "${BRANCH_QM}" ]; then
+                BRANCH_QM="main"
+            fi
+            #QM_GH_URL="${2}/qm/${BRANCH_QM}/setup"
+            shift 2
+            ;;
+
+        --help)
+            usage
+            ;;
+
+        *)
+            break
+            ;;
+    esac
+done
+
+install_qm_rpms() {
+
+  info_message "Installing qm setup rpm"
+  ARCH=$(arch)
+  dnf update -y
+  dnf install -y 'dnf-command(config-manager)'
+  dnf config-manager --set-enabled crb
+  dnf copr enable -y mperina/hirte-snapshot centos-stream-9-"${ARCH}"
+  dnf copr enable -y rhcontainerbot/qm centos-stream-9-"${ARCH}"
+  dnf install -y qm bluechi-ctl bluechi podman hostname
+}
+
+setup_qm_services() {
+
+  info_message "Setup qm services"
+  #Update setup script from QM repos, in case rpm not updates yet
+  if [ -n "${QM_GH_URL}" ]; then
+      curl "${QM_GH_URL}"  > /usr/share/qm/setup
+      chmod +x /usr/share/qm/setup
+  fi
+  # Curl files into here,
+  # Fix: default setup:main should be removed on next qm release
+  /usr/share/qm/setup --hostname localrootfs
+  curl "${BLUECHI_OVERRIDE_CONF}/agent.conf.d/00-default.conf" > /etc/bluechi/agent.conf.d/00-default.conf
+  curl "${BLUECHI_OVERRIDE_CONF}/controller.conf.d/00-default.conf" > /etc/bluechi/controller.conf.d/00-default.conf
+  # move bluechi-agent.conf@qm to correct place
+  mv /etc/qm/bluechi/agent.conf /etc/qm/bluechi/agent.conf.d/agent.conf
+  # Enable services
+  systemctl enable bluechi-controller
+  systemctl enable bluechi-agent
+  # Start services
+  systemctl start bluechi-controller
+  systemctl start bluechi-agent
+  # Restart qm to read lates bluechi-agent.conf
+  systemctl restart qm
+
+}
+
+info_message "Starting setup"
+info_message "=============================="
+if [ "$EUID" -ne 0 ]
+then
+    echo -e "[${RED} ERROR ${CLR}] Please run as root this script. It requires to set limits inside a container which is not allowed by root."
+    exit
+fi
+
+info_message "Cleaning any previous e2e files"
+cleanup
+
+echo
+info_message "Preparing QM environment"
+info_message "=============================="
+
+# Creates the QM env on VM
+install_qm_rpms
+setup_qm_services
+
+info_message "${GRN}QM environment${CLR}"
+echo
+
+# Capture the end time
+END_TIME=$(date +%s)
+
+# Calculate the duration in seconds
+DURATION=$((END_TIME - START_TIME))
+
+# Calculate minutes and seconds
+DAYS=$((DURATION / 86400))
+HOURS=$(( (DURATION % 86400) / 3600 ))
+MINUTES=$(( (DURATION % 3600) / 60 ))
+SECONDS=$((DURATION % 60))
+
+echo
+info_message "${GRN}Running time for this script${CLR}"
+info_message "\t- ${DAYS} days, ${HOURS} hours, ${MINUTES} minutes and ${SECONDS} seconds"
+echo
+info_message "All set!"
+echo

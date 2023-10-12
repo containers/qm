@@ -12,6 +12,7 @@ test:
     test:
       ./test.sh
     tier: 1
+    tag: ffi
     environment:
       CONTROL_CONTAINER_NAME: "autosd"
       NODES_FOR_TESTING_ARR: "localrootfs qm.localrootfs"

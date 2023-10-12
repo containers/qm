@@ -225,3 +225,16 @@ tmt  -c distro=automotive-stream-distribution-9 run -e CONTROL_CONTAINER_NAME="h
      -e NODES_FOR_TESTING_ARR="\"host qm.host\""  -a \
      provision --how connect -u root -p ${PASSWORD} -P {PORT} -g localhost plans -n /plans/e2e/tier-0
 ```
+
+##### FFI tmt configurations
+
+Freedom From Interference, FFI, tests prove cgroups and other security constraints work in the QM environment.
+QM environment running inside qm container as systemd service and isolated from interfereing other host
+processes.
+
+Running FFI tests connecting c9s host, sets different tests environment from the demo environment.
+
+``` bash
+tmt -c scenario=ffi run -a prepare  provision --how connect \
+    -u root -p Aa123456 -P 2222 -p ${PASSWORD} -P {PORT} -g localhost plan -n /plans/e2e/ffi
+```
