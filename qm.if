@@ -164,7 +164,8 @@ template(`qm_domain_template',`
 	seutil_search_default_contexts($1_t)
 
 	allow $1_t bpf_t:dir mounton;
-	allow $1_t cgroup_t:filesystem { getattr remount };
+	allow $1_t cgroup_t:filesystem { getattr remount};
+	allow $1_t cgroup_t:{dir file } mounton;
 	allow $1_t container_devpts_t:chr_file { watch watch_reads };
 	allow $1_t container_runtime_t:fifo_file rw_fifo_file_perms;
 	allow $1_t devpts_t:filesystem relabelfrom;
@@ -194,6 +195,9 @@ template(`qm_domain_template',`
 	corenet_udp_bind_generic_node($1_t)
 	corenet_udp_sendrecv_all_ports($1_t)
 
+	dev_dontaudit_mounton_sysfs($1_container_domain)
+	dev_getattr_mtrr_dev($1_container_domain)
+	dev_list_sysfs($1_container_domain)
 	dev_list_sysfs($1_t)
 	dev_mounton_sysfs($1_t)
 	dev_mounton_sysfs($1_t)
@@ -254,6 +258,7 @@ template(`qm_domain_template',`
 	kernel_rw_net_sysctls($1_t)
 	kernel_rw_security_state($1_t)
 	kernel_rw_unix_sysctls($1_t)
+	kernel_rw_vm_sysctls($1_t)
 	kernel_rw_usermodehelper_state($1_t)
 	kernel_search_debugfs($1_t)
 	dontaudit $1_t proc_security_t:file write;
@@ -463,12 +468,11 @@ template(`qm_domain_template',`
 	allow unconfined_domain_type $1_container_domain:process2 { nnp_transition nosuid_transition };
 	allow unconfined_service_t $1_container_domain:process dyntransition;
 
-	dev_list_sysfs($1_container_domain)
-	dev_dontaudit_mounton_sysfs($1_container_domain)
 	domain_dontaudit_link_all_domains_keyrings($1_container_domain)
 	domain_dontaudit_search_all_domains_keyrings($1_container_domain)
 	domain_dontaudit_search_all_domains_state($1_container_domain)
 	dontaudit $1_container_domain container_runtime_tmpfs_t:dir read;
+	dontaudit $1_container_domain $1_t:chr_file getattr;
 	dontaudit $1_container_domain $1_container_domain:key search;
 	dontaudit $1_container_domain self:capability fsetid;
 	dontaudit $1_container_domain self:capability2  block_suspend ;
