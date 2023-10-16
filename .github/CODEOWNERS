@@ -2,4 +2,4 @@
 # https://docs.github.com/en/repositories/managing-your-repositorys-settings-and-features/customizing-your-repository/about-code-owners
 
 # Default to all maintainers if nothing more specific matches
-* @rhatdan @lsm5 @dougsland @yarboa @sandrobonazzola @dennisbrendel @priyverm
+* @rhatdan @lsm5 @dougsland @yarboa @odra @sandrobonazzola @dennisbrendel @priyverm
