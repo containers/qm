@@ -12,7 +12,7 @@ ROOTFS="/usr/lib/qm/rootfs"
 RWETCFS="/etc/qm"
 RWVARFS="/var/qm"
 AGENT_HOSTNAME="$(hostname)"
-AGENTCONF="/etc/bluechi/agent.conf"
+AGENTCONF="/etc/bluechi/agent.conf.d/agent.conf"
 QM_CONTAINER_IDS=1000000000:1500000000
 CONTAINER_IDS=2500000000:1500000000
 
