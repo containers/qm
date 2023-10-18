@@ -108,10 +108,10 @@ create_qm_node() {
         echo "RUN /usr/share/qm/setup --skip-systemctl true 2>&1 > /tmp/qm-setup.log || echo "QM setup failed, please check /tmp/qm-setup.log."" >> ContainerFile.node"${nodeID}"
 
         # Enable bluechi-agent
-        echo 'RUN cp /usr/share/bluechi-agent/config/*.conf /etc/bluechi/' >> ContainerFile.node"${nodeID}"
+        echo 'RUN cp /usr/share/bluechi-agent/config/*.conf /etc/bluechi/agent.conf.d/' >> ContainerFile.node"${nodeID}"
         echo 'RUN sed -i -e "s/^#NodeName=/NodeName='"node${nodeID}/"\" \
                 '-e "s/^#ManagerHost=/ManagerHost='"${IP_CONTROL_MACHINE}/"\" \
-                ' /etc/bluechi/agent.conf' >> ContainerFile.node"${nodeID}"
+                ' /etc/bluechi/agent.conf.d/agent.conf' >> ContainerFile.node"${nodeID}"
         echo "RUN systemctl enable bluechi-agent &> /dev/null" >> ContainerFile.node"${nodeID}"
 
         # Add systemd as CMD
@@ -145,7 +145,7 @@ create_qm_node() {
                 podman exec qm \
                 cp \
                 /usr/share/bluechi-agent/config/agent.conf \
-                /etc/bluechi/agent.conf
+                /etc/bluechi/agent.conf.d/agent.conf
         )"
         if_error_exit "unable to copy agent.conf template to agent.conf.d dir"
 
@@ -155,14 +155,14 @@ create_qm_node() {
         eval "$(podman exec node"${nodeID}" \
                 podman exec qm \
                 sed -i 's/^#ManagerHost=/ManagerHost='"${IP_CONTROL_MACHINE}"'/g' \
-                /etc/bluechi/agent.conf
+                /etc/bluechi/agent.conf.d/agent.conf
         )"
         if_error_exit "qm node: unable to sed ManagerHost in bluechi agent.conf"
 
         eval "$(podman exec node"${nodeID}" \
                 podman exec qm \
                 sed -i 's/^#NodeName=/NodeName='"${qm_node_name}"'/g' \
-                /etc/bluechi/agent.conf
+                /etc/bluechi/agent.conf.d/agent.conf
         )"
         if_error_exit "qm node: unable to sed NodeName in bluechi agent.conf"
 
@@ -182,7 +182,7 @@ create_qm_node() {
     # CONTROL NODE: append QM node into /etc/bluechi/agent.conf.din the control node the new qm node name
     eval "$(podman exec "${CONTROL_CONTAINER_NAME}" \
                 sed -i '/^AllowedNodeNames=/ s/$/,'"${AllowedNodeNames}"'/' \
-                /etc/bluechi/controller.conf
+                /etc/bluechi/controller.conf.d/controller.conf
     )"
     if_error_exit "control node: unable to sed AllowedNodeName in controller.conf"
 
