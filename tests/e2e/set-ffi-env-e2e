@@ -121,7 +121,7 @@ install_qm_rpms() {
   dnf update -y
   dnf install -y 'dnf-command(config-manager)'
   dnf config-manager --set-enabled crb
-  dnf copr enable -y mperina/hirte-snapshot centos-stream-9-"${ARCH}"
+  dnf copr enable -y @centos-automotive-sig/bluechi-snapshot centos-stream-9-"${ARCH}"
   dnf copr enable -y rhcontainerbot/qm centos-stream-9-"${ARCH}"
   dnf install -y qm bluechi-ctl bluechi podman hostname
 }
