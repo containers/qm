@@ -25,10 +25,14 @@ CONTROL_CONTAINER_NAME="${CONTROL_CONTAINER_NAME:-control}"
 
 test_bluechi_list_all_units() {
 
-    busctl tree org.eclipse.bluechi
+    # busctl tree org.eclipse.bluechi
 
+    ls -la /etc/bluechi/
     ls -la /etc/bluechi/controller.conf.d/
-    cat /etc/bluechi/controller.conf.d/controller.conf
+
+    ls /etc/bluechi/*.conf | xargs -I {} cat {}
+    echo "---"
+    ls /etc/bluechi/controller.conf.d/ | xargs -I {} cat {}
 
     for node_name in "${NODES_FOR_TESTING[@]}"
     do
