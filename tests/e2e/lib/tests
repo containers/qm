@@ -27,6 +27,9 @@ test_bluechi_list_all_units() {
 
     busctl tree org.eclipse.bluechi
 
+    ls -la /etc/bluechi/controller.conf.d/
+    cat /etc/bluechi/controller.conf.d/controller.conf
+
     for node_name in "${NODES_FOR_TESTING[@]}"
     do
         echo
