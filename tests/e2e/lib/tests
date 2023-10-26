@@ -24,6 +24,9 @@ readarray -d ' ' -t NODES_FOR_TESTING <<< "$NODES_FOR_TESTING_ARR"
 CONTROL_CONTAINER_NAME="${CONTROL_CONTAINER_NAME:-control}"
 
 test_bluechi_list_all_units() {
+
+    busctl tree org.eclipse.bluechi
+
     for node_name in "${NODES_FOR_TESTING[@]}"
     do
         echo
