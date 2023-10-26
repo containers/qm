@@ -96,8 +96,8 @@ RUN npm install markdownlint-cli2 --global
 
 # Upgrade the current bluechi using the new rpm packages but exclude src.rpm
 # [manually install bluechi] RUN find . -not -name *.src* -name *.rpm | xargs dnf install -y
-# RUN cp /usr/share/bluechi/config/controller.conf /etc/bluechi/controller.conf.d/
-# [manually install bluechi] RUN cp /usr/share/bluechi/config/controller.conf /etc/bluechi/controller.conf.d/
+# RUN cp /usr/share/bluechi/config/controller.conf /etc/bluechi/
+# [manually install bluechi] RUN cp /usr/share/bluechi/config/controller.conf /etc/bluechi/
 
 # [start] CONTROL - settings
 # Setting configuration, uncommenting:
@@ -105,12 +105,12 @@ RUN npm install markdownlint-cli2 --global
 #	- Use journal for logging
 #	- Set AllowedNodeNames as control and node1
 # TODO: remove the static node1 here, dynamic by rune2e script via sed
-RUN cp /usr/share/bluechi/config/controller.conf /etc/bluechi/controller.conf.d/
+RUN cp /usr/share/bluechi/config/controller.conf /etc/bluechi/
 RUN cp /usr/share/bluechi-agent/config/agent.conf /etc/bluechi/agent.conf.d/
 RUN sed -e '/^#ManagerPort=/s/^#//g' \
 	-e '/#LogTarget/s/^#//' \
 	-e "s/^#AllowedNodeNames=/AllowedNodeNames=control,node1/" \
-	-i /etc/bluechi/controller.conf.d/controller.conf
+	-i /etc/bluechi/controller.conf
 # [end] CONTROL - settings
 
 RUN echo 'Foobar!' | passwd --stdin root
