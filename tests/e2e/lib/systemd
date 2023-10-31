@@ -46,7 +46,7 @@ podman create --name ${srv} \
 ${REGISTRY_UBI8_MINIMAL} \
 sleep infinity"
         #echo "${cmd_create_pod}"
-        eval "${cmd_create_pod}" &> /dev/null
+        eval "${cmd_create_pod}" 1> /dev/null
         if_error_exit "cannot create container ${srv} in target ${container_target}"
 
         if [ -n "${creates_on_qm_node}" ]; then
