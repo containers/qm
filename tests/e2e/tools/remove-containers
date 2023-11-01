@@ -11,3 +11,5 @@ for node in ${output}; do
         podman rm "${node}" --force 1> /dev/null
     fi
 done
+
+podman network rm podmanDualStack -f
