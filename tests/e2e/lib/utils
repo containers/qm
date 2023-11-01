@@ -56,6 +56,7 @@ exec_cmd() {
 }
 
 cleanup() {
+    info_message "Cleaning any existing artifacts that were generated during previous runs"
     output=$(podman ps -a --format "{{.Names}}")
     IFS=$'\n' # Set the internal field separator to newline
 
@@ -73,5 +74,8 @@ cleanup() {
             rm -f ./*.node*
         fi
     done
+    info_message "  - Removing podmanDualStack network..."
+    info_message " "
+    podman network rm podmanDualStack -f 1> /dev/null
 
 }
