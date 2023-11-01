@@ -153,6 +153,19 @@ create_qm_node() {
         NODES_FOR_TESTING+=("${qm_node_name}")
 
         eval "$(podman exec node"${nodeID}" \
+            sed -i -e 's/^#ManagerHost=.*/ManagerHost='"${IP_CONTROL_MACHINE}"'/g' \
+                -e 's/^ManagerHost=.*/ManagerHost='"${IP_CONTROL_MACHINE}"'/g' \
+                /etc/bluechi/agent.conf.d/agent.conf
+        )"
+        if_error_exit "node: unable to sed ManagerHost in bluechi agent.conf"
+
+        # restarting the node bluechi-agent
+        eval "$(podman exec node"${nodeID}" \
+                systemctl restart bluechi-agent
+        )"
+        if_error_exit "node: unable to restart bluechi-agent service"
+
+        eval "$(podman exec node"${nodeID}" \
                 podman exec qm \
                 sed -i 's/^#ManagerHost=/ManagerHost='"${IP_CONTROL_MACHINE}"'/g' \
                 /etc/bluechi/agent.conf.d/agent.conf
