@@ -1,4 +1,7 @@
 #!/bin/bash
+
+set -eoux pipefail
+
 # shellcheck disable=SC1091
 #
 # Copyright 2023 The qm Authors
@@ -20,9 +23,13 @@
 START_TIME=$(date +%s)
 SCRIPT_DIR=$( cd -- "$( dirname -- "${BASH_SOURCE[0]}" )" &> /dev/null && pwd )
 
+# shellcheck disable=SC1091
 source "${SCRIPT_DIR}"/lib/utils
+# shellcheck disable=SC1091
 source "${SCRIPT_DIR}"/lib/container
+# shellcheck disable=SC1091
 source "${SCRIPT_DIR}"/lib/systemd
+# shellcheck disable=SC1091
 source "${SCRIPT_DIR}"/lib/tests
 
 # GLOBALS
@@ -39,11 +46,9 @@ export BUILD_BLUECHI_FROM_GH_URL=""
 export QM_GH_URL=""
 export BRANCH_QM=""
 
-if [ -t 1 ]; then
-    RED='\033[91m'
-    GRN='\033[92m'
-    CLR='\033[0m'
-fi
+RED='\033[91m'
+GRN='\033[92m'
+CLR='\033[0m'
 
 # ====================== Start - int main {} ;-)
 ARGUMENT_LIST=(
@@ -114,6 +119,29 @@ while [ $# -gt 0 ]; do
     esac
 done
 
+create_qm_disks() {
+
+  local disk_table
+  disk_table=$(lsblk --noheadings --raw)
+  local disks_arr
+  disks_arr=$(echo "$disk_table" | awk '$1~// && $6=="disk" {print $1}')
+
+  mkdir /var/qm
+  for disk in $disks_arr; do
+     if [[ ${disk} == "vda" || \
+           $(echo "${disk_table}" | grep -c "${disk}" ) -eq 1 ]];then
+         new_part="$( (echo n; echo p; echo ; echo ; echo ; echo w) | fdisk "/dev/${disk}")"
+         part_id="$(echo "${new_part}" | grep -Po "new partition \K([0-9])")"
+         if [[ $(echo "${disk}" | grep -c nvme) -eq 1 ]]; then
+           part_id=p${part_id}
+         fi
+         mkfs.xfs "/dev/${disk}${part_id}"
+         mount "/dev/${disk}${part_id}" /var/qm
+         xfs_growfs /var/qm
+     fi
+  done
+}
+
 install_qm_rpms() {
 
   info_message "Installing qm setup rpm"
@@ -176,6 +204,7 @@ info_message "Preparing QM environment"
 info_message "=============================="
 
 # Creates the QM env on VM
+create_qm_disks
 install_qm_rpms
 setup_qm_services
 
