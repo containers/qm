@@ -23,10 +23,11 @@ if_error_exit() {
     # Arguments:                                                              #
     #   $1 - error message if not provided, it will just exit                 #
     ###########################################################################
-    if [ "$?" != "0" ]; then
+    local exit_code="$?"
+    if [ "${exit_code}" != "0" ]; then
         RED="\033[91m"
         ENDCOLOR="\033[0m"
-        echo -e "[ ${RED}FAILED${ENDCOLOR} ] ${1}"
+        echo -e "[ ${RED}FAILED${ENDCOLOR} ] ${1} with exit code: ${exit_code}"
         kill $$ &> /dev/null
     fi
 }
@@ -46,6 +47,12 @@ info_message() {
     BLUE="\033[94m"
     ENDCOLOR="\033[0m"
     echo -e "[ ${BLUE}INFO${ENDCOLOR}  ] ${1}"
+}
+
+exec_cmd() {
+    local cmd="$1"
+    eval "$cmd"
+    if_error_exit "Error: Command "$cmd" failed"
 }
 
 cleanup() {

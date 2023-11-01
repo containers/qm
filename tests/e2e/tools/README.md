@@ -2,4 +2,4 @@ The `remove-containers` script will remove all containers (and images) which nam
 
 ### Freedom From Interference
 
-Under FFI c binaries build in different [automotive-repo](https://gitlab.com/CentOS/automotive/container-images/-/tree/main/images/ffi-tools)
+Under FFI binaries build in different [automotive-repo](https://gitlab.com/CentOS/automotive/container-images/-/tree/main/images/ffi-tools)
