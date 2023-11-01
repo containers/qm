@@ -67,6 +67,12 @@ jobs:
     skip_build: true
     targets:
     - centos-stream-9-x86_64
+    tf_extra_params:
+      environments:
+        -  hardware:
+            disk:
+             - size: ">= 20 GB"
+
 
   - job: tests
     trigger: pull_request
@@ -80,6 +86,10 @@ jobs:
         - tmt:
             context:
              scenario : "ffi"
+          hardware:
+            disk:
+             - size: ">= 20 GB"
+             - size: ">= 20 GB"
 
   - job: propose_downstream
     trigger: release

@@ -13,6 +13,15 @@ prepare_test() {
        /etc/containers/systemd/qm.container"
 }
 
+disk_cleanup() {
+   exec_cmd "systemctl stop qm"
+   remove_file=$(find /var/qm -size  +2G)
+   exec_cmd "rm -f $remove_file"
+   exec_cmd "systemctl start qm"
+   remove_file=$(find /root -size  +1G)
+   exec_cmd "rm -f $remove_file"
+}
+
 reload_config() {
    exec_cmd "systemctl daemon-reload"
    exec_cmd "systemctl restart qm"
