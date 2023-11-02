@@ -32,6 +32,7 @@ RUN dnf install -y \
 	sudo \
 	gpgme-devel \
 	libseccomp-devel \
+	iptables-nft \
 	iptables-services \
 	selinux-policy-targeted \
 	selinux-policy-devel \
