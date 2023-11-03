@@ -15,6 +15,11 @@ AGENT_HOSTNAME="$(hostname)"
 AGENTCONF="/etc/bluechi/agent.conf.d/agent.conf"
 QM_CONTAINER_IDS=1000000000:1500000000
 CONTAINER_IDS=2500000000:1500000000
+PACKAGES_TO_INSTALL="selinux-policy-targeted podman systemd bluechi-agent procps-ng iptables-nft"
+
+# RHEL kernel uses iptables-nft, not iptables-legacy, the tool should
+# make sure this package is removed
+PACKAGES_TO_REMOVE="iptables-legacy"
 
 CMDLINE_ARGUMENT_LIST=(
   "installdir"
@@ -24,6 +29,7 @@ CMDLINE_ARGUMENT_LIST=(
   "rwvarfs"
   "skip-systemctl"
 )
+
 
 root_check() {
     if [ "$(id -u)" -ne 0 ];then
@@ -132,7 +138,15 @@ install() {
     # shellcheck source=/dev/null
     . /etc/os-release
     setupRW "${ROOTFS}" "${RWETCFS}" "${RWVARFS}"
-    dnf -y install --releasever="${VERSION_ID}" --installroot "${ROOTFS}" selinux-policy-targeted podman systemd bluechi-agent procps-ng
+
+
+
+    cmd_dnf_install="dnf -y install --releasever=${VERSION_ID} --installroot ${ROOTFS} ${PACKAGES_TO_INSTALL}"
+    ${cmd_dnf_install}
+
+    cmd_dnf_remove="dnf --installroot ${ROOTFS} remove ${PACKAGES_TO_REMOVE} -y"
+    ${cmd_dnf_remove}
+
     dnf -y update --installroot "${ROOTFS}"
     rm -rf "${ROOTFS}"/etc/selinux/targeted/contexts/files/file_contexts/*
 
