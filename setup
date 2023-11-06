@@ -15,7 +15,7 @@ AGENT_HOSTNAME="$(hostname)"
 AGENTCONF="/etc/bluechi/agent.conf.d/agent.conf"
 QM_CONTAINER_IDS=1000000000:1500000000
 CONTAINER_IDS=2500000000:1500000000
-PACKAGES_TO_INSTALL="selinux-policy-targeted podman systemd bluechi-agent procps-ng iptables-nft vim findutils"
+PACKAGES_TO_INSTALL="selinux-policy-targeted podman systemd bluechi-agent procps-ng iptables-nft"
 
 # RHEL kernel uses iptables-nft, not iptables-legacy, the tool should
 # make sure this package is removed.
