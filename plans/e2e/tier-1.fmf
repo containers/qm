@@ -13,12 +13,13 @@ adjust:
       - name: Install rpms
         how: install
         package: podman
-      - name: Setp AutoSD env
+
+      - name: Setup AutoSD env
         how: shell
         script: |
            # Currently option passing c9s
            podman run --replace -d --name autosd \
-                  --privileged -it \
+                  --privileged \
                   quay.io/centos-sig-automotive/autosd:latest
    when: distro == centos-stream-9 or distro == fedora
 
