@@ -55,6 +55,7 @@ template(`qm_domain_template',`
 	container_read_share_files($1_t)
 	container_exec_share_files($1_t)
 	allow $1_t container_ro_file_t:file execmod;
+	allow $1_container_t $1_file_type:chr_file { rw_inherited_file_perms };
 
 	attribute $1_file_type;
 	allow $1_file_type self:filesystem associate;
@@ -260,6 +261,7 @@ template(`qm_domain_template',`
 	kernel_rw_unix_sysctls($1_t)
 	kernel_rw_vm_sysctls($1_t)
 	kernel_rw_usermodehelper_state($1_t)
+	kernel_rw_vm_sysctls($1_t)
 	kernel_search_debugfs($1_t)
 	dontaudit $1_t proc_security_t:file write;
 	allow $1_t filesystem_type:filesystem { mount remount unmount };
@@ -468,6 +470,9 @@ template(`qm_domain_template',`
 	allow unconfined_domain_type $1_container_domain:process2 { nnp_transition nosuid_transition };
 	allow unconfined_service_t $1_container_domain:process dyntransition;
 
+	dev_getattr_all($1_container_domain)
+	dev_list_sysfs($1_container_domain)
+	dev_dontaudit_mounton_sysfs($1_container_domain)
 	domain_dontaudit_link_all_domains_keyrings($1_container_domain)
 	domain_dontaudit_search_all_domains_keyrings($1_container_domain)
 	domain_dontaudit_search_all_domains_state($1_container_domain)
@@ -555,4 +560,9 @@ template(`qm_domain_template',`
 
 	userdom_rw_inherited_user_pipes($1_container_domain)
 	userdom_use_user_ptys($1_container_domain)
+
+	optional_policy(`
+		vsomeip_use($1_t)
+		vsomeip_use($1_container_domain)
+	')
 ')
