@@ -1,7 +1,7 @@
 /tier0:
     summary: Test is calling e2e/lib/tests as stand alone test
     test:
-      bash -x ./test.sh
+      ./test.sh
     tier: 0
 
 /tier1:
@@ -10,7 +10,7 @@
       CONTROL_CONTAINER_NAME: "autosd"
       NODES_FOR_TESTING_ARR: "qm.localrootfs localrootfs"
     test:
-      bash -x ./test.sh
+      ./test.sh
     tier: 1
 framework:
     shell
