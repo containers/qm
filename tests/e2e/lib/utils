@@ -52,7 +52,7 @@ info_message() {
 exec_cmd() {
     local cmd="$1"
     eval "$cmd"
-    if_error_exit "Error: Command "$cmd" failed"
+    if_error_exit "Error: Command $cmd failed"
 }
 
 cleanup() {

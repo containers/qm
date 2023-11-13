@@ -1,6 +1,3 @@
-test:
-  ./test.sh
-
 /tier0:
     summary: Test is calling e2e/lib/tests as stand alone test
     test:
@@ -9,12 +6,11 @@ test:
 
 /tier1:
     summary: Test is calling e2e/lib/tests AutoSD container
+    environment:
+      CONTROL_CONTAINER_NAME: "autosd"
+      NODES_FOR_TESTING_ARR: "qm.localrootfs localrootfs"
     test:
       ./test.sh
     tier: 1
-    tag: ffi
-    environment:
-      CONTROL_CONTAINER_NAME: "autosd"
-      NODES_FOR_TESTING_ARR: "localrootfs qm.localrootfs"
 framework:
     shell
