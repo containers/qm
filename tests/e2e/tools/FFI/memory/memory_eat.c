@@ -4,6 +4,10 @@
 #include <sys/sysinfo.h>
 #include <unistd.h>
 
+#ifndef MEM_PERCENT
+#define MEM_PERCENT 0.5
+#endif
+
 int main() {
     struct sysinfo si;
     if (sysinfo(&si) != 0) {
@@ -12,7 +16,7 @@ int main() {
     }
 
     unsigned long total_memory = si.totalram * si.mem_unit;
-    unsigned long memory_to_allocate = 0.9 * total_memory;
+    unsigned long memory_to_allocate = MEM_PERCENT * total_memory;
 
     char *buffer = malloc(memory_to_allocate);
 

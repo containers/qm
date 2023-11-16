@@ -1,7 +1,7 @@
 CC = gcc
 CFLAGS = -Wall -g
 
-VPATH=disk/QM:memory/ASIL:memory/QM
+VPATH=disk/QM:memory
 QM_BIN=./bin/QM
 ASIL_BIN=./bin/ASIL
 
@@ -17,14 +17,14 @@ createqmbin:
 createasilbin:
 	@mkdir -p $(ASIL_BIN)
 
-20_percent_memory_eat: 20_percent_memory_eat.c
-	$(CC) $(CFLAGS) -o $(ASIL_BIN)/$@ $<
+20_percent_memory_eat: memory_eat.c
+	$(CC) $(CFLAGS) -DMEM_PERCENT=0.2 -o $(ASIL_BIN)/$@ $<
 
 file-allocate: file-allocate.c
 	$(CC) $(CFLAGS) -o $(QM_BIN)/$@ $<
 
-90_percent_memory_eat: 90_percent_memory_eat.c
-	$(CC) $(CFLAGS) -o $(QM_BIN)/$@ $<
+90_percent_memory_eat: memory_eat.c
+	$(CC) $(CFLAGS) -DMEM_PERCENT=0.9 -o $(QM_BIN)/$@ $<
 
 clean:
 	rm -rf $(QM_BIN) $(ASIL_QM)
