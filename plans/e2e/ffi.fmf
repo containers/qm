@@ -20,7 +20,7 @@ adjust:
         how: shell
         script: |
            cd tests/e2e
-           ./set-ffi-env-e2e --qm-setup-from-gh-url=https://raw.githubusercontent.com/containers
+           ./set-ffi-env-e2e --branch-qm=fix-qm-tmp-dir  --qm-setup-from-gh-url=https://raw.githubusercontent.com/Yarboa
    when: scenario == ffi and distro == centos-stream-9, fedora
 
 execute:

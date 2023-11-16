@@ -11,6 +11,7 @@ INSTALLDIR="/usr/share/qm"
 ROOTFS="/usr/lib/qm/rootfs"
 RWETCFS="/etc/qm"
 RWVARFS="/var/qm"
+TMP_QM_IMG_DIR="tmp-img-dir"
 AGENT_HOSTNAME="$(hostname)"
 AGENTCONF="/etc/bluechi/agent.conf.d/agent.conf"
 QM_CONTAINER_IDS=1000000000:1500000000
@@ -92,7 +93,8 @@ storage() {
     ROOTFS=$1
     if ! test -f "${ROOTFS}/etc/containers/storage.conf"; then
 	mkdir -p "${ROOTFS}/var/lib/shared/overlay-images" \
-	      "${ROOTFS}/var/lib/shared/overlay-layers"
+	      "${ROOTFS}/var/lib/shared/overlay-layers" \
+              "${ROOTFS}/var/${TMP_QM_IMG_DIR}"
 	touch "${ROOTFS}/var/lib/shared/overlay-images/images.lock" \
 	      "${ROOTFS}/var/lib/shared/overlay-layers/layers.lock"
 
@@ -100,6 +102,8 @@ storage() {
 	    -e 's|^#.*transient_store.*|transient_store=true|g' \
 	    "${ROOTFS}/usr/share/containers/storage.conf" \
 	    > "${ROOTFS}/etc/containers/storage.conf"
+        sed -i "s|^#env = \[\]|env = \[\"TMPDIR=/var/${TMP_QM_IMG_DIR}\"\]|" \
+            "${ROOTFS}/usr/share/containers/containers.conf"
     fi
 }
 

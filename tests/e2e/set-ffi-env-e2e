@@ -105,7 +105,7 @@ while [ $# -gt 0 ]; do
             if [ -z "${BRANCH_QM}" ]; then
                 BRANCH_QM="main"
             fi
-            #QM_GH_URL="${2}/qm/${BRANCH_QM}/setup"
+            QM_GH_URL="${2}/qm/${BRANCH_QM}/setup"
             shift 2
             ;;
 
@@ -129,7 +129,7 @@ create_qm_disks() {
   mkdir /var/qm
   for disk in $disks_arr; do
      if [[ ${disk} == "vda" || \
-           $(echo "${disk_table}" | grep -c "${disk}" ) -eq 1 ]];then
+           $(echo "${disk_table}" | grep -c "${disk}" ) -eq 1 && ${disk} != "zram0" ]];then
          new_part="$( (echo n; echo p; echo ; echo ; echo ; echo w) | fdisk "/dev/${disk}")"
          part_id="$(echo "${new_part}" | grep -Po "new partition \K([0-9])")"
          if [[ $(echo "${disk}" | grep -c nvme) -eq 1 ]]; then
@@ -146,7 +146,6 @@ install_qm_rpms() {
 
   info_message "Installing qm setup rpm"
   ARCH=$(arch)
-  dnf update -y
   dnf install -y 'dnf-command(config-manager)'
   dnf config-manager --set-enabled crb
   dnf copr enable -y @centos-automotive-sig/bluechi-snapshot centos-stream-9-"${ARCH}"
@@ -185,7 +184,6 @@ EOF
   systemctl start bluechi-agent
   # Restart qm to read lates bluechi-agent.conf
   systemctl restart qm
-
 }
 
 info_message "Starting setup"
