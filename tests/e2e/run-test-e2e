@@ -181,7 +181,7 @@ cleanup
 info_message "Creating dual stack network"
 podman network \
     create --ipv6 --gateway fd00::1:8:1 --subnet fd00::1:8:0/112 \
-    --gateway 10.90.0.1 --subnet 10.90.0.0/16 podmanDualStack &> /dev/null
+    --gateway 10.90.0.1 --subnet 10.90.0.0/16 podmanDualStack
 
 info_message "Cleaning any previous e2e files"
 
