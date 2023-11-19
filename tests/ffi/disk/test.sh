@@ -8,12 +8,13 @@ disk_cleanup
 prepare_test
 reload_config
 
-podman exec -it qm /bin/bash -c \
-       "podman run -d  --replace --name ffi-qm  quay.io/centos-sig-automotive/ffi-tools:latest \
-       tail -f /dev/null"
+exec_cmd "podman exec -it qm /bin/bash -c \
+         'podman run -d  --replace --name ffi-qm \
+          quay.io/centos-sig-automotive/ffi-tools:latest \
+          tail -f /dev/null'"
 
-podman exec -it qm /bin/bash -c \
-       "podman exec -it ffi-qm ./QM/file-allocate > /dev/null"
+exec_cmd "podman exec -it qm /bin/bash -c \
+         'podman exec -it ffi-qm ./QM/file-allocate > /dev/null'"
 
 if ! eval "fallocate -l 2G /root/file.lock" ; then
    echo "No space left on device"

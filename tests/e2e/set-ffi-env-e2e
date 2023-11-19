@@ -45,6 +45,7 @@ export ARCH=""
 export BUILD_BLUECHI_FROM_GH_URL=""
 export QM_GH_URL=""
 export BRANCH_QM=""
+export SET_QM_PART=""
 
 RED='\033[91m'
 GRN='\033[92m'
@@ -54,6 +55,7 @@ CLR='\033[0m'
 ARGUMENT_LIST=(
     "qm-setup-from-gh-url"
     "branch-qm"
+    "set-qm-disk-part"
 )
 
 usage() {
@@ -69,6 +71,8 @@ Usage: ./set-ffi-env-e2e [OPTIONS]
 --branch-qm
         Specify which branch the GitHub repo will be set. Requires --qm-setup-from-gh-url
 
+--set-qm-disk-part
+        Specify if disk partition neede for /var/qm needed
 
 Examples:
 
@@ -79,6 +83,7 @@ Examples:
                 ./set-ffi-env-e2e \\
                         --branch-qm=superfeature \\
                         --qm-setup-from-gh-url=https://raw.githubusercontent.com/MYUSER/ \\
+                        --set-qm-disk-part=Y \\
 
 EOF
     exit 0
@@ -106,6 +111,11 @@ while [ $# -gt 0 ]; do
                 BRANCH_QM="main"
             fi
             QM_GH_URL="${2}/qm/${BRANCH_QM}/setup"
+            shift 2
+            ;;
+
+        --set-qm-disk-part)
+            SET_QM_PART="${2}"
             shift 2
             ;;
 
@@ -202,7 +212,9 @@ info_message "Preparing QM environment"
 info_message "=============================="
 
 # Creates the QM env on VM
-create_qm_disks
+if [ -n "${SET_QM_PART}" ]; then
+    create_qm_disks
+fi
 install_qm_rpms
 setup_qm_services
 
