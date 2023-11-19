@@ -9,8 +9,14 @@ prepare_test() {
    if_error_exit "cannot create temp dir under /tmp/"
    exec_cmd "cp ${qm_service_file} ${qm_service_backup}"
    # Remove 'DropCapability=sys_resource' enable nested container in QM
-   exec_cmd "sed -i 's/DropCapability=sys_resource/#DropCapability=sys_resource/' \
-       /etc/containers/systemd/qm.container"
+   exec_cmd "sed -i 's|DropCapability=sys_resource|#DropCapability=sys_resource|' \
+            ${qm_service_file}"
+   # FIXME: QM is failing to start podman command
+   # Add back once this ReadOnlyTmpfs added to quadlet
+   # Ref: https://github.com/containers/podman/issues/20439
+   if ! grep "Volatile" "${qm_service_file}" ; then
+     exec_cmd "sed -i 's|ReadOnly=true|&\nVolatileTmp=true|' ${qm_service_file}"
+   fi
 }
 
 disk_cleanup() {

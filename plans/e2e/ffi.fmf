@@ -18,9 +18,11 @@ adjust:
 
       - name: Set QM env
         how: shell
+           # FIXME: On new QM release remove
+           # qm-setup-from-gh-url, branch-qm option
         script: |
            cd tests/e2e
-           ./set-ffi-env-e2e --branch-qm=fix-qm-tmp-dir  --qm-setup-from-gh-url=https://raw.githubusercontent.com/Yarboa
+           ./set-ffi-env-e2e --branch-qm=main --qm-setup-from-gh-url=https://raw.githubusercontent.com/containers --set-qm-disk-part=Y
    when: scenario == ffi and distro == centos-stream-9, fedora
 
 execute:
