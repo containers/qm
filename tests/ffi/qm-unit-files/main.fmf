@@ -1,0 +1,11 @@
+summary: Test is testing FFI setup
+environment:
+  CONTROL_CONTAINER_NAME: "host"
+test:
+  ./test.sh
+path:
+  /tests/qm-unit-files/
+tag: ffi
+
+framework:
+    shell

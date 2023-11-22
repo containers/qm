@@ -1,4 +1,6 @@
 /tier0:
+    environment:
+      CONTROL_CONTAINER_NAME: "node1"
     summary: Test is calling e2e/lib/tests as stand alone test
     test:
       ./test.sh
@@ -12,13 +14,5 @@
       ./test.sh
     tier: 1
 
-/ffi:
-    summary: Test is testing FFI setup
-    environment:
-      CONTROL_CONTAINER_NAME: "host"
-    test:
-      ./test.sh
-
-    tag: ffi
 framework:
     shell
