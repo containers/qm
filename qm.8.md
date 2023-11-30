@@ -129,6 +129,22 @@ If you want permanently modify the bluechi agent within the QM you can add confi
 /usr/lib/qm/rootfs/etc/bluechi/agent.conf.d/ directory or modify the /etc/containers/systemd/qm.container
 quadlet file to not execute the bluechi-agent setup script.
 
+## Using systemd drop-in with QM
+
+The systemd drop-in feature allows users to extend or modify the configuration of systemd units without directly editing the unit files provided by the system package.
+
+In this example, we will add the AllowedCPU to set as 1 to qm.service that quadlet generated:
+
+**Create allowedcpus.conf**
+
+```console
+cat  /etc/systemd/system/qm.service.d/allowedcpus.conf
+
+# Contents of qm.continer.d/allowedcpus.conf
+[Service]
+AllowedCPUs=1
+```
+
 ## SEE ALSO
 
 **[podman(1)](https://github.com/containers/podman/blob/main/docs/source/markdown/podman.1.md)**,**[quadlet(5)](https://github.com/containers/podman/blob/main/docs/source/markdown/podman-systemd.unit.5.md)**, systemctl(1), systemd(1), dnf(8), [bluechi-agent(1)](https://github.com/containers/bluechi/blob/main/doc/man/bluechi-agent.1.md),[bluechi-agent.conf.5](https://github.com/containers/bluechi/blob/main/doc/man/bluechi-agent.conf.5.md)
