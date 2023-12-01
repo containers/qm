@@ -2,7 +2,8 @@
 WantedBy=default.target
 
 [Service]
-AllowedCPUs=1
+# It's recommended to use systemd drop-in to override the
+# systemd settings. See QM manpage for an example.
 CPUWeight=50
 Delegate=true
 IOWeight=50
