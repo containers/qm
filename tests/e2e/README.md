@@ -166,10 +166,30 @@ qemu-img resize /tmp/CentOS-Stream-GenericCloud-9-latest.x86_64.qcow2 +20G
 virt-customize -a /tmp/CentOS-Stream-GenericCloud-9-latest.x86_64.qcow2 --root-password password:${PASSWORD}
 ```
 
+- Update disk size
+
+Use the following command within the vm, once qemu-image resize used
+
+```bash
+sudo growpart /dev/vda 1
+```
+
+In case of running FFI tests, test scripts, add additional partition, reserve some space as following
+
+```bash
+growpart --free-percent=50 /dev/vda 1
+```
+
+Extend the mounted filesystem
+
+```bash
+xfs_growfs /
+```
+
 - Run VM locally
 
 ``` bash
-/usr/bin/qemu-system-x86_64 -nographic -smp 12 -enable-kvm -m 2G -machine q35 -cpu host -device virtio-net-pci,netdev=n0,mac=FE:30:26:a6:91:2d -netdev user,id=n0,net=10.0.2.0/24,hostfwd=tcp::2222-:22 -drive file=/tmp/CentOS-Stream-GenericCloud-9-latest.x86_64.qcow2,index=0,media=disk,format=qcow2,if=virtio,snapshot=off
+/usr/bin/qemu-system-x86_64 -nographic -smp 12 -enable-kvm -m 2G -machine q35 -cpu host -device virtio-net-pci,netdev=n0,mac=FE:30:26:a6:91:2d -netdev user,id=n0,net=10.0.2.0/24,hostfwd=tcp::${PORT}-:22 -drive file=/tmp/CentOS-Stream-GenericCloud-9-latest.x86_64.qcow2,index=0,media=disk,format=qcow2,if=virtio,snapshot=off
 ```
 
 **To exit from qemu**: `CTRL-a c` and then `quit` into the qemu terminal
@@ -236,5 +256,5 @@ Running FFI tests connecting c9s host, sets different tests environment from the
 
 ``` bash
 tmt -c scenario=ffi run -a prepare  provision --how connect \
-    -u root -p Aa123456 -P 2222 -p ${PASSWORD} -P {PORT} -g localhost plan -n /plans/e2e/ffi
+    -u root -p ${PASSWORD} -P {PORT} -g localhost plan -n /plans/e2e/ffi
 ```
