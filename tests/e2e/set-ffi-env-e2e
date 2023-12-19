@@ -46,6 +46,7 @@ export BUILD_BLUECHI_FROM_GH_URL=""
 export QM_GH_URL=""
 export BRANCH_QM=""
 export SET_QM_PART=""
+export USE_QM_COPR=""
 
 RED='\033[91m'
 GRN='\033[92m'
@@ -56,6 +57,7 @@ ARGUMENT_LIST=(
     "qm-setup-from-gh-url"
     "branch-qm"
     "set-qm-disk-part"
+    "use-qm-copr"
 )
 
 usage() {
@@ -74,16 +76,20 @@ Usage: ./set-ffi-env-e2e [OPTIONS]
 --set-qm-disk-part
         Specify if disk partition neede for /var/qm needed
 
+--use-qm-copr
+        Specify to install rpms from rhcontainerbot/qm copr
+
 Examples:
 
 	No args, it will install latest qm and bluechi from copr rpm repository
 		./set-ffi-env-e2e
 
-        Usee qm setup specific github url and select the branches
+        Use qm setup specific github url and select the branches
                 ./set-ffi-env-e2e \\
                         --branch-qm=superfeature \\
                         --qm-setup-from-gh-url=https://raw.githubusercontent.com/MYUSER/ \\
                         --set-qm-disk-part=Y \\
+                        --use-qm-copr=Y \\
 
 EOF
     exit 0
@@ -116,6 +122,11 @@ while [ $# -gt 0 ]; do
 
         --set-qm-disk-part)
             SET_QM_PART="${2}"
+            shift 2
+            ;;
+
+        --use-qm-copr)
+            USE_QM_COPR="${2}"
             shift 2
             ;;
 
@@ -159,7 +170,9 @@ install_qm_rpms() {
   dnf install -y 'dnf-command(config-manager)'
   dnf config-manager --set-enabled crb
   dnf copr enable -y @centos-automotive-sig/bluechi-snapshot centos-stream-9-"${ARCH}"
-  dnf copr enable -y rhcontainerbot/qm centos-stream-9-"${ARCH}"
+  if [ -n "${USE_QM_COPR}" ]; then
+      dnf copr enable -y rhcontainerbot/qm centos-stream-9-"${ARCH}"
+  fi
   dnf install -y qm bluechi-ctl bluechi podman hostname
 }
 

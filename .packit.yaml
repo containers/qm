@@ -64,7 +64,6 @@ jobs:
     trigger: pull_request
     identifier: e2e-tiers
     tmt_plan: /plans/e2e/tier-0
-    skip_build: true
     targets:
     - centos-stream-9-x86_64
     tf_extra_params:
@@ -78,7 +77,6 @@ jobs:
     trigger: pull_request
     identifier: e2e-ffi
     tmt_plan: /plans/e2e/ffi
-    skip_build: true
     targets:
     - centos-stream-9-x86_64
     tf_extra_params:

@@ -75,13 +75,17 @@ imageID: ${IMAGE_ID}"
 
 setup_node() {
         local nodeID="${1}"
+        local use_qm_copr="${2}"
 
         # copy control as template to node${number}
         cp ./lib/ContainerFile.template ContainerFile.node"${nodeID}"
         if_error_exit "failed to copy ContainerFile control template to node!"
-
+        if [ -n ${use_qm-copr} ]; then
+          sed -e 's/crb/&\nRUN dnf -y copr enable rhcontainerbot\/qm centos-stream-9/' -i ContainerFile.node"${nodeID}"
+          if_error_exit "failed to sed ContainerFile node template!"
+        fi
         # remove specific code from control mode (template)
-        sed -i '/start/,/end/d' ContainerFile.node"${nodeID}"
+        sed '/start/,/end/d' -i ContainerFile.node"${nodeID}"
         if_error_exit "failed to sed ContainerFile node template!"
 }
 
@@ -97,10 +101,14 @@ create_qm_node() {
 
         setup_node \
             "${nodeID}" \
-            "${IP_CONTROL_MACHINE}"
-
+            "${USE_QM_COPR}"
         # Add final instructions
         echo "RUN dnf install qm -y &> /dev/null" >> ContainerFile.node"${nodeID}"
+
+        if [ -n "${QM_GH_URL}" ]; then
+          curl "${QM_GH_URL}"  > /usr/share/qm/setup
+          chmod +x /usr/share/qm/setup
+        fi
 
         # Execute qm setup
         # Use --skip-systemctl true in podman build, systemd is not running

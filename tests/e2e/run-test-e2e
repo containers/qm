@@ -17,6 +17,8 @@
 # along with this program; If not, see <http://www.gnu.org/licenses/>.
 #
 # Capture the start time
+set -vx
+
 START_TIME=$(date +%s)
 SCRIPT_DIR=$( cd -- "$( dirname -- "${BASH_SOURCE[0]}" )" &> /dev/null && pwd )
 
@@ -38,6 +40,7 @@ export BUILD_QM_FROM_GH_URL=""
 export BUILD_BLUECHI_FROM_GH_URL=""
 export BRANCH_BLUECHI=""
 export BRANCH_QM=""
+export USE_QM_COPR=""
 
 # If no additional nodes are required, use 1
 if [ -z "${NUMBER_OF_NODES}" ]; then
@@ -62,6 +65,7 @@ fi
 ARGUMENT_LIST=(
     "build-qm-from-gh-url"
     "branch-qm"
+    "use-qm-copr"
     "build-bluechi-from-gh-url"
     "branch-bluechi"
     "skip-tests"
@@ -79,7 +83,8 @@ Usage: ./run-test-e2e [OPTIONS]
 	Build QM from a specific GitHub URL, useful for testing new features
 --branch-qm
 	Specify which branch the GitHub repo will be set. Requires --build-qm-from-gh-url
-
+--use-qm-copr
+        Specify to install rpms from rhcontainerbot/qm copr
 --number-of-nodes
 	Specify number of nodes. (default 1)
 
@@ -101,6 +106,7 @@ Examples:
 			--build-qm-from-gh-url=https://github.com/MYUSER/qm.git \\
 			--branch-bluechi=superfeature \\
 			--build-bluechi-from-gh-url=https://github.com/MYUSER/bluechi.git \\
+			--use-qm-copr=Y \\
 
 EOF
     exit 0
@@ -157,6 +163,12 @@ while [ $# -gt 0 ]; do
 
             shift 2
             ;;
+
+        --use-qm-copr)
+            USE_QM_COPR="${2}"
+            shift 2
+            ;;
+
 
         --help)
             usage

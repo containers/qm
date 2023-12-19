@@ -45,8 +45,10 @@ ${container_target}:/tmp/container-${srv}.container"
              eval "${cmd_cp_systemd_srv}"
              if_error_exit "cannot copy container-${srv} to qm container"
 
+             # Find configuration file from service
+             target_service_file=$(podman exec ${container_target} systemctl show -P  SourcePath qm.service)
 	     # START: remove DropCapability to run nested container
-             podman exec -it ${container_target} sed -i '/^\s*DropCapability=sys_resource/ d' /etc/containers/systemd/qm.container
+             podman exec -it ${container_target} bash -c "sed -i '/^\s*DropCapability=sys_resource/ d' \"${target_service_file}\""
 	     if_error_exit "unable to remove DropCapability=sys_resource in qm.container"
 
 	     podman exec -it ${container_target} systemctl daemon-reload
