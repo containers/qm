@@ -11,7 +11,7 @@ INSTALLDIR="/usr/share/qm"
 ROOTFS="/usr/lib/qm/rootfs"
 RWETCFS="/etc/qm"
 RWVARFS="/var/qm"
-TMP_QM_IMG_DIR="tmp-img-dir"
+TMP_QM_IMG_DIR="tmp.images"
 AGENT_HOSTNAME="$(hostname)"
 AGENTCONF="/etc/bluechi/agent.conf.d/agent.conf"
 QM_CONTAINER_IDS=1000000000:1500000000
@@ -98,12 +98,16 @@ storage() {
 	touch "${ROOTFS}/var/lib/shared/overlay-images/images.lock" \
 	      "${ROOTFS}/var/lib/shared/overlay-layers/layers.lock"
 
-	sed -e '/additionalimage.*/a "/var/lib/shared",' \
-	    -e 's|^#.*transient_store.*|transient_store=true|g' \
-	    "${ROOTFS}/usr/share/containers/storage.conf" \
-	    > "${ROOTFS}/etc/containers/storage.conf"
-        sed -i "s|^#env = \[\]|env = \[\"TMPDIR=/var/${TMP_QM_IMG_DIR}\"\]|" \
-            "${ROOTFS}/usr/share/containers/containers.conf"
+        sed -e '/additionalimage.*/,/]/s/^#//g' \
+            -e '/additionalimages.*/{n;s/.*/\"\/var\/lib\/shared\",/;}' \
+            -e 's|^#.*transient_store.*|transient_store=true|g' \
+            /"${ROOTFS}/usr/share/containers/storage.conf" \
+            > "${ROOTFS}/etc/containers/storage.conf"
+
+        if ! grep -q "env" "${ROOTFS}/etc/containers/containers.conf"; then
+            echo "env = [\"TMPDIR=/var/${TMP_QM_IMG_DIR}\"]" \
+            >>  "${ROOTFS}/etc/containers/containers.conf"
+        fi
     fi
 }
 

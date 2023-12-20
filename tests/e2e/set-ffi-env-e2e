@@ -46,7 +46,7 @@ export BUILD_BLUECHI_FROM_GH_URL=""
 export QM_GH_URL=""
 export BRANCH_QM=""
 export SET_QM_PART=""
-export USE_QM_COPR=""
+export USE_QM_COPR="${USE_QM_COPR:-}"
 
 RED='\033[91m'
 GRN='\033[92m'

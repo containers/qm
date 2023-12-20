@@ -8,9 +8,11 @@ provision:
    how: local
 
 adjust:
- - when: scenario == manual
+ - when: run == manual
+   environment+:
+       USE_QM_COPR: yes
    prepare+:
-     - name: Prepare Repos
+     - name: Prepare QM Repos
        how: shell
        order: 10
        script: |
