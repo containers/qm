@@ -11,6 +11,10 @@ provision:
    how: local
 
 adjust:
+ - when: run == manual
+   environment+:
+       USE_QM_COPR: yes
+ - when: scenario == ffi and distro == centos-stream-9, fedora
    prepare+:
       - name: Install rpms
         how: install
@@ -23,7 +27,6 @@ adjust:
         script: |
            cd tests/e2e
            ./set-ffi-env-e2e --set-qm-disk-part=yes
-   when: scenario == ffi and distro == centos-stream-9, fedora
 
 execute:
     how: tmt
