@@ -75,13 +75,13 @@ imageID: ${IMAGE_ID}"
 
 setup_node() {
         local nodeID="${1}"
-        local use_qm_copr="${2}"
+        local use_copr_repo="${2}"
 
         # copy control as template to node${number}
         cp ./lib/ContainerFile.template ContainerFile.node"${nodeID}"
         if_error_exit "failed to copy ContainerFile control template to node!"
-        if [ -n ${use_qm_copr} ]; then
-          sed -e 's/crb/&\nRUN dnf -y copr enable rhcontainerbot\/qm centos-stream-9/' -i ContainerFile.node"${nodeID}"
+        if [ -n "${use_copr_repo}" ]; then
+          sed -e "/crb/a RUN dnf -y copr enable ${use_copr_repo} centos-stream-9" -i ContainerFile.node"${nodeID}"
           if_error_exit "failed to sed ContainerFile node template!"
         fi
         # remove specific code from control mode (template)

@@ -39,7 +39,7 @@ export BUILD_QM_FROM_GH_URL=""
 export BUILD_BLUECHI_FROM_GH_URL=""
 export BRANCH_BLUECHI=""
 export BRANCH_QM=""
-export USE_QM_COPR="${USE_QM_COPR:-}"
+export USE_QM_COPR="${PACKIT_COPR_PROJECT:-rhcontainerbot/qm}"
 
 # If no additional nodes are required, use 1
 if [ -z "${NUMBER_OF_NODES}" ]; then

@@ -10,13 +10,8 @@ provision:
 adjust:
  - when: run == manual
    environment+:
-       USE_QM_COPR: yes
-   prepare+:
-     - name: Prepare QM Repos
-       how: shell
-       order: 10
-       script: |
-          dnf copr enable -y rhcontainerbot/qm centos-stream-9
+       # Sample code to use manual packit repo
+       PACKIT_COPR_PROJECT: packit/containers-qm-291
 
  - when: distro == centos-stream-9 or distro == fedora
    prepare+:
