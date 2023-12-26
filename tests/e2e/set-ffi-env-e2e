@@ -145,9 +145,12 @@ create_qm_disks() {
   local disk_table
   disk_table=$(lsblk --noheadings --raw)
   local disks_arr
+  local slash_var
+  slash_var="/var"
   disks_arr=$(echo "$disk_table" | awk '$1~// && $6=="disk" {print $1}')
+  info_message "Create_qm_disks, found ${disks_arr}"
+  info_message "=============================="
 
-  mkdir /var/qm
   for disk in $disks_arr; do
      if [[ ${disk} == "vda" || \
            $(echo "${disk_table}" | grep -c "${disk}" ) -eq 1 && ${disk} != "zram0" ]];then
@@ -157,8 +160,18 @@ create_qm_disks() {
            part_id=p${part_id}
          fi
          mkfs.xfs "/dev/${disk}${part_id}"
-         mount "/dev/${disk}${part_id}" /var/qm
-         xfs_growfs /var/qm
+         info_message "Create_qm_disks, prepare and mount /new_var"
+         info_message "=============================="
+         mkdir -p /new_var
+         mount "/dev/${disk}${part_id}" /new_var
+         rsync -aqxP /var/* /new_var
+         systemctl stop var-lib-nfs-rpc_pipefs.mount
+         umount /new_var
+         rm -rf "${slash_var:?}"/*
+         info_message "Create_qm_disks, prepare and mount ${slash_var}"
+         info_message "=============================="
+         mount "/dev/${disk}${part_id}" "${slash_var}"
+         systemctl start var-lib-nfs-rpc_pipefs.mount
      fi
   done
 }
@@ -166,6 +179,8 @@ create_qm_disks() {
 install_qm_rpms() {
 
   info_message "Installing qm setup rpm"
+  info_message "Installing qm using ${USE_QM_COPR} repo"
+  info_message "=============================="
   ARCH=$(arch)
   dnf install -y 'dnf-command(config-manager)'
   dnf config-manager --set-enabled crb
@@ -179,6 +194,7 @@ install_qm_rpms() {
 setup_qm_services() {
 
   info_message "Setup qm services"
+  info_message "=============================="
   #Update setup script from QM repos, in case rpm not updates yet
   if [ -n "${QM_GH_URL}" ]; then
       curl "${QM_GH_URL}"  > /usr/share/qm/setup
@@ -200,9 +216,13 @@ cat > /etc/bluechi/agent.conf.d/00-default.conf << 'EOF'
 NodeName=localrootfs
 EOF
   # Enable services
+  info_message "Setup qm services, enable bluechi services"
+  info_message "=============================="
   systemctl enable bluechi-controller
   systemctl enable bluechi-agent
   # Start services
+  info_message "Setup qm services, start bluechi services"
+  info_message "=============================="
   systemctl start bluechi-controller
   systemctl start bluechi-agent
   # Restart qm to read lates bluechi-agent.conf

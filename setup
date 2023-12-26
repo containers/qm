@@ -86,16 +86,15 @@ bluechiSetup() {
 NodeName=qm.${hostname}
 EOF
     fi
-    umount "${ROOTFS}/var" "${ROOTFS}/etc"
 }
 
 storage() {
     ROOTFS=$1
     if ! test -f "${ROOTFS}/etc/containers/storage.conf"; then
 	mkdir -p "${ROOTFS}/var/lib/shared/overlay-images" \
-	      "${ROOTFS}/var/lib/shared/overlay-layers" \
-              "${ROOTFS}/var/${TMP_QM_IMG_DIR}"
-	touch "${ROOTFS}/var/lib/shared/overlay-images/images.lock" \
+	      "${ROOTFS}/var/lib/shared/overlay-layers"
+
+        touch "${ROOTFS}/var/lib/shared/overlay-images/images.lock" \
 	      "${ROOTFS}/var/lib/shared/overlay-layers/layers.lock"
 
         sed -e '/additionalimage.*/,/]/s/^#//g' \
@@ -103,11 +102,16 @@ storage() {
             -e 's|^#.*transient_store.*|transient_store=true|g' \
             /"${ROOTFS}/usr/share/containers/storage.conf" \
             > "${ROOTFS}/etc/containers/storage.conf"
+    fi
 
-        if ! grep -q "env" "${ROOTFS}/etc/containers/containers.conf"; then
-            echo "env = [\"TMPDIR=/var/${TMP_QM_IMG_DIR}\"]" \
-            >>  "${ROOTFS}/etc/containers/containers.conf"
-        fi
+    #File always copied from /usr/share/qm, check if exist and append
+    if test -f "${ROOTFS}/etc/containers/containers.conf"; then
+        mkdir -p "${ROOTFS}/var/${TMP_QM_IMG_DIR}"
+        cat >> "${ROOTFS}/etc/containers/containers.conf" <<EOF
+
+[engine]
+env = ["TMPDIR=/var/${TMP_QM_IMG_DIR}"]
+EOF
     fi
 }
 
