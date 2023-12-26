@@ -34,10 +34,11 @@ test_bluechi_list_all_units() {
         if [ "${CONTROL_CONTAINER_NAME}" == "host" ]; then
            bluechictl_cmd="bluechictl list-units ${node_name}"
         else
+           # It could take some time for qm bluechi-agent to connect
+           sleep 5
            bluechictl_cmd="podman exec"
            bluechictl_cmd+=" ${CONTROL_CONTAINER_NAME}"
            bluechictl_cmd+=" bluechictl list-units ${node_name}"
-           sleep 1
         fi
         cmd_result=$(eval "${bluechictl_cmd}")
 
