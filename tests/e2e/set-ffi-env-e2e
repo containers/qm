@@ -188,13 +188,14 @@ install_qm_rpms() {
   if [ -n "${USE_QM_COPR}" ]; then
       dnf copr enable -y "${USE_QM_COPR}" centos-stream-9-"${ARCH}"
   fi
-  dnf install -y qm bluechi-ctl bluechi podman hostname
+  dnf install -y bluechi-ctl bluechi-agent bluechi qm podman hostname
 }
 
 setup_qm_services() {
 
   info_message "Setup qm services"
   info_message "=============================="
+
   #Update setup script from QM repos, in case rpm not updates yet
   if [ -n "${QM_GH_URL}" ]; then
       curl "${QM_GH_URL}"  > /usr/share/qm/setup
@@ -238,6 +239,7 @@ then
 fi
 
 info_message "Cleaning any previous e2e files"
+info_message "=============================="
 cleanup
 
 echo
@@ -252,7 +254,7 @@ install_qm_rpms
 setup_qm_services
 
 info_message "${GRN}QM environment${CLR}"
-echo
+info_message "=============================="
 
 # Capture the end time
 END_TIME=$(date +%s)
@@ -266,9 +268,7 @@ HOURS=$(( (DURATION % 86400) / 3600 ))
 MINUTES=$(( (DURATION % 3600) / 60 ))
 SECONDS=$((DURATION % 60))
 
-echo
 info_message "${GRN}Running time for this script${CLR}"
 info_message "\t- ${DAYS} days, ${HOURS} hours, ${MINUTES} minutes and ${SECONDS} seconds"
-echo
 info_message "All set!"
-echo
+info_message "=============================="
