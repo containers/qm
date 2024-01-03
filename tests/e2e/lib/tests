@@ -20,8 +20,8 @@
 
 NODES_FOR_TESTING_ARR="${NODES_FOR_TESTING_ARR:-control qm-node1}"
 readarray -d ' ' -t NODES_FOR_TESTING <<< "$NODES_FOR_TESTING_ARR"
-
 CONTROL_CONTAINER_NAME="${CONTROL_CONTAINER_NAME:-control}"
+WAIT_BLUECHI_AGENT_CONNECT="${WAIT_BLUECHI_AGENT_CONNECT:-5}"
 
 test_bluechi_list_all_units() {
 
@@ -35,7 +35,9 @@ test_bluechi_list_all_units() {
            bluechictl_cmd="bluechictl list-units ${node_name}"
         else
            # It could take some time for qm bluechi-agent to connect
-           sleep 5
+           if [[ "${node_name}" =~ .*qm.* ]];then
+              sleep "${WAIT_BLUECHI_AGENT_CONNECT}"
+           fi
            bluechictl_cmd="podman exec"
            bluechictl_cmd+=" ${CONTROL_CONTAINER_NAME}"
            bluechictl_cmd+=" bluechictl list-units ${node_name}"
