@@ -80,10 +80,13 @@ setup_node() {
         # copy control as template to node${number}
         cp ./lib/ContainerFile.template ContainerFile.node"${nodeID}"
         if_error_exit "failed to copy ContainerFile control template to node!"
-        if [ -n "${use_copr_repo}" ]; then
-          sed -e "/crb/a RUN dnf -y copr enable ${use_copr_repo} centos-stream-9" -i ContainerFile.node"${nodeID}"
-          if_error_exit "failed to sed ContainerFile node template!"
+        if grep -q packit <<< "${USE_QM_COPR}"; then
+          sed -e "/crb/a RUN dnf copr enable -y ${use_copr_repo}" -i ContainerFile.node"${nodeID}"
+        else
+          sed -e "/crb/a RUN dnf copr enable -y ${use_copr_repo} centos-stream-9" -i ContainerFile.node"${nodeID}"
+
         fi
+        if_error_exit "failed to sed ContainerFile node template!"
         # remove specific code from control mode (template)
         sed '/start/,/end/d' -i ContainerFile.node"${nodeID}"
         if_error_exit "failed to sed ContainerFile node template!"
