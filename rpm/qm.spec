@@ -105,6 +105,17 @@ sed -i 's/^install: man all/install:/' Makefile
 %_format MODULES %{_datadir}/selinux/packages/$x.pp.bz2
 %selinux_modules_install -s %{selinuxtype} $MODULES
 
+# Set AllowedCPUs in quadlet file
+NPROC=$(nproc)
+if [[ $NPROC == 1 ]]; then
+    ALLOWED_CPUS=0
+elif [[ $NPROC == 2 ]]; then
+    ALLOWED_CPUS=1
+else
+    ALLOWED_CPUS=$(expr $NPROC / 2)"-"$(expr $NPROC - 1)
+fi
+sed "s/^AllowedCPUs=.*/AllowedCPUs=$ALLOWED_CPUS/" %{_datadir}/containers/systemd/%{name}.container > %{_sysconfdir}/containers/systemd/%{name}.container
+
 %postun
 if [ $1 -eq 0 ]; then
    %selinux_modules_uninstall -s %{selinuxtype} %{modulenames}

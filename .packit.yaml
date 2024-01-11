@@ -65,8 +65,7 @@ jobs:
     identifier: e2e-tiers
     tmt_plan: /plans/e2e/tier-0
     targets:
-      epel-9-x86_64:
-        distros: [centos-stream-9]
+    - epel-9-x86_64
     tf_extra_params:
       environments:
         -  hardware:
@@ -79,11 +78,13 @@ jobs:
     identifier: e2e-ffi
     tmt_plan: /plans/e2e/ffi
     targets:
-      epel-9-x86_64:
-        distros: [centos-stream-9]
+    - epel-9-x86_64
     tf_extra_params:
       environments:
-        - tmt:
+        - artifacts:
+          - type: repository-file
+            id: https://copr.fedorainfracloud.org/coprs/g/centos-automotive-sig/bluechi-snapshot/repo/centos-stream-$releasever-x86_64/
+          tmt:
             context:
              scenario : "ffi"
           hardware:

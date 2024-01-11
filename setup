@@ -1,4 +1,4 @@
-#! /bin/bash -e
+#! /bin/bash
 #
 # This setup script will install an OS environment by default into
 # /usr/lib/qm/rootfs and create a Podman quadlet containerized environment
@@ -262,6 +262,9 @@ case "$1" in
     if [ "$SYSTEMCTL_SKIP" == "N" ]; then
 	    systemctl daemon-reload
 	    systemctl start qm.service
+	    journalctl -xeu qm.service
+            ls -laZ /var/lib/containers/
+            grep -E -v '\#|^$' /etc/containers/storage.conf
     else
       /usr/libexec/podman/quadlet /run/systemd/generator/
     fi

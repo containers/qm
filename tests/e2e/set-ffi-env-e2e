@@ -190,7 +190,7 @@ install_qm_rpms() {
   else
       dnf copr enable -y "${USE_QM_COPR}" centos-stream-9
   fi
-  dnf install -y bluechi-ctl bluechi-agent bluechi qm podman hostname
+  dnf install -y bluechi-ctl bluechi-agent podman hostname qm
 }
 
 setup_qm_services() {
