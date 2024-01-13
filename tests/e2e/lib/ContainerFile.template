@@ -26,6 +26,7 @@ RUN dnf install -y \
 	python3-flake8 \
 	python3-pytest \
 	python3-pytest-timeout \
+	python3-dasbus \
 	pre-commit \
 	pcp \
 	sudo \
