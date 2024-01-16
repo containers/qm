@@ -2,6 +2,7 @@ summary: FFI - QM FreedomFromInterference
 
 environment:
     CONTROL_CONTAINER_NAME: host
+    FFI_SETUP_OPTIONS: none
 
 discover:
     how: fmf
@@ -10,24 +11,30 @@ discover:
 provision:
    how: local
 
+prepare:
+ - name: Install rpms
+   how: install
+   package: podman
+
 adjust:
  - when: run == manual
    environment+:
        # Sample code to use manual packit repo
        PACKIT_COPR_PROJECT: packit/containers-qm-291
- - when: scenario == ffi and distro == centos-stream-9, fedora
-   prepare+:
-      - name: Install rpms
-        how: install
-        package: podman
 
+ - when: distro == centos-stream-9, fedora
+   environment+:
+       FFI_SETUP_OPTIONS: --set-qm-disk-part=yes
+
+ - when: scenario == ffi
+   prepare+:
       - name: Set QM env
         how: shell
            # FIXME: On new QM release remove
            # qm-setup-from-gh-url, branch-qm option
         script: |
            cd tests/e2e
-           ./set-ffi-env-e2e --set-qm-disk-part=yes
+           ./set-ffi-env-e2e "${FFI_SETUP_OPTIONS}"
 
 execute:
     how: tmt
