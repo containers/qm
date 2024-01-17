@@ -207,7 +207,7 @@ setup_qm_services() {
   cat > /etc/bluechi/controller.conf << 'EOF'
 [bluechi-controller]
 AllowedNodeNames=qm.localrootfs,localrootfs
-ManagerPort=842
+ControllerPort=842
 LogLevel=INFO
 LogTarget=journald
 LogIsQuiet=false

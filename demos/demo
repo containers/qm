@@ -158,7 +158,7 @@ Network=host
     # get the ip of controller via interface eth0
     ip_controller=$(ip addr list eth0 |grep "inet " |cut -d' ' -f6|cut -d/ -f1)
     eval "$(podman exec qm \
-		sed -i 's/^#ManagerHost=/ManagerHost='"${ip_controller}"'/g' \
+		sed -i 's/^#ControllerHost=/ControllerHost='"${ip_controller}"'/g' \
 		/etc/bluechi/agent.conf
     )"
     eval "$(podman exec qm \
