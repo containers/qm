@@ -23,7 +23,7 @@ TasksMax=50%
 AddCapability=all
 
 # Comment DropCapability this will allow FFI Tools to surpass their defaults.
-DropCapability=sys_resource
+# DropCapability=sys_resource
 
 AddDevice=-/dev/kvm
 AddDevice=-/dev/fuse
