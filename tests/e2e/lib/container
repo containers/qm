@@ -118,7 +118,7 @@ create_qm_node() {
         # Enable bluechi-agent
         echo 'RUN cp /usr/share/bluechi-agent/config/*.conf /etc/bluechi/agent.conf.d/' >> ContainerFile.node"${nodeID}"
         echo 'RUN sed -i -e "s/^#NodeName=/NodeName='"node${nodeID}/"\" \
-                '-e "s/^#ManagerHost=/ManagerHost='"${IP_CONTROL_MACHINE}/"\" \
+                '-e "s/^#ControllerHost=/ControllerHost='"${IP_CONTROL_MACHINE}/"\" \
                 ' /etc/bluechi/agent.conf.d/agent.conf' >> ContainerFile.node"${nodeID}"
         echo "RUN systemctl enable bluechi-agent &> /dev/null" >> ContainerFile.node"${nodeID}"
 
@@ -148,7 +148,7 @@ create_qm_node() {
         )"
         if_error_exit "unable to execute systemctl start qm"
 
-        # set in the QM container the ManagerHost (Control Machine) and restart bluechi-agent
+        # set in the QM container the ControllerHost (Control Machine) and restart bluechi-agent
         eval "$(podman exec node"${nodeID}" \
                 podman exec qm \
                 cp \
@@ -161,11 +161,11 @@ create_qm_node() {
         NODES_FOR_TESTING+=("${qm_node_name}")
 
         eval "$(podman exec node"${nodeID}" \
-            sed -i -e 's/^#ManagerHost=.*/ManagerHost='"${IP_CONTROL_MACHINE}"'/g' \
-                -e 's/^ManagerHost=.*/ManagerHost='"${IP_CONTROL_MACHINE}"'/g' \
+            sed -i -e 's/^#ControllerHost=.*/ControllerHost='"${IP_CONTROL_MACHINE}"'/g' \
+                -e 's/^ControllerHost=.*/ControllerHost='"${IP_CONTROL_MACHINE}"'/g' \
                 /etc/bluechi/agent.conf.d/agent.conf
         )"
-        if_error_exit "node: unable to sed ManagerHost in bluechi agent.conf"
+        if_error_exit "node: unable to sed ControllerHost in bluechi agent.conf"
 
         # restarting the node bluechi-agent
         eval "$(podman exec node"${nodeID}" \
@@ -175,10 +175,10 @@ create_qm_node() {
 
         eval "$(podman exec node"${nodeID}" \
                 podman exec qm \
-                sed -i 's/^#ManagerHost=/ManagerHost='"${IP_CONTROL_MACHINE}"'/g' \
+                sed -i 's/^#ControllerHost=/ControllerHost='"${IP_CONTROL_MACHINE}"'/g' \
                 /etc/bluechi/agent.conf.d/agent.conf
         )"
-        if_error_exit "qm node: unable to sed ManagerHost in bluechi agent.conf"
+        if_error_exit "qm node: unable to sed ControllerHost in bluechi agent.conf"
 
         eval "$(podman exec node"${nodeID}" \
                 podman exec qm \

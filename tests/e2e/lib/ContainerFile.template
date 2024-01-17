@@ -102,13 +102,13 @@ RUN npm install markdownlint-cli2 --global
 
 # [start] CONTROL - settings
 # Setting configuration, uncommenting:
-#	- ManagePort to communicate via 842
+#	- ControllerPort to communicate via 842
 #	- Use journal for logging
 #	- Set AllowedNodeNames as control and node1
 # TODO: remove the static node1 here, dynamic by rune2e script via sed
 RUN cp /usr/share/bluechi/config/controller.conf /etc/bluechi/
 RUN cp /usr/share/bluechi-agent/config/agent.conf /etc/bluechi/agent.conf.d/
-RUN sed -e '/^#ManagerPort=/s/^#//g' \
+RUN sed -e '/^#ControllerPort=/s/^#//g' \
 	-e '/#LogTarget/s/^#//' \
 	-e "s/^#AllowedNodeNames=/AllowedNodeNames=control,node1/" \
 	-i /etc/bluechi/controller.conf
