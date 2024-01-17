@@ -22,9 +22,10 @@ if os.path.exists(socket_dir):
 try:
     selinux.setfscreatecon("system_u:object_r:qm_file_t:s0")
     selinux.setsockcreatecon("system_u:system_r:qm_t:s0")
-except BaseException:
+except BaseException as see:
     # selinux is disabled
     print("\nSELinux is disabled, such environment is not recommended\n")
+    print("\nSELinux Exception occured:", see)
     pass
 
 server = socket.socket(socket.AF_UNIX, socket.SOCK_STREAM)
