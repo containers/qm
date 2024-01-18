@@ -18,9 +18,11 @@ jobs:
     # x86_64 is assumed by default
     # qm is noarch so we only need to test on one arch
     targets:
-      - fedora-rawhide
-      - fedora-latest
-      - epel-9
+      fedora-rawhide: {}
+      fedora-latest: {}
+      epel-9:
+        additional_repos:
+          - https://download.copr.fedorainfracloud.org/results/@centos-automotive-sig/bluechi-snapshot/centos-stream-9-x86_64/
 
   # Run on commit to main branch
   - &copr
@@ -65,10 +67,14 @@ jobs:
     identifier: e2e-tiers
     tmt_plan: /plans/e2e/tier-0
     targets:
-    - epel-9-x86_64
+      epel-9-x86_64:
+        distros: [centos-stream-9]
     tf_extra_params:
       environments:
-        -  hardware:
+        - artifacts:
+          - type: repository-file
+            id: https://copr.fedorainfracloud.org/coprs/g/centos-automotive-sig/bluechi-snapshot/repo/centos-stream-9
+          hardware:
             disk:
              - size: ">= 20 GB"
 
@@ -78,12 +84,13 @@ jobs:
     identifier: e2e-ffi
     tmt_plan: /plans/e2e/ffi
     targets:
-    - epel-9-x86_64
+      epel-9-x86_64:
+        distros: [centos-stream-9]
     tf_extra_params:
       environments:
         - artifacts:
           - type: repository-file
-            id: https://copr.fedorainfracloud.org/coprs/g/centos-automotive-sig/bluechi-snapshot/repo/centos-stream-$releasever-x86_64/
+            id: https://copr.fedorainfracloud.org/coprs/g/centos-automotive-sig/bluechi-snapshot/repo/centos-stream-9
           tmt:
             context:
              scenario : "ffi"

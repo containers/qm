@@ -37,6 +37,7 @@ ReadOnly=true
 # Ref: https://github.com/containers/podman/issues/20439
 VolatileTmp=true
 Rootfs=${ROOTFS}
+GlobalArgs=--log-level=debug
 
 # FIXME: QM is failing to start if SecurityLabelNested is enabled.
 # Add back as soon podman 4.7 is released.
