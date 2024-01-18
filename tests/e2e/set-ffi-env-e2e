@@ -1,6 +1,7 @@
 #!/bin/bash
 
-set -eoux pipefail
+#set -eoux pipefail
+set -x
 
 # shellcheck disable=SC1091
 #
@@ -186,9 +187,9 @@ install_qm_rpms() {
   dnf config-manager --set-enabled crb
   dnf copr enable -y @centos-automotive-sig/bluechi-snapshot centos-stream-9-"${ARCH}"
   if [ -n "${USE_QM_COPR}" ]; then
-      dnf copr enable -y "${USE_QM_COPR}" centos-stream-9-"${ARCH}"
+      dnf copr enable -y "${USE_QM_COPR}"
   fi
-  dnf install -y bluechi-ctl bluechi-agent bluechi qm podman hostname
+  dnf install -y bluechi-ctl bluechi-agent bluechi-controller qm podman hostname
 }
 
 setup_qm_services() {
@@ -204,6 +205,14 @@ setup_qm_services() {
   # Curl files into here,
   # Fix: default setup:main should be removed on next qm release
   /usr/share/qm/setup --hostname localrootfs
+  rc="$?"
+  if [ "${rc}" -ne 0 ]; then
+     echo -n "===== journalctl ===="
+     journalctl -xeu qm.service
+     echo -n "===== dmesg ===="
+     dmesg | grep overlay
+     exit ${rc}
+  fi
   cat > /etc/bluechi/controller.conf << 'EOF'
 [bluechi-controller]
 AllowedNodeNames=qm.localrootfs,localrootfs
