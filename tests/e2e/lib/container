@@ -89,6 +89,23 @@ setup_node() {
         if_error_exit "failed to sed ContainerFile node template!"
 }
 
+set_nodename_all_nodes() {
+    for nodeID in $(seq 1 "${NUMBER_OF_NODES}") ;
+    do
+        eval "$(podman exec node"${nodeID}" \
+                sed -i 's/^#NodeName=/NodeName='node"${nodeID}"'/g' \
+                /etc/bluechi/agent.conf.d/agent.conf
+        )"
+        if_error_exit "node: unable to sed NodeName in bluechi agent.conf"
+
+        # restarting the qm bluechi-agent
+        eval "$(podman exec node"${nodeID}" \
+                systemctl restart bluechi-agent
+        )"
+        if_error_exit "node: unable to restart bluechi-agent service"
+    done
+}
+
 qm_set_nodename_all_nodes() {
     for nodeID in $(seq 1 "${NUMBER_OF_NODES}") ;
     do
@@ -137,8 +154,7 @@ create_qm_node() {
 
         # Enable bluechi-agent
         echo 'RUN cp /usr/share/bluechi-agent/config/*.conf /etc/bluechi/agent.conf.d/' >> ContainerFile.node"${nodeID}"
-        echo 'RUN sed -i -e "s/^#NodeName=/NodeName='"node${nodeID}/"\" \
-                '-e "s/^#ControllerHost=/ControllerHost='"${IP_CONTROL_MACHINE}/"\" \
+        echo 'RUN sed -i -e "s/^#ControllerHost=/ControllerHost='"${IP_CONTROL_MACHINE}/"\" \
                 ' /etc/bluechi/agent.conf.d/agent.conf' >> ContainerFile.node"${nodeID}"
         echo "RUN systemctl enable bluechi-agent &> /dev/null" >> ContainerFile.node"${nodeID}"
 

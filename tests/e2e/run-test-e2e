@@ -236,6 +236,7 @@ for ((i=1;i<=NUMBER_OF_NODES;i++)); do
     echo
 done
 
+set_nodename_all_nodes
 qm_set_nodename_all_nodes
 
 # Tests
