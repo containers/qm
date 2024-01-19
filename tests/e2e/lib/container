@@ -89,6 +89,26 @@ setup_node() {
         if_error_exit "failed to sed ContainerFile node template!"
 }
 
+qm_set_nodename_all_nodes() {
+    for nodeID in $(seq 1 "${NUMBER_OF_NODES}") ;
+    do
+        qm_node_name="qm-node${nodeID}"
+        eval "$(podman exec node"${nodeID}" \
+                podman exec qm \
+                sed -i 's/^#NodeName=/NodeName='"${qm_node_name}"'/g' \
+                /etc/bluechi/agent.conf.d/agent.conf
+        )"
+        if_error_exit "qm node: unable to sed NodeName in bluechi agent.conf"
+
+        # restarting the qm bluechi-agent
+        eval "$(podman exec node"${nodeID}" \
+                podman exec qm \
+                systemctl restart bluechi-agent
+        )"
+        if_error_exit "qm node: unable to restart bluechi-agent service"
+    done
+}
+
 create_qm_node() {
     # Generates 'N' containers QM nodes as required for the test scale
 
@@ -179,20 +199,6 @@ create_qm_node() {
                 /etc/bluechi/agent.conf.d/agent.conf
         )"
         if_error_exit "qm node: unable to sed ControllerHost in bluechi agent.conf"
-
-        eval "$(podman exec node"${nodeID}" \
-                podman exec qm \
-                sed -i 's/^#NodeName=/NodeName='"${qm_node_name}"'/g' \
-                /etc/bluechi/agent.conf.d/agent.conf
-        )"
-        if_error_exit "qm node: unable to sed NodeName in bluechi agent.conf"
-
-        # restarting the qm bluechi-agent
-        eval "$(podman exec node"${nodeID}" \
-                podman exec qm \
-                systemctl restart bluechi-agent
-        )"
-        if_error_exit "qm node: unable to restart bluechi-agent service"
 
         AllowedNodeNames="${AllowedNodeNames}\n  ${qm_node_name},\n  node${nodeID},"
     done

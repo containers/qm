@@ -236,6 +236,8 @@ for ((i=1;i<=NUMBER_OF_NODES;i++)); do
     echo
 done
 
+qm_set_nodename_all_nodes
+
 # Tests
 info_message "Starting tests"
 info_message "=============================="
