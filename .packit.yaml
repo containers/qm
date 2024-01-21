@@ -20,8 +20,9 @@ jobs:
     targets:
       fedora-rawhide: {}
       fedora-latest: {}
-      epel-9:
+      centos-stream-9:
         additional_repos:
+          - https://dl.fedoraproject.org/pub/epel/9/Everything/x86_64/
           - https://download.copr.fedorainfracloud.org/results/@centos-automotive-sig/bluechi-snapshot/centos-stream-9-x86_64/
 
   # Run on commit to main branch
@@ -44,10 +45,10 @@ jobs:
       - fedora-38-ppc64le
       - fedora-38-s390x
       - fedora-38-x86_64
-      - epel-9-aarch64
-      - epel-9-ppc64le
-      - epel-9-s390x
-      - epel-9-x86_64
+      - centos-stream+epel-next-9-aarch64
+      - centos-stream+epel-next-9-ppc64le
+      - centos-stream+epel-next-9-s390x
+      - centos-stream+epel-next-9-x86_64
 
   - <<: *copr
     project: qm
@@ -58,17 +59,16 @@ jobs:
       - fedora-38-aarch64
       - fedora-38-ppc64le
       - fedora-38-x86_64
-      - epel-9-aarch64
-      - epel-9-ppc64le
-      - epel-9-x86_64
+      - centos-stream-9-aarch64
+      - centos-stream-9-ppc64le
+      - centos-stream-9-x86_64
 
   - job: tests
     trigger: pull_request
     identifier: e2e-tiers
     tmt_plan: /plans/e2e/tier-0
     targets:
-      epel-9-x86_64:
-        distros: [centos-stream-9]
+    - centos-stream-9-x86_64
     tf_extra_params:
       environments:
         - artifacts:
@@ -84,8 +84,7 @@ jobs:
     identifier: e2e-ffi
     tmt_plan: /plans/e2e/ffi
     targets:
-      epel-9-x86_64:
-        distros: [centos-stream-9]
+    - centos-stream-9-x86_64
     tf_extra_params:
       environments:
         - artifacts:
