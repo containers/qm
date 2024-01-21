@@ -181,14 +181,13 @@ install_qm_rpms() {
   info_message "Installing qm setup rpm"
   info_message "Installing qm using ${USE_QM_COPR} repo"
   info_message "=============================="
-  ARCH=$(arch)
   dnf install -y 'dnf-command(config-manager)'
   dnf config-manager --set-enabled crb
-  dnf copr enable -y @centos-automotive-sig/bluechi-snapshot centos-stream-9-"${ARCH}"
+  dnf copr enable -y @centos-automotive-sig/bluechi-snapshot centos-stream-9
   if [ -n "${USE_QM_COPR}" ]; then
-      dnf copr enable -y "${USE_QM_COPR}" centos-stream-9-"${ARCH}"
+      dnf copr enable -y "${USE_QM_COPR}" centos-stream-9
   fi
-  dnf install -y bluechi-ctl bluechi-agent bluechi qm podman hostname
+  dnf install -y bluechi-ctl bluechi-agent bluechi-controller qm podman hostname
 }
 
 setup_qm_services() {
