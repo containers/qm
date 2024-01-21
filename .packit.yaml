@@ -18,9 +18,12 @@ jobs:
     # x86_64 is assumed by default
     # qm is noarch so we only need to test on one arch
     targets:
-      - fedora-rawhide
-      - fedora-latest
-      - centos-stream-9
+      fedora-rawhide: {}
+      fedora-latest: {}
+      centos-stream-9:
+        additional_repos:
+          - https://dl.fedoraproject.org/pub/epel/9/Everything/x86_64/
+          - https://download.copr.fedorainfracloud.org/results/@centos-automotive-sig/bluechi-snapshot/centos-stream-9-x86_64/
 
   # Run on commit to main branch
   - &copr
@@ -68,7 +71,10 @@ jobs:
     - centos-stream-9-x86_64
     tf_extra_params:
       environments:
-        -  hardware:
+        - artifacts:
+          - type: repository-file
+            id: https://copr.fedorainfracloud.org/coprs/g/centos-automotive-sig/bluechi-snapshot/repo/centos-stream-9
+          hardware:
             disk:
              - size: ">= 20 GB"
 
@@ -81,7 +87,10 @@ jobs:
     - centos-stream-9-x86_64
     tf_extra_params:
       environments:
-        - tmt:
+        - artifacts:
+          - type: repository-file
+            id: https://copr.fedorainfracloud.org/coprs/g/centos-automotive-sig/bluechi-snapshot/repo/centos-stream-9
+          tmt:
             context:
              scenario : "ffi"
           hardware:
