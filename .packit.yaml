@@ -53,15 +53,21 @@ jobs:
   - <<: *copr
     project: qm
     targets:
-      - fedora-39-aarch64
-      - fedora-39-ppc64le
-      - fedora-39-x86_64
-      - fedora-38-aarch64
-      - fedora-38-ppc64le
-      - fedora-38-x86_64
-      - centos-stream-9-aarch64
-      - centos-stream-9-ppc64le
-      - centos-stream-9-x86_64
+      fedora-39-aarch64: {}
+      fedora-39-ppc64le: {}
+      fedora-39-x86_64: {}
+      fedora-38-aarch64: {}
+      fedora-38-ppc64le: {}
+      fedora-38-x86_64: {}
+      centos-stream-9-aarch64:
+        additional_repos:
+          - https://dl.fedoraproject.org/pub/epel/9/Everything/aarch64/
+      centos-stream-9-ppc64le:
+        additional_repos:
+          - https://dl.fedoraproject.org/pub/epel/9/Everything/ppc64le/
+      centos-stream-9-x86_64:
+        additional_repos:
+          - https://dl.fedoraproject.org/pub/epel/9/Everything/x86_64/
 
   - job: tests
     trigger: pull_request
