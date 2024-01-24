@@ -59,7 +59,6 @@ BuildArch: noarch
 BuildRequires: golang-github-cpuguy83-md2man
 BuildRequires: container-selinux
 BuildRequires: make
-BuildRequires: vsomeip3-selinux
 BuildRequires: git-core
 BuildRequires: pkgconfig(systemd)
 BuildRequires: selinux-policy >= %_selinux_policy_version
@@ -73,6 +72,7 @@ Requires(post): libselinux-utils
 Requires: podman >= %{podman_epoch}:4.5
 %endif
 Requires: bluechi-agent
+Requires: vsomeip3-selinux
 
 %description
 This package allow users to setup an environment which prevents applications
