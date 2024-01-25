@@ -1,3 +1,8 @@
+# Support for vsomeip is enabled by default, it can be disabled passing `--define "with_vsomeip 0"` option to rpmbuild
+%if 0%{!?with_vsomeip:1}
+%global with_vsomeip 1
+%endif
+
 %global debug_package %{nil}
 
 # Some bits borrowed from the openstack-selinux package
@@ -59,11 +64,15 @@ BuildArch: noarch
 BuildRequires: golang-github-cpuguy83-md2man
 BuildRequires: container-selinux
 BuildRequires: make
-BuildRequires: vsomeip3-selinux
 BuildRequires: git-core
 BuildRequires: pkgconfig(systemd)
 BuildRequires: selinux-policy >= %_selinux_policy_version
 BuildRequires: selinux-policy-devel >= %_selinux_policy_version
+
+%if %{with_vsomeip}
+BuildRequires: vsomeip3-selinux
+%endif
+
 Requires: selinux-policy >= %_selinux_policy_version
 Requires(post): selinux-policy-base >= %_selinux_policy_version
 Requires(post): selinux-policy-targeted >= %_selinux_policy_version
