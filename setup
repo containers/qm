@@ -1,4 +1,4 @@
-#! /bin/bash -e
+#! /bin/bash -ex
 #
 # This setup script will install an OS environment by default into
 # /usr/lib/qm/rootfs and create a Podman quadlet containerized environment
@@ -98,7 +98,7 @@ storage() {
 	      "${ROOTFS}/var/lib/shared/overlay-layers/layers.lock"
 
         sed -e '/additionalimage.*/,/]/s/^#//g' \
-            -e '/additionalimages.*/a\"/var\/lib\/shared/\",' \
+            -e '/additionalimages.*/{n;s|.*|\"\/var\/lib\/shared/\",|}' \
             -e 's|^#.*transient_store.*|transient_store=true|g' \
             /"${ROOTFS}/usr/share/containers/storage.conf" \
             > "${ROOTFS}/etc/containers/storage.conf"
@@ -155,6 +155,16 @@ install() {
 
     cmd_dnf_remove="dnf --installroot ${ROOTFS} remove ${PACKAGES_TO_REMOVE} -y"
     ${cmd_dnf_remove}
+    # check if "${ROOTFS}"/etc/yum.repos.d
+    if [ -z "$(find "${ROOTFS}"/etc/yum.repos.d -mindepth 1 -maxdepth 1)" ]; then
+       cat > "${ROOTFS}/etc/yum.repos.d/autosd.repo" << EOF
+[autosd]
+name=Automotive-Sig \$releasever
+baseurl=https://autosd.sig.centos.org/AutoSD-9/nightly/repos/AutoSD/compose/AutoSD/\$basearch/os
+enabled=1
+gpgcheck=0
+EOF
+    fi
 
     dnf -y update --installroot "${ROOTFS}"
     rm -rf "${ROOTFS}"/etc/selinux/targeted/contexts/files/file_contexts/*
