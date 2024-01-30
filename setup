@@ -98,7 +98,7 @@ storage() {
 	      "${ROOTFS}/var/lib/shared/overlay-layers/layers.lock"
 
         sed -e '/additionalimage.*/,/]/s/^#//g' \
-            -e '/additionalimages.*/{n;s|.*|\"\/var\/lib\/shared/\",|}' \
+            -e '/additionalimages.*/a\"/var\/lib\/shared/\",' \
             -e 's|^#.*transient_store.*|transient_store=true|g' \
             /"${ROOTFS}/usr/share/containers/storage.conf" \
             > "${ROOTFS}/etc/containers/storage.conf"

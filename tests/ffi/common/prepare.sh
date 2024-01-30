@@ -19,6 +19,11 @@ prepare_test() {
    fi
    # FIXME: QM is failing to start run podman #297 on asil space
    exec_cmd "restorecon -RFv /var/lib/containers &> /tmp/asil-restorecon"
+   # FIXME: oom killer not triggerd for qm processes
+   # Changing QM score to 1000 to avoid full memory error on SoC
+   if [[ -n "${PACKIT_COPR_PROJECT}" && "${PACKIT_COPR_PROJECT}" == "release" ]]; then
+     exec_cmd "sed -i 's|OOMScoreAdjust.*|OOMScoreAdjust=1000|' ${qm_service_file}"
+   fi
 }
 
 disk_cleanup() {
@@ -43,7 +48,7 @@ prepare_images() {
        exec_cmd "mkdir -p ${QM_HOST_REGISTRY_DIR}"
        exec_cmd "podman push ${image_id} dir:${QM_HOST_REGISTRY_DIR}/tools-ffi:latest"
        # Remove image to save /var space
-       exec_cmd "podman image rm ${image_id}"
+       exec_cmd "podman image rm -f ${image_id}"
    fi
 }
 

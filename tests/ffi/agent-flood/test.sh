@@ -14,7 +14,7 @@ setup_test_containers_in_qm() {
     #Prepare quadlet files for testing containers
     for ((i=1;i<=NUMBER_OF_NODES;i++)); do
         info_message "setup_test_containers_in_qm(): prepare quadlet files for bluechi-tester-${i}.container"
-        cat >> "/etc/qm/containers/systemd/bluechi-tester-${i}.container" <<EOF
+        cat > "/etc/qm/containers/systemd/bluechi-tester-${i}.container" <<EOF
 [Unit]
 Description=bluechi-tester-X
 After=local-fs.target
