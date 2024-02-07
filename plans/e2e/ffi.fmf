@@ -14,7 +14,13 @@ provision:
 prepare:
  - name: Install rpms
    how: install
-   package: podman
+   package:
+      - iputils
+      - podman
+      - sysstat
+      - bc
+      - kernel-modules-extra
+
 
 adjust:
  - when: run == manual
