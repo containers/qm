@@ -1,5 +1,5 @@
 summary: Sending large packets
-test: ./test_icmp.sh 'ping -i 0.01 -s 1600 %s'
+test: ./test_largepckts_icmp.sh 'ping -i 0.01 -s 1600 %s'
 duration: 10m
 tag: ffi
 
