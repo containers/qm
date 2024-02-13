@@ -17,9 +17,9 @@ ploss=0
 echo " "
 echo "Creating Containers*"
 echo " "
-podman run -d --name orderly stream9-stress
-podman run -d --name confusion stream9-stress
-podman run -d --name partner stream9-stress
+podman run -d --name orderly stream9-stress tail -f /dev/null
+podman run -d --name confusion stream9-stress tail -f /dev/null
+podman run -d --name partner stream9-stress tail -f /dev/null
 podman inspect orderly | grep IPAddress | tail -1 | awk '{print $NF}' |  sed 's/"//g' | sed 's/,//g'
 ipadd=$(podman inspect orderly | grep IPAddress | tail -1 | awk '{print $NF}' |  sed 's/"//g' | sed 's/,//g')
 STRESS_CMD=$(printf "$1" $ipadd)
