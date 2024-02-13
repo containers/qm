@@ -62,5 +62,13 @@ then
 else
         echo -e "\e[1;32m Interference is not present - No packet loss \e[0m"
 fi
-./cleanup.sh
+#Kill ping and remove the containers
+pkill ping
+podman exec -it confusion sh -c "tc qdisc del dev eth0 root" #removing the injected fault#
+modprobe -rv sch_netem
+echo "removing containers"
+podman rm -f partner
+podman rm -f orderly
+podman rm -f confusion
+echo "End Test"
 rm -f log
