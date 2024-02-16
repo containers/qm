@@ -1,16 +1,14 @@
 /tier0:
     summary: Test is calling e2e/lib/tests as stand alone test
-    test:
-      ./test.sh
+    test: ./test.sh
     tier: 0
-
+    id: 7356c7cc-95aa-4a8e-9b02-2726f570add6
 /tier1:
     summary: Test is calling e2e/lib/tests AutoSD container
     environment:
-      CONTROL_CONTAINER_NAME: "autosd"
-      NODES_FOR_TESTING_ARR: "qm.localrootfs localrootfs"
-    test:
-      ./test.sh
+        CONTROL_CONTAINER_NAME: autosd
+        NODES_FOR_TESTING_ARR: qm.localrootfs localrootfs
+    test: ./test.sh
     tier: 1
-framework:
-    shell
+    id: 39945ab6-a90d-4ec9-ba6c-8c7ae4485f66
+framework: shell
