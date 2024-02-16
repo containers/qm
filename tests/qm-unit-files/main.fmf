@@ -1,18 +1,15 @@
 /tier0:
     environment:
-      CONTROL_CONTAINER_NAME: "node1"
+        CONTROL_CONTAINER_NAME: node1
     summary: Test is calling e2e/lib/tests as stand alone test
-    test:
-      ./test.sh
+    test: ./test.sh
     tier: 0
-
+    id: 68e8a9a8-a9f8-4c43-be58-71645d09bc5c
 /tier1:
     summary: Test is testing AutoSD container
     environment:
-      CONTROL_CONTAINER_NAME: "autosd"
-    test:
-      ./test.sh
+        CONTROL_CONTAINER_NAME: autosd
+    test: ./test.sh
     tier: 1
-
-framework:
-    shell
+    id: 458e9b41-917b-4d37-9e2c-07149f3220f0
+framework: shell

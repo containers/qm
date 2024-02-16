@@ -1,10 +1,7 @@
 summary: Test bluechi evel agents
-test:
-    /bin/bash ./test.sh
+test: /bin/bash ./test.sh
 duration: 10m
 tag: ffi
-#This tests should run last
 order: 70
-
-framework:
-    shell
+framework: shell
+id: 202f8fd7-bcd1-4b78-b51a-6bb850f840af
