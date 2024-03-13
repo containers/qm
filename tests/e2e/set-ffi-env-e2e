@@ -184,10 +184,22 @@ install_qm_rpms() {
   dnf install -y 'dnf-command(config-manager)'
   dnf config-manager --set-enabled crb
 
-  if [[ -n "${USE_QM_COPR}" && "${USE_QM_COPR}" != "release" ]]; then
-      dnf copr enable -y @centos-automotive-sig/bluechi-snapshot centos-stream-9
-      dnf copr enable -y "${USE_QM_COPR}" centos-stream-9
+  local release_id
+  release_id=$(grep ^ID= /etc/os-release | cut -d = -f 2)
+
+  if [[ -n "${USE_QM_COPR}" ]]; then
+      if [[ "${USE_QM_COPR}" != "release" ]]; then
+          dnf copr enable -y @centos-automotive-sig/bluechi-snapshot centos-stream-9
+          dnf copr enable -y "${USE_QM_COPR}" centos-stream-9
+      elif [[ "${USE_QM_COPR}" == "release" && "${release_id}" =~ "centos" ]]; then
+          if [ ! -f /etc/yum.repos.d/autosd.repo ]; then
+              info_message "Installing autosd repository"
+              info_message "=============================="
+              install_autosd_repo
+          fi
+      fi
   fi
+
   dnf install -y bluechi-ctl bluechi-agent bluechi-controller qm hostname
 }
 
@@ -228,6 +240,21 @@ EOF
   systemctl start bluechi-agent
   # Restart qm to read lates bluechi-agent.conf
   systemctl restart qm
+}
+
+install_autosd_repo() {
+    # Install autosd repository
+    source /etc/os-release
+
+    releasever=${VERSION_ID}
+    touch /etc/yum.repos.d/autosd.repo
+    cat > "/etc/yum.repos.d/autosd.repo" << EOF
+[autosd]
+name=Automotive-Sig \$releasever
+baseurl=https://autosd.sig.centos.org/AutoSD-9/nightly/repos/AutoSD/compose/AutoSD/\$basearch/os
+enabled=1
+gpgcheck=0
+EOF
 }
 
 info_message "Starting setup"
