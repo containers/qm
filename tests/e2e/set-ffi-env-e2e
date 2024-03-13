@@ -187,14 +187,16 @@ install_qm_rpms() {
   local release_id
   release_id=$(grep ^ID= /etc/os-release | cut -d = -f 2)
 
-  if [[ -n "${USE_QM_COPR}" && "${USE_QM_COPR}" != "release" ]]; then
-      dnf copr enable -y @centos-automotive-sig/bluechi-snapshot centos-stream-9
-      dnf copr enable -y "${USE_QM_COPR}" centos-stream-9
-  fi
-
-  if [[ -n "${USE_QM_COPR}" && "${USE_QM_COPR}" == "release" && "${release_id}" =~ "centos" ]]; then
-      if [ -z "$(find /etc/yum.repos.d/autosd.repo -mindepth 1 -maxdepth 1)" ]; then
-          install_autosd_repo
+  if [[ -n "${USE_QM_COPR}" ]]; then
+      if [[ "${USE_QM_COPR}" != "release" ]]; then
+          dnf copr enable -y @centos-automotive-sig/bluechi-snapshot centos-stream-9
+          dnf copr enable -y "${USE_QM_COPR}" centos-stream-9
+      elif [[ "${USE_QM_COPR}" == "release" && "${release_id}" =~ "centos" ]]; then
+          if [ ! -f /etc/yum.repos.d/autosd.repo ]; then
+              info_message "Installing autosd repository"
+              info_message "=============================="
+              install_autosd_repo
+          fi
       fi
   fi
 
@@ -241,21 +243,18 @@ EOF
 }
 
 install_autosd_repo() {
-    local release_version_id
-    local base_arch
-    local autosd_repo_filepath
-    local autosd_repo_base_url
-    release_version_id=$(grep ^VERSION_ID= /etc/os-release | cut -d = -f 2 | cut -d \" -f 2)
-    base_arch=$(arch)
-    autosd_repo_filepath=/etc/yum.repos.d/autosd.repo
-    autosd_repo_base_url="https://autosd.sig.centos.org"
+    # Install autosd repository
+    source /etc/os-release
 
-    touch $autosd_repo_filepath
-    echo "[autosd]" >> $autosd_repo_filepath
-    echo "name=Automotive-Sig ${release_version_id}" >> $autosd_repo_filepath
-    echo "baseurl=${autosd_repo_base_url}/AutoSD-9/nightly/repos/AutoSD/compose/AutoSD/${base_arch}/os" >> $autosd_repo_filepath
-    echo "enabled=1" >> $autosd_repo_filepath
-    echo "gpgcheck=0" >> $autosd_repo_filepath
+    releasever=${VERSION_ID}
+    touch /etc/yum.repos.d/autosd.repo
+    cat > "/etc/yum.repos.d/autosd.repo" << EOF
+[autosd]
+name=Automotive-Sig \$releasever
+baseurl=https://autosd.sig.centos.org/AutoSD-9/nightly/repos/AutoSD/compose/AutoSD/\$basearch/os
+enabled=1
+gpgcheck=0
+EOF
 }
 
 info_message "Starting setup"
