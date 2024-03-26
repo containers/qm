@@ -2,7 +2,7 @@ CC = gcc
 CFLAGS = -Wall -g
 CFLAGS_SHM = -lrt -Wall -Werror
 
-VPATH=disk/QM:memory:shared-memory
+VPATH=disk/QM:memory:SharedMemory
 QM_BIN=./bin/QM
 ASIL_BIN=./bin/ASIL
 
