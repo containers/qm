@@ -38,10 +38,7 @@ ReadOnly=true
 VolatileTmp=true
 Rootfs=${ROOTFS}
 
-# FIXME: QM is failing to start if SecurityLabelNested is enabled.
-# Add back as soon podman 4.7 is released.
-# SecurityLabelNested=true
-
+SecurityLabelNested=true
 SecurityLabelFileType=qm_file_t
 SecurityLabelLevel=s0
 SecurityLabelType=qm_t
