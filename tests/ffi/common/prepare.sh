@@ -11,12 +11,6 @@ prepare_test() {
    # Remove 'DropCapability=sys_resource' enable nested container in QM
    exec_cmd "sed -i 's|DropCapability=sys_resource|#DropCapability=sys_resource|' \
             ${qm_service_file}"
-   # FIXME: QM is failing to start podman command
-   # Add back once this ReadOnlyTmpfs added to quadlet
-   # Ref: https://github.com/containers/podman/issues/20439
-   if ! grep "Volatile" "${qm_service_file}" ; then
-     exec_cmd "sed -i 's|ReadOnly=true|&\nVolatileTmp=true|' ${qm_service_file}"
-   fi
    # FIXME: QM is failing to start run podman #297 on asil space
    exec_cmd "restorecon -RFv /var/lib/containers &> /tmp/asil-restorecon"
    # FIXME: oom killer not triggerd for qm processes

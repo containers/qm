@@ -32,10 +32,6 @@ Exec=/sbin/init
 Network=host
 PodmanArgs=--pids-limit=-1 --security-opt label=nested --security-opt unmask=all
 ReadOnly=true
-# FIXME: QM is failing to start podman command
-# Add back once this ReadOnlyTmpfs added to quadlet
-# Ref: https://github.com/containers/podman/issues/20439
-VolatileTmp=true
 Rootfs=${ROOTFS}
 
 SecurityLabelNested=true
