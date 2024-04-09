@@ -30,7 +30,7 @@ AddDevice=-/dev/fuse
 ContainerName=qm
 Exec=/sbin/init
 Network=host
-PodmanArgs=--pids-limit=-1 --security-opt label=nested --security-opt unmask=all
+PodmanArgs=--pids-limit=-1 --security-opt seccomp=/usr/share/qm/seccomp.json --security-opt label=nested --security-opt unmask=all
 ReadOnly=true
 # FIXME: QM is failing to start podman command
 # Add back once this ReadOnlyTmpfs added to quadlet

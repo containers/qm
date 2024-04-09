@@ -142,6 +142,34 @@ create_rootfs_required_dirs() {
 
 }
 
+create_qm_seccomp_rules() {
+    TEMP_SECCOMP=$(mktemp)
+    SECCOMP_FILE_PATH="/usr/share/containers/seccomp.json"
+    QM_PATH_SECCOMP="/usr/share/qm/seccomp.json"
+
+    if [ ! -f "${SECCOMP_FILE_PATH}" ]; then
+        rm -f "${TEMP_SECCOMP}"
+        echo "Exiting... unable to find ${SECCOMP_FILE_PATH}"
+        exit 1
+    fi
+
+    # Copying original seccomp.json
+    cp "${SECCOMP_FILE_PATH}" "${QM_PATH_SECCOMP}"
+
+    # seccomp.json can be updated, we should get it from the source and adapt it.
+    echo "- Removing sched_setscheduler() as allowed syscall"
+    # make sure create a fresh seccomp.json for QM and remove allow permission for sched_setscheduler() syscall
+    jq --tab '(.syscalls[] | select(.names[] == "sched_setscheduler" and .action == "SCMP_ACT_ALLOW") .names) |= map(select(. != "sched_setscheduler"))' "${SECCOMP_FILE_PATH}" > "${TEMP_SECCOMP}"
+
+    echo "- Adding sched_setscheduler() into the deny list"
+    # Add sched_setscheduler to the deny list
+    jq --tab '.syscalls += [{"names": ["sched_setscheduler"], "action": "SCMP_ACT_ERRNO", "args": [], "errnoRet": 1, "errno": "EPERM"}]' "${TEMP_SECCOMP}" > "${QM_PATH_SECCOMP}"
+
+    rm -f "${TEMP_SECCOMP}"
+    echo -e "\ndone"
+
+}
+
 install() {
     ROOTFS=$1
     RWETCFS=$2
@@ -203,6 +231,9 @@ eval set --"${opts}"
 
 # main()
 root_check
+
+# Create a QM seccomp.json before start the QM daemon
+create_qm_seccomp_rules
 
 while [[ $# -gt 0 ]]; do
   case "$1" in
