@@ -13,7 +13,6 @@ prepare_test() {
             ${qm_service_file}"
    # FIXME: QM is failing to start run podman #297 on asil space
    exec_cmd "restorecon -RFv /var/lib/containers &> /tmp/asil-restorecon"
-   # FIXME: oom killer not triggerd for qm processes
    # Changing QM score to 1000 to avoid full memory error on SoC
    if [[ -n "${PACKIT_COPR_PROJECT}" && "${PACKIT_COPR_PROJECT}" == "release" ]]; then
      exec_cmd "sed -i 's|OOMScoreAdjust.*|OOMScoreAdjust=1000|' ${qm_service_file}"
