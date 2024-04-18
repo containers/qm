@@ -170,6 +170,21 @@ create_qm_seccomp_rules() {
 
 }
 
+validate_qm_installation() {
+    files=(
+        "${INSTALLDIR}/containers.conf"
+        "${INSTALLDIR}/contexts"
+        "${INSTALLDIR}/file_contexts"
+    )
+
+    for file in "${files[@]}"; do
+        if [[ ! -f "$file" ]]; then
+            echo "Exiting... '$file' not found. Try reinstall the QM package before continue." >&2
+            exit 1
+        fi
+    done
+}
+
 install() {
     ROOTFS=$1
     RWETCFS=$2
@@ -198,6 +213,7 @@ EOF
     rm -rf "${ROOTFS}"/etc/selinux/targeted/contexts/files/file_contexts/*
 
     create_rootfs_required_dirs
+    validate_qm_installation
 
     cp "${INSTALLDIR}/containers.conf" "${ROOTFS}/etc/containers/"
     cp "${INSTALLDIR}/contexts" "${ROOTFS}/usr/share/containers/selinux/"
