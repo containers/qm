@@ -17,3 +17,6 @@ Try to allocate as maximum possible disk space.
 
 ## Sysctl
 Running as nested container inside QM attempt to change settings in the host level (ASIL).
+
+## deny_set_scheduler
+A tool to test if set_scheduler() is denied inside QM partition
