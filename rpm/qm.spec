@@ -28,14 +28,6 @@
 %global podman_epoch 2
 %endif
 
-%if 0%{?rhel} && 0%{?centos} == 0
-# podman 4.5 is not available in RHEL 9 but it's available in CentOS Stream 9.
-# bluechi-agent is available in EPEL 9.
-%bcond_with podman_45
-%else
-%bcond_without podman_45
-%endif
-
 Name: qm
 # Set different Epochs for copr and koji
 %if %{with copr}
@@ -70,9 +62,7 @@ Requires(post): selinux-policy-base >= %_selinux_policy_version
 Requires(post): selinux-policy-targeted >= %_selinux_policy_version
 Requires(post): policycoreutils
 Requires(post): libselinux-utils
-%if %{with podman_45}
 Requires: podman >= %{podman_epoch}:4.5
-%endif
 Requires: bluechi-agent
 
 %description
