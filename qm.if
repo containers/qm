@@ -55,7 +55,7 @@ template(`qm_domain_template',`
 	container_read_share_files($1_t)
 	container_exec_share_files($1_t)
 	allow $1_t container_ro_file_t:file execmod;
-	allow $1_container_t $1_file_type:chr_file { rw_inherited_file_perms };
+	allow $1_container_domain $1_file_type:chr_file { rw_inherited_file_perms };
 
 	attribute $1_file_type;
 	allow $1_file_type self:filesystem associate;
@@ -326,12 +326,7 @@ template(`qm_domain_template',`
 	list_dirs_pattern($1_container_domain, $1_file_type, $1_file_type)
 	read_files_pattern($1_container_domain, $1_file_type, $1_file_type)
 
-	# QM Container kvm - Policy for running kata containers
-	type $1_container_kvm_t,  $1_container_domain;
-	domain_type($1_container_kvm_t)
-	domain_user_exemption_target($1_container_kvm_t)
-	typeattribute $1_container_kvm_t container_net_domain, container_user_domain;
-	container_manage_files_template($1_container_kvm, $1_container)
+	qm_container_template($1, kvm)
 
 	type $1_container_kvm_var_run_t;
 	files_pid_file($1_container_kvm_var_run_t)
@@ -348,7 +343,6 @@ template(`qm_domain_template',`
 	allow $1_container_kvm_t $1_container_kvm_var_run_t:{file dir} mounton;
 
 	allow $1_container_kvm_t $1_t:unix_stream_socket rw_stream_socket_perms;
-
 	container_stream_connect($1_container_kvm_t)
 
 	allow $1_container_kvm_t $1_t:tun_socket attach_queue;
@@ -382,32 +376,15 @@ template(`qm_domain_template',`
 
 	sssd_read_public_files($1_container_kvm_t)
 
-	# Container init - Policy for running systemd based containers
-	type $1_container_init_t,  $1_container_domain;
-	domain_type($1_container_init_t)
-	domain_user_exemption_target($1_container_init_t)
-	typeattribute $1_container_init_t container_init_domain, container_net_domain, container_user_domain;
 
-	corenet_unconfined($1_container_init_t)
+	qm_container_template($1, init)
 	logging_send_syslog_msg($1_container_init_t)
 
-	allow $1_container_init_t proc_t:filesystem remount;
+	qm_container_template($1, wayland)
 
-	optional_policy(`
-		virt_default_capabilities($1_container_init_t)
-	')
-
-	tunable_policy(`virt_sandbox_use_sys_admin',`
-		allow $1_container_init_t self:capability sys_admin;
-		allow $1_container_init_t self:cap_userns sys_admin;
-	')
-
-	allow $1_container_init_t self:netlink_audit_socket nlmsg_relay;
-	container_manage_files_template($1_container_init, $1_container)
-
-	read_files_pattern($1_container_t, $1_container_ro_file_t,$1_container_ro_file_t,)
-	read_lnk_files_pattern($1_container_t, $1_container_ro_file_t,$1_container_ro_file_t,)
-	list_dirs_pattern($1_container_t, $1_container_ro_file_t,$1_container_ro_file_t,)
+	read_files_pattern($1_container_domain, $1_container_ro_file_t,$1_container_ro_file_t,)
+	read_lnk_files_pattern($1_container_domain, $1_container_ro_file_t,$1_container_ro_file_t,)
+	list_dirs_pattern($1_container_domain, $1_container_ro_file_t,$1_container_ro_file_t,)
 
 	#
 	# Rules for container domains in the qm
@@ -592,4 +569,43 @@ interface(`vsomeip_use',`
         allow $1 vsomeip_t:unix_stream_socket connectto;
         allow vsomeip_t $1:unix_stream_socket connectto;
         allow $1 router_vsomeip_var_run_t:sock_file write;
+')
+
+########################################
+## <summary>
+##	Creates types and rules for QM a
+##	container runtime process domain.
+## </summary>
+## <param name="prefix">
+##	<summary>
+##	Prefix for the domain.
+##	</summary>
+## </param>
+## <param name="type">
+##	<summary>
+##	type of process domain.
+##	</summary>
+## </param>
+#
+interface(`qm_container_template',`
+	# Container $2 - Policy for running systemd based containers
+	type $1_container_$2_t,  $1_container_domain;
+	domain_type($1_container_$2_t)
+	domain_user_exemption_target($1_container_$2_t)
+	typeattribute $1_container_$2_t container_net_domain, container_user_domain;
+
+	corenet_unconfined($1_container_$2_t)
+
+	allow $1_container_$2_t proc_t:filesystem remount;
+
+	optional_policy(`
+		virt_default_capabilities($1_container_$2_t)
+	')
+
+	allow $1_container_$2_t self:netlink_audit_socket nlmsg_relay;
+	container_manage_files_template($1_container_$2, $1_container)
+
+	read_files_pattern($1_container_$2_t, $1_container_ro_file_t, $1_container_ro_file_t,)
+	read_lnk_files_pattern($1_container_$2_t, $1_container_ro_file_t, $1_container_ro_file_t,)
+	list_dirs_pattern($1_container_$2_t, $1_container_ro_file_t, $1_container_ro_file_t,)
 ')
