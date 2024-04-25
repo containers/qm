@@ -593,3 +593,14 @@ interface(`vsomeip_use',`
         allow vsomeip_t $1:unix_stream_socket connectto;
         allow $1 router_vsomeip_var_run_t:sock_file write;
 ')
+
+## Handling network sockets for qm_container_t
+template(`qm_container_network_sockets',`
+        gen_require(`
+                type qm_container_t;
+                type container_runtime_t;
+                class unix_stream_socket connectto;
+        ')
+        # Allow qm_container_t to connect to container_runtime_t using unix_stream_socket
+        allow qm_container_t container_runtime_t:unix_stream_socket connectto;
+')
