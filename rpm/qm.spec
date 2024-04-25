@@ -62,8 +62,10 @@ Requires(post): selinux-policy-base >= %_selinux_policy_version
 Requires(post): selinux-policy-targeted >= %_selinux_policy_version
 Requires(post): policycoreutils
 Requires(post): libselinux-utils
+Requires: moreutils
 Requires: podman >= %{podman_epoch}:4.5
 Requires: bluechi-agent
+Requires: jq
 
 %description
 This package allow users to setup an environment which prevents applications
@@ -95,6 +97,8 @@ sed -i 's/^install: man all/install:/' Makefile
 # Install all modules in a single transaction
 %_format MODULES %{_datadir}/selinux/packages/$x.pp.bz2
 %selinux_modules_install -s %{selinuxtype} $MODULES
+# Execute the script to create seccomp rules after the package is installed
+/usr/share/qm/create-seccomp-rules
 
 %postun
 if [ $1 -eq 0 ]; then
@@ -114,6 +118,7 @@ fi
 %{_datadir}/qm/contexts
 %{_datadir}/qm/file_contexts
 %{_datadir}/qm/setup
+%{_datadir}/qm/create-seccomp-rules
 %ghost %dir %{_datadir}/containers
 %ghost %dir %{_datadir}/containers/systemd
 %{_datadir}/containers/systemd/qm.container

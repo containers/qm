@@ -1,0 +1,76 @@
+#!/bin/bash
+#
+# This program is free software; you can redistribute it and/or modify
+# it under the terms of the GNU General Public License as published by
+# the Free Software Foundation; either version 2 of the License, or
+# (at your option) any later version.
+#
+# This program is distributed in the hope that it will be useful,
+# but WITHOUT ANY WARRANTY; without even the implied warranty of
+# MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+# GNU General Public License for more details.
+#
+# You should have received a copy of the GNU General Public License
+# along with this program; if not, write to the Free Software Foundation,
+# Inc., 51 Franklin Street, Fifth Floor, Boston, MA 02110-1301 USA.
+
+SECCOMP_CONTAINERS_FILE="/usr/share/containers/seccomp.json"
+QM_PATH_SECCOMP="/usr/share/qm/seccomp.json"
+QM_DIR="${QM_PATH_SECCOMP%/*}"
+
+function remove_seccomp_entry_from_allow() {
+    local syscall_name=$1
+    local seccomp_file_path=$2
+
+    # sponge is used to absorb the output of jq and then write it back to the
+    # original file safely.
+    jq --tab \
+        --arg syscall "$syscall_name" \
+	--arg action "$action_type" \
+        '(.syscalls[] | select(.names[] == $syscall and .action == "SCMP_ACT_ALLOW").names) |= map(select(. != $syscall))' \
+        "${seccomp_file_path}" | sponge "${seccomp_file_path}"
+    
+}
+
+function add_syscall_deny_list() {
+    local syscall_name="$1"
+    local seccomp_file_path="$2"
+
+    # sponge is used to absorb the output of jq and then write it back to the
+    # original file safely.
+    jq --tab \
+       --arg syscall "$syscall_name" \
+       --arg action "$action_type" \
+       '.syscalls += [{"names": [$syscall], "action": "SCMP_ACT_ERRNO", "args": [], "errnoRet": 1, "errno": "EPERM"}]' \
+       "${seccomp_file_path}" | sponge "${seccomp_file_path}"
+}
+
+# Main
+if [ ! -f "${SECCOMP_CONTAINERS_FILE}" ]; then
+    echo "Exiting... unable to find ${SECCOMP_CONTAINERS_FILE}"
+    exit 1
+fi
+
+if [ ! -d "${QM_DIR}" ]; then
+    echo "Exiting... unable to find ${QM_DIR}"
+    exit 1
+fi
+
+# Copying original seccomp.json
+cp "${SECCOMP_CONTAINERS_FILE}" "${QM_PATH_SECCOMP}"
+
+remove_seccomp_entry_from_allow \
+	"sched_setscheduler" \
+	"${QM_PATH_SECCOMP}"
+
+remove_seccomp_entry_from_allow \
+	"sched_setattr" \
+	"${QM_PATH_SECCOMP}"
+
+add_syscall_deny_list \
+	"sched_setscheduler" \
+	"${QM_PATH_SECCOMP}"
+
+add_syscall_deny_list \
+	"sched_setattr" \
+	"${QM_PATH_SECCOMP}"
