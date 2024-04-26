@@ -53,6 +53,7 @@ install: man all
 	install -d -m 755 ${DESTDIR}${DATADIR}/qm
 	install -D -m 644 qm_contexts  ${DESTDIR}${DATADIR}/qm/contexts
 	install -D -m 755 setup ${DESTDIR}${DATADIR}/qm/setup
+	install -D -m 755 tools/comment-tz-local ${DESTDIR}${DATADIR}/qm/comment-tz-local
 	install -D -m 755 create-seccomp-rules ${DESTDIR}${DATADIR}/qm/create-seccomp-rules
 	install -D -m 644 qm_file_contexts ${DESTDIR}${DATADIR}/qm/file_contexts
 	install -D -m 644 containers.conf ${DESTDIR}${DATADIR}/qm/containers.conf
