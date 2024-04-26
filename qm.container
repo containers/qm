@@ -38,6 +38,11 @@ SecurityLabelNested=true
 SecurityLabelFileType=qm_file_t
 SecurityLabelLevel=s0
 SecurityLabelType=qm_t
-Timezone=local
+
+# ostree based distro use Env=TZ
+# See GH#367 for more info
+# Timezone=local
+Environment=TZ
+
 Volume=${RWETCFS}:/etc
 Volume=${RWVARFS}:/var
