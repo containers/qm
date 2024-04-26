@@ -99,6 +99,7 @@ sed -i 's/^install: man all/install:/' Makefile
 %selinux_modules_install -s %{selinuxtype} $MODULES
 # Execute the script to create seccomp rules after the package is installed
 /usr/share/qm/create-seccomp-rules
+/usr/share/qm/comment-tz-local # FIX-ME GH-issue: 367
 
 %postun
 if [ $1 -eq 0 ]; then
@@ -119,6 +120,7 @@ fi
 %{_datadir}/qm/file_contexts
 %{_datadir}/qm/setup
 %{_datadir}/qm/create-seccomp-rules
+%{_datadir}/qm/comment-tz-local
 %ghost %dir %{_datadir}/containers
 %ghost %dir %{_datadir}/containers/systemd
 %{_datadir}/containers/systemd/qm.container
