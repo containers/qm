@@ -4,6 +4,7 @@
 %global selinuxtype targeted
 %global moduletype services
 %global modulenames qm
+%global seccomp_json /usr/share/%{modulenames}/seccomp.json
 
 %global _installscriptdir %{_prefix}/lib/%{modulenames}
 
@@ -103,7 +104,11 @@ sed -i 's/^install: man all/install:/' Makefile
 
 %postun
 if [ $1 -eq 0 ]; then
+   # This section executes only on package removal, not on upgrade
    %selinux_modules_uninstall -s %{selinuxtype} %{modulenames}
+   if [ -f %{seccomp_json} ]; then
+     /bin/rm -f %{seccomp_json}
+   fi
 fi
 
 #define license tag if not already defined
