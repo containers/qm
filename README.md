@@ -32,6 +32,14 @@ each other.
 For now all of the control processes in the qm other then containers will run
 with the same qm_t type.
 
+Still would like to discuss about a specific selinux prevision?  
+Please open an [QM issue](https://github.com/containers/qm/issues) with the output of selinux error from a recent operation related to QM. The output of the following commands are appreciated for understanding the root cause.
+```
+ausearch -m avc -ts recent | audit2why  
+journalctl -t setroubleshoot  
+sealert -a /var/log/audit/audit.log  
+```
+
 * [BlueChi](https://github.com/containers/qm/pull/57)
 
 The package configures the bluechi agent within the QM.
