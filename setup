@@ -7,7 +7,9 @@
 
 # Globals
 SYSTEMCTL_SKIP="N"
+REMOVE_QM_ROOTFS="N"
 INSTALLDIR="/usr/share/qm"
+QM_ROOTFS_TOOL="${INSTALLDIR}/qm-rootfs"
 ROOTFS="/usr/lib/qm/rootfs"
 RWETCFS="/etc/qm"
 RWVARFS="/var/qm"
@@ -55,6 +57,7 @@ usage()
    echo "--rwvarfs             set rwvarfs (default: /var/qm)"
    echo "--skip-systemctl      skip systemctl daemon commands (default: false)"
    echo "--hostname            custom agent hostname to use (default: \$\(hostname\))"
+   echo "--remove-qm-rootfs    WARNING: remove qm rootfs created during setup"
    echo
    echo "Example:"
    echo "  $ sudo ./setup --installdir=/usr/share/qm --rootfs=/usr/lib/qm/rootfs"
@@ -211,7 +214,7 @@ EOF
 
 # read command line arguments
 opts=$(getopt \
-  --longoptions "$(printf "help,skip-systemctl,%s:," "${CMDLINE_ARGUMENT_LIST[@]}")" \
+  --longoptions "$(printf "help,skip-systemctl,remove-qm-rootfs,%s:," "${CMDLINE_ARGUMENT_LIST[@]}")" \
   --name "$(basename "$0")" \
   --options "" \
   -- "$@"
@@ -248,6 +251,10 @@ while [[ $# -gt 0 ]]; do
       AGENT_HOSTNAME="${2}"
       shift 2
       ;;
+    --remove-qm-rootfs)
+      REMOVE_QM_ROOTFS="Y"
+      shift 2
+      ;;
     --help)
       usage
       exit 1
@@ -265,8 +272,17 @@ echo  "  * rwetcfs: ${RWETCFS}"
 echo  "  * rwvarfs: ${RWVARFS}"
 echo  "  * install dir: ${INSTALLDIR}"
 echo  "  * skip-systemctl: ${SYSTEMCTL_SKIP}"
+echo  "  * remove-qm-rootfs: ${REMOVE_QM_ROOTFS}"
 echo  "  * agent hostname: ${AGENT_HOSTNAME}"
 echo
+
+if [ "${REMOVE_QM_ROOTFS}" == "Y" ]; then
+    # Get the one path below, i.e: /usr/lib/qm instead /usr/lib/qm/rootfs
+    path_qm_rootfs=$(${QM_ROOTFS_TOOL} | sed 's|/[^/]*$||')
+    rm -rf "${path_qm_rootfs}"
+    exit 0
+fi
+
 
 case "$1" in
     bluechi-agent)

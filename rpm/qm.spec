@@ -5,6 +5,7 @@
 %global moduletype services
 %global modulenames qm
 %global seccomp_json /usr/share/%{modulenames}/seccomp.json
+%global setup_tool %{_prefix}/share/%{modulenames}/setup
 
 %global _installscriptdir %{_prefix}/lib/%{modulenames}
 
@@ -102,6 +103,14 @@ sed -i 's/^install: man all/install:/' Makefile
 /usr/share/qm/create-seccomp-rules
 /usr/share/qm/comment-tz-local # FIX-ME GH-issue: 367
 
+%preun
+if [ $1 = 0 ]; then
+   # Commands to run before the package is completely removed
+   # remove previous configured qm rootfs
+   systemctl stop qm
+   %{setup_tool} --remove-qm-rootfs &> /dev/null
+fi
+
 %postun
 if [ $1 -eq 0 ]; then
    # This section executes only on package removal, not on upgrade
@@ -125,6 +134,7 @@ fi
 %{_datadir}/qm/file_contexts
 %{_datadir}/qm/setup
 %{_datadir}/qm/create-seccomp-rules
+%{_datadir}/qm/qm-rootfs
 %{_datadir}/qm/comment-tz-local
 %ghost %dir %{_datadir}/containers
 %ghost %dir %{_datadir}/containers/systemd

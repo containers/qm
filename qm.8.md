@@ -145,6 +145,12 @@ cat  /etc/systemd/system/qm.service.d/allowedcpus.conf
 AllowedCPUs=1
 ```
 
+## Tools
+
+**qm-rootfs**
+
+Prints the qm rootfs location previously configured during setup.
+
 ## SEE ALSO
 
 **[podman(1)](https://github.com/containers/podman/blob/main/docs/source/markdown/podman.1.md)**,**[quadlet(5)](https://github.com/containers/podman/blob/main/docs/source/markdown/podman-systemd.unit.5.md)**, systemctl(1), systemd(1), dnf(8), [bluechi-agent(1)](https://github.com/containers/bluechi/blob/main/doc/man/bluechi-agent.1.md),[bluechi-agent.conf.5](https://github.com/containers/bluechi/blob/main/doc/man/bluechi-agent.conf.5.md)
