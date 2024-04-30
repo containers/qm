@@ -29,7 +29,7 @@ AddDevice=-/dev/kvm
 AddDevice=-/dev/fuse
 ContainerName=qm
 Exec=/sbin/init
-Network=host
+Network=private
 PodmanArgs=--pids-limit=-1 --security-opt seccomp=/usr/share/qm/seccomp.json --security-opt label=nested --security-opt unmask=all
 ReadOnly=true
 Rootfs=${ROOTFS}
