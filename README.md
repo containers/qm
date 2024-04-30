@@ -71,6 +71,13 @@ repository enabled in order to provide `golang-github-cpuguy83-md2man` package.
 
 Looking for quadlet examples files? See our [docs dir](docs/quadlet-examples/).
 
-# Developement
+## Development
 
 If your looking for contribute to the project use our [development README guide](docs/devel/README.md) as start point.
+
+## RPM Mirrors
+
+Looking for a specific version of QM? 
+Search in the mirrors list below.  
+
+[CentOS Automotive SIG - qm package - noarch](https://mirror.stream.centos.org/SIGs/9-stream/automotive/aarch64/packages-main/Packages/q/)
