@@ -15,6 +15,8 @@
 # Inc., 51 Franklin Street, Fifth Floor, Boston, MA 02110-1301 USA.
 
 SECCOMP_CONTAINERS_FILE="/usr/share/containers/seccomp.json"
+SYSCALLS_TO_DENY=("sched_setscheduler" "sched_setattr")
+
 QM_PATH_SECCOMP="/usr/share/qm/seccomp.json"
 QM_DIR="${QM_PATH_SECCOMP%/*}"
 
@@ -59,18 +61,10 @@ fi
 # Copying original seccomp.json
 cp "${SECCOMP_CONTAINERS_FILE}" "${QM_PATH_SECCOMP}"
 
-remove_seccomp_entry_from_allow \
-	"sched_setscheduler" \
-	"${QM_PATH_SECCOMP}"
+for syscall in "${SYSCALLS_TO_DENY[@]}"; do
+    # Remove syscall entry from the allow list
+    remove_seccomp_entry_from_allow "${syscall}" "${QM_PATH_SECCOMP}"
 
-remove_seccomp_entry_from_allow \
-	"sched_setattr" \
-	"${QM_PATH_SECCOMP}"
-
-add_syscall_deny_list \
-	"sched_setscheduler" \
-	"${QM_PATH_SECCOMP}"
-
-add_syscall_deny_list \
-	"sched_setattr" \
-	"${QM_PATH_SECCOMP}"
+    # Add syscall to the deny list
+    add_syscall_deny_list "${syscall}" "${QM_PATH_SECCOMP}"
+done

@@ -1,0 +1,79 @@
+#!/bin/bash
+#
+# ===============================================================================
+# PLEASE READ FOR THE CI/CD JOB:
+# ===============================================================================
+# 1. MAKE SURE THIS CI/CD JOB IS TRIGGERED ONLY IF IS A QM RELATED SUBJECT/TOPIC
+#    These syscalls are blocked in QM environment ONLY. (NOT blocked in the host).
+#
+# 2. ADJUST THE VARIABLE PROJECT_URL to match the CI/CD variable for the git
+#    project.
+# ===============================================================================
+#
+# This program is free software; you can redistribute it and/or modify
+# it under the terms of the GNU General Public License as published by
+# the Free Software Foundation; either version 2 of the License, or
+# (at your option) any later version.
+#
+# This program is distributed in the hope that it will be useful,
+# but WITHOUT ANY WARRANTY; without even the implied warranty of
+# MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+# GNU General Public License for more details.
+#
+# You should have received a copy of the GNU General Public License
+# along with this program; if not, write to the Free Software Foundation,
+# Inc., 51 Franklin Street, Fifth Floor, Boston, MA 02110-1301 USA.
+
+# Must be the latest create-seccomp-rules to include SYSCALLS_TO_DENY ARRAY
+SECCOMP_RULES="/usr/share/qm/create-seccomp-rules"
+
+# shellcheck disable=SC1090
+source "${SECCOMP_RULES}"
+
+# PROJECT_URL is the variable that holds the URL of the git project
+# in github or gitlab
+#
+# Example: "https://gitlab.com/rt-linux-tools/stalld.git/"
+# The project statlld uses sched_setattr which is blocked in QM env.
+PROJECT_URL="https://gitlab.com/rt-linux-tools/stalld.git/"
+
+# Remove any trailing slash from the URL
+PROJECT_NAME="${PROJECT_URL%/}"
+
+# Extract the last segment from the URL after the final slash
+# This typically represents the project name or repository name
+PROJECT_NAME="${PROJECT_NAME##*/}"
+
+# Remove the ".git" suffix from the project name if it exists
+# This is helpful when the URL points directly to a Git repository
+PROJECT_NAME="${PROJECT_NAME%.git}"
+
+# Create a temporary directory
+temp_dir=$(mktemp -d) > /dev/null 2>&1
+
+# Ensure the temporary directory is removed when the script exits
+# shellcheck disable=SC2064
+trap 'rm -rf "${temp_dir}"' EXIT
+
+if [[ -z "${SYSCALLS_TO_DENY}" ]]; then
+    # no system calls to deny
+    echo "no system calls to deny"
+    exit 0
+fi
+
+# there are syscalls to deny, lets loop into it.
+pushd "${temp_dir}" 1> /dev/null || exit
+    git clone "${PROJECT_URL}"
+    cd "${PROJECT_NAME}" || exit
+    for syscall in "${SYSCALLS_TO_DENY[@]}"; do
+	if grep -rw "${syscall}" . ; then
+            echo "^^^^^^ ERROR - [${syscall}] found which is NOT ALLOWED in the QM project ^^^^^^^"
+	    echo
+            exit 255
+        fi
+    done
+popd 1> /dev/null || exit
+echo
+echo "Exiting.. nothing found, all good"
+
+exit 0
