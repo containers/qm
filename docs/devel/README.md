@@ -103,9 +103,9 @@ git clone https://gitlab.com/CentOS/automotive/sample-images.git
 cd sample-images/osbuild-manifests/
 dnf clean all
 rm -rf _build
-rm -f cs9-qemu-qm-minimal-regular.x86_64.qcow2
-rm -f cs9-qemu-qm-minimal-ostree.x86_64.qcow2
-make cs9-qemu-qm-minimal-regular.x86_64.qcow2 'DEFINES=extra_repos=[{"id":"local","baseurl":"file:///root/rpmbuild/RPMS/noarch"}] extra_rpms=["qm-1.0","vim-enhanced","strace","dnf","gdb","polkit","rsync","python3","openssh-server","openssh-clients"] ssh_permit_root_login=true osname="autosd" ssh_permit_password_auth=true'
+rm -f cs9-qemu-qmcontainer-regular.x86_64.qcow2
+rm -f cs9-qemu-qmcontainer-ostree.x86_64.qcow2
+make cs9-qemu-qmcontainer-regular.x86_64.qcow2 'DEFINES=extra_repos=[{"id":"local","baseurl":"file:///root/rpmbuild/RPMS/noarch"}] extra_rpms=["qm-1.0","vim-enhanced","strace","dnf","gdb","polkit","rsync","python3","openssh-server","openssh-clients"] ssh_permit_root_login=true osname="autosd" ssh_permit_password_auth=true'
 ```
 
 Run the virtual machine, default user: root, pass: password.  
@@ -158,4 +158,59 @@ a83253ae278d              /sbin/init  38 seconds ago  Up 38 seconds             
 ```bash
 # podman exec -it qm bash
 bash-5.1#
+```
+
+## SSH guest CentOS Automotive Stream Distro
+Make sure the CentOS Automotive Stream Distro Virtual Machine/Container is running with SSHD enabled
+and permits ssh connection from root user.
+
+Add **PermitRootLogin yes** into **sshd_config**
+
+```bash
+host> vi /etc/ssh/sshd_config
+```
+
+Restart systemctl restart sshd
+
+```bash
+host> systemctl restart sshd
+```
+
+Find the port the ssh is listening in the VM
+
+```bash
+host> netstat -na |more # Locate the port (2222 or 2223, etc)
+```
+
+Example connecting from the terminal to the Virtual Machine:
+
+```bash
+connect-to-VM-via-SSH> ssh root@127.0.0.1 \
+			-p 2222 \
+			-oStrictHostKeyChecking=no \
+			-oUserKnownHostsFile=/dev/null
+```
+
+## Check if HOST and Container are using different network namespace
+
+**HOST**
+
+```bash
+[root@localhost ~]# ls -l /proc/self/ns/net
+lrwxrwxrwx. 1 root root 0 May  1 04:33 /proc/self/ns/net -> 'net:[4026531840]'
+```
+
+**QM**
+
+```bash
+bash-5.1# ls -l /proc/self/ns/net
+lrwxrwxrwx. 1 root root 0 May  1 04:33 /proc/self/ns/net -> 'net:[4026532287]'
+```
+
+## Debugging with podman in QM using --root
+
+```bash
+bash-5.1# podman --root /usr/share/containers/storage pull alpine
+Error: creating runtime static files directory "/usr/share/containers/storage/libpod":  
+mkdir /usr/share/containers/storage: read-only file system
 ```
