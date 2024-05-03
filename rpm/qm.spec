@@ -135,6 +135,7 @@ fi
 %{_datadir}/qm/setup
 %{_datadir}/qm/create-seccomp-rules
 %{_datadir}/qm/qm-rootfs
+%{_datadir}/qm/qm-storage-settings
 %{_datadir}/qm/comment-tz-local
 %ghost %dir %{_datadir}/containers
 %ghost %dir %{_datadir}/containers/systemd

@@ -1,0 +1,149 @@
+#!/bin/bash
+#
+# This program is free software; you can redistribute it and/or modify
+# it under the terms of the GNU General Public License as published by
+# the Free Software Foundation; either version 2 of the License, or
+# (at your option) any later version.
+#
+# This program is distributed in the hope that it will be useful,
+# but WITHOUT ANY WARRANTY; without even the implied warranty of
+# MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+# GNU General Public License for more details.
+#
+# You should have received a copy of the GNU General Public License
+# along with this program; if not, write to the Free Software Foundation,
+# Inc., 51 Franklin Street, Fifth Floor, Boston, MA 02110-1301 USA.
+
+# Global vars
+TMP_QM_IMG_DIR="tmp.images"
+QM_ROOTFS_TOOL="/usr/share/qm/qm-rootfs"
+STORAGE_CONFIG=""
+
+# exec_command will try to find the command before execute, it will try first in a regular
+# path (normal distros) and if not unable to find, it look for the command using ostree path
+# structure
+exec_command() {
+    COMMAND=$1
+    if [ ! -f "$1" ]; then # no path, let's try ostree approach
+        COMMAND="/run/osbuild/tree$1"
+        if [ -f "${COMMAND}" ]; then
+	    # FIXME: support this in qm-rootfs and remove this if condition
+	    # it's a deploy/install moment in ostree  
+  	    echo "/run/osbuild/tree/usr/lib/qm/rootfs"
+	    return
+        else
+            echo "Exiting unable to find QM ROOTFS ${COMMAND}"
+            exit 255
+	fi
+    fi
+
+    # print the output of QM ROOTFS
+    echo $($COMMAND)
+}
+
+setup_init() {
+    ROOTFS=$(exec_command "/usr/share/qm/qm-rootfs")
+
+    # containers/storage.conf
+    STORAGE_CONFIG="${ROOTFS}/etc/containers/storage.conf"
+    if [ ! -f "${STORAGE_CONFIG}" ]; then # no path, let's try ostree approach
+        STORAGE_CONFIG="/run/osbuild/tree/${STORAGE_CONFIG}"
+        if [ ! -f "${STORAGE_CONFIG}" ]; then
+	    echo "Exiting /etc/containers/storage.conf in the ROOTFS"
+            exit 255
+        fi
+    fi
+}
+
+additional_images_storages() {
+    if ! grep -q "/var/lib/shared" "${STORAGE_CONFIG}"; then
+        awk -i inplace '
+        BEGIN {
+            # Initialize insideBlock to 0 to track when we are inside the 'additionalimagestores' block
+            insideBlock = 0
+        }
+
+        {
+            # Check if the current line is the start of the block
+            if ($0 ~ /additionalimagestores = \[/) {
+                print $0             # Print the starting line of the block
+                insideBlock = 1      # Set insideBlock to 1 indicating that we are inside the block
+                next                 # Skip to the next line to process further
+            }
+
+            # Execute the following if we are inside the specified block
+            if (insideBlock == 1) {
+                # Check if the line contains the specific path "/usr/share/containers/storage"
+                if ($0 ~ /"\/usr\/share\/containers\/storage"/) {
+                    if ($0 !~ /,$/) {  # If the line does not end with a comma
+                        print $0 ","  # Print the line with a comma appended
+                    } else {
+                        print $0      # Otherwise, print the line as it is
+                    }
+                    print "   \"/var/lib/shared\""  # Add a new path to the list
+                    next             # Skip to the next line to continue processing within the block
+                }
+
+                # Check if the current line is the end of the block
+                if ($0 ~ /^\s*\]$/) {
+                    print $0          # Print the line that ends the block
+                    insideBlock = 0   # Reset insideBlock to 0 as we are leaving the block
+                    next              # Move to the next line outside the block
+                }
+
+                print $0  # Print other lines within the block that do not need modification
+            } else {
+                print $0  # Print lines outside the block as they are
+            }
+        }' "${STORAGE_CONFIG}"
+    fi
+}
+
+update_storage_conf() {
+
+    if [ ! -f "${STORAGE_CONFIG}" ]; then
+        echo "Exiting... unable to find ${STORAGE_CONFIG}"
+	exit 255
+    fi
+
+    # 1. Uncomment lines from 'additionalimage' to ']'
+    if grep -q '#.*additionalimage' "$STORAGE_CONFIG"; then
+        sed -i '/additionalimage.*/,/]/s/^#//g' "$STORAGE_CONFIG"
+    fi
+
+    # 2. Append line after 'additionalimages'
+    if ! grep -qE 'additionalimagestores\s*=\s*\[.*"/var/lib/shared".*\]' "${STORAGE_CONFIG}"; then
+        if [ ! -d "${STORAGE_CONFIG}" ]; then
+	     mkdir -p "${ROOTFS}/var/lib/shared"
+	fi
+	sed -i -E '/^additionalimagestores = \[/ {
+            s/(\])$/"\/var\/lib\/shared"\1/
+            s/(.+),(\])$/"\/var\/lib\/shared"\2/
+        }' "${STORAGE_CONFIG}"
+    fi
+
+    # 3. Uncomment or change 'transient_store'
+    if ! grep -q '^transient_store=true' "$STORAGE_CONFIG"; then
+        sed -i 's|^#.*transient_store.*|transient_store=true|g' "$STORAGE_CONFIG"
+    fi
+
+    # 4. Add /var/lib/shared
+    additional_images_storages
+
+    # Append TMPDIR
+    if test -f "${ROOTFS}/etc/containers/containers.conf"; then
+        if ! grep -q "TMPDIR=/var/${TMP_QM_IMG_DIR}" "${ROOTFS}/etc/containers/containers.conf"; then
+            mkdir -p "${ROOTFS}/var/${TMP_QM_IMG_DIR}"
+            cat >> "${ROOTFS}/etc/containers/containers.conf" <<EOF
+
+[engine]
+env = ["TMPDIR=/var/${TMP_QM_IMG_DIR}"]
+EOF
+        fi
+    fi
+}
+
+# main
+setup_init
+update_storage_conf
+exit 0 
