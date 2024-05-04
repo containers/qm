@@ -37,6 +37,10 @@ jobs:
       - fedora-rawhide-ppc64le
       - fedora-rawhide-s390x
       - fedora-rawhide-x86_64
+      - fedora-40-aarch64
+      - fedora-40-ppc64le
+      - fedora-40-s390x
+      - fedora-40-x86_64
       - fedora-39-aarch64
       - fedora-39-ppc64le
       - fedora-39-s390x
@@ -53,6 +57,9 @@ jobs:
   - <<: *copr
     project: qm
     targets:
+      fedora-40-aarch64: {}
+      fedora-40-ppc64le: {}
+      fedora-40-x86_64: {}
       fedora-39-aarch64: {}
       fedora-39-ppc64le: {}
       fedora-39-x86_64: {}
@@ -109,6 +116,7 @@ jobs:
     update_release: false
     dist_git_branches:
       - fedora-rawhide
+      - fedora-40
       - fedora-39
       - fedora-38
       - epel-9
@@ -117,6 +125,7 @@ jobs:
     trigger: commit
     dist_git_branches:
       - fedora-rawhide
+      - fedora-40
       - fedora-39
       - fedora-38
       - epel-9
@@ -125,6 +134,7 @@ jobs:
     trigger: commit
     dist_git_branches:
       # rawhide updates are created automatically
+      - fedora-40
       - fedora-39
       - fedora-38
       - epel-9
