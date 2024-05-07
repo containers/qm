@@ -3,6 +3,7 @@
 - [Useful Commands](#useful-commands)
   - [Installing software inside QM partition](#installing-software-inside-qm-partition)
   - [Removing software inside QM partition](#removing-software-inside-qm-partition)
+  - [Copying files to QM partition](#copying-files-to-qm-partition)
   - [Listing QM service](#Listing-QM-service)
   - [List QM container via podman](#List-QM-container-via-podman)
   - [Connecting to QM container via podman](#Connecting-to-QM-container-via-podman)
@@ -135,6 +136,20 @@ dnf --installroot /usr/lib/qm/rootfs/ remove vim -y
 
 ```bash
 dnf --installroot /usr/lib/qm/rootfs/ remove vim -y
+```
+
+## Copying files to QM partition
+Please note: This process is only applicable for regular images.
+OSTree images are read-only, and any files must be included during the build process.
+
+Once this is understood, proceed by executing the following command on the host after
+the QM package has been installed.
+
+```bash
+#host> cp file_to_be_copied /usr/lib/qm/rootfs/root
+#host> podman exec -it qm bash
+bash-5.1> ls /root
+file_to_be_copied
 ```
 
 ## Listing QM service
