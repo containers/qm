@@ -1,6 +1,12 @@
 - [Building QM rpm manually with changes](#building-qm-rpm-manually-with-changes)
 - [Building CentOS AutoSD and QM manually](#building-centos-autosd-and-qm-manually)
 - [Useful Commands](#useful-commands)
+  - [Listing QM service](#Listing-QM-service)
+  - [List QM container via podman](#List-QM-container-via-podman)
+  - [Connecting to QM container via podman](#Connecting-to-QM-container-via-podman)
+  - [SSH guest CentOS Automotive Stream Distro](#SSH-guest-CentOS-Automotive-Stream-Distro)
+  - [Check if HOST and Container are using different network namespace](#Check-if-HOST-and-Container-are-using-different-network-namespace)
+  - [Debugging with podman in QM using --root](#Debugging-with-podman-in-QM)
 
 # Building QM rpm manually with changes
 
@@ -207,7 +213,7 @@ bash-5.1# ls -l /proc/self/ns/net
 lrwxrwxrwx. 1 root root 0 May  1 04:33 /proc/self/ns/net -> 'net:[4026532287]'
 ```
 
-## Debugging with podman in QM using --root
+## Debugging with podman in QM
 
 ```bash
 bash-5.1# podman --root /usr/share/containers/storage pull alpine
