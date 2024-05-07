@@ -1,6 +1,8 @@
 - [Building QM rpm manually with changes](#building-qm-rpm-manually-with-changes)
 - [Building CentOS AutoSD and QM manually](#building-centos-autosd-and-qm-manually)
 - [Useful Commands](#useful-commands)
+  - [Installing software inside QM partition](#installing-software-inside-qm-partition)
+  - [Removing software inside QM partition](#removing-software-inside-qm-partition)
   - [Listing QM service](#Listing-QM-service)
   - [List QM container via podman](#List-QM-container-via-podman)
   - [Connecting to QM container via podman](#Connecting-to-QM-container-via-podman)
@@ -122,6 +124,18 @@ To change default values, use the [defaults.ipp.yml](https://gitlab.com/CentOS/a
 ```
 
 # Useful Commands
+
+## Installing software inside QM partition
+
+```bash
+dnf --installroot /usr/lib/qm/rootfs/ remove vim -y
+```
+
+## Removing software inside QM partition
+
+```bash
+dnf --installroot /usr/lib/qm/rootfs/ remove vim -y
+```
 
 ## Listing QM service
 
