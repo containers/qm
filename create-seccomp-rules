@@ -24,27 +24,28 @@ function remove_seccomp_entry_from_allow() {
     local syscall_name=$1
     local seccomp_file_path=$2
 
-    # sponge is used to absorb the output of jq and then write it back to the
-    # original file safely.
+    temp_file=$(mktemp)
     jq --tab \
         --arg syscall "$syscall_name" \
 	--arg action "$action_type" \
         '(.syscalls[] | select(.names[] == $syscall and .action == "SCMP_ACT_ALLOW").names) |= map(select(. != $syscall))' \
-        "${seccomp_file_path}" | sponge "${seccomp_file_path}"
-    
+        "${seccomp_file_path}" > "$temp_file" && mv "$temp_file" "${seccomp_file_path}"
+
+    rm "$temp_file" &> /dev/null
 }
 
 function add_syscall_deny_list() {
     local syscall_name="$1"
     local seccomp_file_path="$2"
 
-    # sponge is used to absorb the output of jq and then write it back to the
-    # original file safely.
+    temp_file=$(mktemp)
     jq --tab \
        --arg syscall "$syscall_name" \
        --arg action "$action_type" \
        '.syscalls += [{"names": [$syscall], "action": "SCMP_ACT_ERRNO", "args": [], "errnoRet": 1, "errno": "EPERM"}]' \
-       "${seccomp_file_path}" | sponge "${seccomp_file_path}"
+       "${seccomp_file_path}" > "$temp_file" && mv "$temp_file" "${seccomp_file_path}"
+
+    rm "$temp_file" &> /dev/null
 }
 
 # Main
