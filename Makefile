@@ -52,7 +52,6 @@ install: man all
 	install -D -pm 644 qm.8 ${DESTDIR}${DATADIR}/man/man8/qm.8
 	install -d -m 755 ${DESTDIR}${DATADIR}/qm
 	install -D -m 644 qm_contexts  ${DESTDIR}${DATADIR}/qm/contexts
-	install -D -m 755 setup ${DESTDIR}${DATADIR}/qm/setup
 	install -D -m 755 tools/comment-tz-local ${DESTDIR}${DATADIR}/qm/comment-tz-local
 	install -D -m 755 tools/qm-rootfs ${DESTDIR}${DATADIR}/qm/qm-rootfs
 	install -D -m 755 tools/qm-storage-settings ${DESTDIR}${DATADIR}/qm/qm-storage-settings

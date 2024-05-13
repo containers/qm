@@ -5,7 +5,6 @@
 %global moduletype services
 %global modulenames qm
 %global seccomp_json /usr/share/%{modulenames}/seccomp.json
-%global setup_tool %{_prefix}/share/%{modulenames}/setup
 
 %global _installscriptdir %{_prefix}/lib/%{modulenames}
 
@@ -108,7 +107,6 @@ if [ $1 = 0 ]; then
    # Commands to run before the package is completely removed
    # remove previous configured qm rootfs
    systemctl stop qm
-   %{setup_tool} --remove-qm-rootfs &> /dev/null
 fi
 
 %postun
@@ -132,7 +130,6 @@ fi
 %{_datadir}/qm/containers.conf
 %{_datadir}/qm/contexts
 %{_datadir}/qm/file_contexts
-%{_datadir}/qm/setup
 %{_datadir}/qm/create-seccomp-rules
 %{_datadir}/qm/qm-rootfs
 %{_datadir}/qm/qm-storage-settings
