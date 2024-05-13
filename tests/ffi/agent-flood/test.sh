@@ -2,6 +2,12 @@
 
 # shellcheck disable=SC1091
 
+# Check if SKIP_TEST is set to true
+if [ "$SKIP_TEST" == "true" ]; then
+    echo "Skipping the bluechi stress test."
+    exit 0
+fi
+
 . ../common/prepare.sh
 
 export QM_HOST_REGISTRY_DIR="/var/qm/lib/containers/registry"
