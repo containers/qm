@@ -1,6 +1,9 @@
 #! /bin/bash -ex
 #
-# This setup script will install an OS environment by default into
+# This setup script is an unofficial solution designed to deploy QM in
+# non-automotive environments like baremetal, desktop, or CICD.
+#
+# It will install an OS environment by default into
 # /usr/lib/qm/rootfs and create a Podman quadlet containerized environment
 # running systemd as PID1 inside.
 #
@@ -42,6 +45,9 @@ root_check() {
 
 usage()
 {
+   echo "This script is an unofficial solution designed to deploy QM in"
+   echo "non-automotive environments like baremetal, desktop, or CICD."
+   echo
    echo "The setup script will install an OS environment by default into"
    echo "/usr/lib/qm/rootfs and create a Podman quadlet containerized environment"
    echo "running systemd as PID1 inside."
