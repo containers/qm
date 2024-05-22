@@ -32,27 +32,7 @@ jobs:
     branch: main
     owner: rhcontainerbot
     project: podman-next
-    targets:
-      - fedora-rawhide-aarch64
-      - fedora-rawhide-ppc64le
-      - fedora-rawhide-s390x
-      - fedora-rawhide-x86_64
-      - fedora-40-aarch64
-      - fedora-40-ppc64le
-      - fedora-40-s390x
-      - fedora-40-x86_64
-      - fedora-39-aarch64
-      - fedora-39-ppc64le
-      - fedora-39-s390x
-      - fedora-39-x86_64
-      - fedora-38-aarch64
-      - fedora-38-ppc64le
-      - fedora-38-s390x
-      - fedora-38-x86_64
-      - centos-stream+epel-next-9-aarch64
-      - centos-stream+epel-next-9-ppc64le
-      - centos-stream+epel-next-9-s390x
-      - centos-stream+epel-next-9-x86_64
+    enable_net: true
 
   - <<: *copr
     project: qm
