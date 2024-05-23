@@ -1,4 +1,4 @@
-#!/bin/bash
+#!/bin/bash -ex
 #
 # This program is free software; you can redistribute it and/or modify
 # it under the terms of the GNU General Public License as published by
@@ -16,7 +16,6 @@
 
 # Global vars
 TMP_QM_IMG_DIR="tmp.images"
-QM_ROOTFS_TOOL="/usr/share/qm/qm-rootfs"
 STORAGE_CONFIG=""
 
 # exec_command will try to find the command before execute, it will try first in a regular
@@ -28,7 +27,7 @@ exec_command() {
         COMMAND="/run/osbuild/tree$1"
         if [ -f "${COMMAND}" ]; then
 	    # FIXME: support this in qm-rootfs and remove this if condition
-	    # it's a deploy/install moment in ostree  
+	    # it's a deploy/install moment in ostree
   	    echo "/run/osbuild/tree/usr/lib/qm/rootfs"
 	    return
         else
@@ -37,8 +36,8 @@ exec_command() {
 	fi
     fi
 
-    # print the output of QM ROOTFS
-    echo $($COMMAND)
+    # print and  output of QM ROOTFS
+    "$COMMAND"
 }
 
 setup_init() {
@@ -46,10 +45,10 @@ setup_init() {
 
     # containers/storage.conf
     STORAGE_CONFIG="${ROOTFS}/etc/containers/storage.conf"
-    if [ ! -f "${STORAGE_CONFIG}" ]; then # no path, let's try ostree approach
+    if [  -d /run/osbuild/ostree ]; then # osbuild exist, let's try ostree approach
         STORAGE_CONFIG="/run/osbuild/tree/${STORAGE_CONFIG}"
         if [ ! -f "${STORAGE_CONFIG}" ]; then
-	    echo "Exiting /etc/containers/storage.conf in the ROOTFS"
+            echo "Exiting /etc/containers/storage.conf not found under /run/osbuild/tree/"
             exit 255
         fi
     fi
@@ -59,7 +58,7 @@ additional_images_storages() {
     if ! grep -q "/var/lib/shared" "${STORAGE_CONFIG}"; then
         awk -i inplace '
         BEGIN {
-            # Initialize insideBlock to 0 to track when we are inside the 'additionalimagestores' block
+            # Initialize insideBlock to 0 to track when we are inside the "additionalimagestores" block
             insideBlock = 0
         }
 
@@ -146,4 +145,4 @@ EOF
 # main
 setup_init
 update_storage_conf
-exit 0 
+exit 0
