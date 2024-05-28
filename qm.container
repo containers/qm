@@ -9,7 +9,7 @@ Delegate=true
 IOWeight=50
 ManagedOOMSwap=kill
 MemorySwapMax=0
-# Containers within the qm y default set OOMScoreAdj to 750
+# Containers within the qm contain default set OOMScoreAdj to 750
 OOMScoreAdjust=500
 Restart=always
 Slice=QM.slice
