@@ -1,4 +1,4 @@
-#! /bin/bash -ex
+#!/bin/bash -ex
 #
 # This setup script is an unofficial solution designed to deploy QM in
 # non-automotive environments like baremetal, desktop, or CICD.
@@ -16,7 +16,6 @@ QM_ROOTFS_TOOL="${INSTALLDIR}/qm-rootfs"
 ROOTFS="/usr/lib/qm/rootfs"
 RWETCFS="/etc/qm"
 RWVARFS="/var/qm"
-TMP_QM_IMG_DIR="tmp.images"
 AGENT_HOSTNAME="$(hostname)"
 AGENTCONF="/etc/bluechi/agent.conf.d/agent.conf"
 QM_CONTAINER_IDS=1000000000:1500000000
@@ -150,8 +149,8 @@ install() {
     cmd_dnf_install="dnf -y install --releasever=${VERSION_ID} --installroot ${ROOTFS} ${PACKAGES_TO_INSTALL}"
     ${cmd_dnf_install}
 
-    if dnf --installroot "${ROOTFS}" list installed "${PACKAGE_TO_REMOVE}" > /dev/null 2>&1; then
-        dnf --installroot ${ROOTFS} remove ${PACKAGES_TO_REMOVE} -y
+    if dnf --installroot "${ROOTFS}" list installed "${PACKAGES_TO_REMOVE}" > /dev/null 2>&1; then
+        dnf --installroot "${ROOTFS}" remove "${PACKAGES_TO_REMOVE}" -y
     fi
 
     # check if "${ROOTFS}"/etc/yum.repos.d
@@ -186,6 +185,7 @@ EOF
 	    /etc/systemd/system/multi-user.target.wants/bluechi-agent.service
     fi
 
+    "${INSTALLDIR}/qm-storage-settings"
     restorecon -R "${ROOTFS}"
     umount "${ROOTFS}/var" "${ROOTFS}/etc"
 }
