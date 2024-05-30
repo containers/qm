@@ -2,7 +2,6 @@
 
 . ../common/prepare.sh
 
-local expected_result
 expected_result="Failed to set scheduler: Operation not permitted"
 
 disk_cleanup
