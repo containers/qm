@@ -2,16 +2,16 @@
 
 . ../common/prepare.sh
 
+export QM_HOST_REGISTRY_DIR="/var/qm/lib/containers/registry"
+export QM_REGISTRY_DIR="/var/lib/containers/registry"
 expected_result="Failed to set scheduler: Operation not permitted"
 
 disk_cleanup
 prepare_test
 reload_config
 
-podman exec -it qm /bin/bash -c \
-         'podman run -d  --replace --name ffi-qm \
-          quay.io/centos-sig-automotive/ffi-tools:latest \
-          tail -f /dev/null'
+prepare_images
+run_container_in_qm "ffi-qm"
 
 return_from_setscheduler=$(podman exec -it qm /bin/bash -c \
          'podman exec -it ffi-qm ./QM/test_sched_setscheduler')
