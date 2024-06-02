@@ -1,0 +1,6 @@
+summary: Executing sysctl inside nested container running on top of QM
+test: /bin/bash ./test.sh
+duration: 20m
+tag: ffi
+framework: shell
+id: f615d356-9bf9-4de2-a007-7a99eca2bc48
