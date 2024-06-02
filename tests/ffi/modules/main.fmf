@@ -1,0 +1,6 @@
+summary: modprobe - test interference from the QM partition to host
+test: /bin/bash ./test.sh
+duration: 20m
+tag: ffi
+framework: shell
+id: 74275f94-c9a4-45f3-8e46-86a904f26959
