@@ -1,0 +1,131 @@
+#!/bin/bash
+
+# Licensed under the Apache License, Version 2.0 (the "License");
+# you may not use this file except in compliance with the License.
+# You may obtain a copy of the License at
+#
+#     http://www.apache.org/licenses/LICENSE-2.0
+#
+# Unless required by applicable law or agreed to in writing, software
+# distributed under the License is distributed on an "AS IS" BASIS,
+# WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+# See the License for the specific language governing permissions and
+# limitations under the License.
+
+UPSTREAM_URL="https://github.com/containers/qm"
+
+show_tags() {
+  echo "Fetching all tags from $UPSTREAM_URL..."
+  git remote add upstream "$UPSTREAM_URL" &> /dev/null
+  git fetch upstream --tags &> /dev/null
+  echo "Available tags:"
+  git tag -l
+}
+
+# Ensure two tags are provided or --show-tags is used
+if [ "$#" -eq 1 ] && [ "$1" == "--show-tags" ]; then
+  show_tags
+  exit 0
+elif [ "$#" -eq 2 ] || [ "$#" -eq 3 ]; then
+  if [ "$#" -eq 3 ]; then
+    UPSTREAM_URL=$3
+  fi
+else
+  echo "Usage: $0 <older-tag> <newer-tag> [upstream-url]"
+  echo "       $0 --show-tags [upstream-url]"
+  echo "Example: $0 v0.6.2 v0.6.3"
+  echo "Example with custom upstream to download tags: $0 v0.6.2 v0.6.3 https://github.com/custom/repo"
+  exit 1
+fi
+
+OLDER_TAG=$1
+NEWER_TAG=$2
+
+# Print starting message
+echo "Generating release notes from $OLDER_TAG to $NEWER_TAG..."
+
+# Fetch all tags
+echo "Collecting tags from $UPSTREAM_URL..."
+git remote add upstream "$UPSTREAM_URL" &> /dev/null
+git fetch upstream --tags &> /dev/null
+
+# Check if tags exist
+echo "Checking if tags exist..."
+if ! git rev-parse "$OLDER_TAG" >/dev/null 2>&1; then
+  echo "Error: Tag '$OLDER_TAG' does not exist."
+  exit 1
+fi
+
+if ! git rev-parse "$NEWER_TAG" >/dev/null 2>&1; then
+  echo "Error: Tag '$NEWER_TAG' does not exist."
+  exit 1
+fi
+
+# Get the log between the two tags
+echo "Fetching commit logs..."
+LOG=$(git log --pretty=format:"- %s (%an, %ad)" "$OLDER_TAG".."$NEWER_TAG")
+
+# Categorize logs into sections
+echo "Categorizing commits..."
+NEW_FEATURES=""
+BUG_FIXES=""
+TESTING=""
+DOCS=""
+new_count=0
+bug_fixes_count=0
+testing_count=0
+docs_count=0
+
+while IFS= read -r line; do
+  if [[ "$line" =~ ^-?[[:space:]]*(Add|add|New|new|Initial|initial|RFE|tools: add|seccomp: add|FFI: add) ]]; then
+    NEW_FEATURES+="$line\n"
+    ((new_count++))
+  elif [[ "$line" =~ ^-?[[:space:]]*(Fix|fix|Bug|bug|Remove|remove|spec:|qm.container:|prepare.sh:|setup:|qm:|Merge|use|qm.containers:|seccomp|FFI|revert) ]]; then
+    BUG_FIXES+="$line\n"
+    ((bug_fixes_count++))
+  elif [[ "$line" =~ ^-?[[:space:]]*(Test|test|Testing|testing|main.fmf:|tests:|packit:) ]]; then
+    TESTING+="$line\n"
+    ((testing_count++))
+  elif [[ "$line" =~ ^-?[[:space:]]*(Doc|doc|README|readme|Docs|docs) ]]; then
+    DOCS+="$line\n"
+    ((docs_count++))
+  fi
+done <<< "$LOG"
+
+total_count=$((new_count + bug_fixes_count + testing_count + docs_count))
+
+# Refine the wording in the sections
+if [ -n "$NEW_FEATURES" ]; then
+  NEW_FEATURES="New ($new_count):\n\n${NEW_FEATURES}"
+fi
+
+if [ -n "$BUG_FIXES" ]; then
+  BUG_FIXES="Bug-Fixes ($bug_fixes_count):\n\n${BUG_FIXES}"
+fi
+
+if [ -n "$TESTING" ]; then
+  TESTING="Testing ($testing_count):\n\n${TESTING}"
+fi
+
+if [ -n "$DOCS" ]; then
+  DOCS="Docs ($docs_count):\n\n${DOCS}"
+fi
+
+# Generate markdown output
+echo "Generating markdown output..."
+OUTPUT="What's new:
+==================
+
+${NEW_FEATURES}
+${BUG_FIXES}
+${TESTING}
+${DOCS}
+
+Total: $total_count
+"
+
+# Print the output
+echo -e "$OUTPUT"
+
+echo "Release notes generated successfully."
+
