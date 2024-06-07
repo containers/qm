@@ -1,0 +1,6 @@
+summary: Test QM not allow SCHED_DEADLINE be set via sched_setattr() syscall  
+test: /bin/bash ./test.sh
+duration: 10m
+tag: ffi
+framework: shell
+
