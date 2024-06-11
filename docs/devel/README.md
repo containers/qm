@@ -24,45 +24,34 @@ git clone https://github.com/containers/qm.git
 
 **2.** Change the Version macro in the spec file
 
-Rename the qm directory to a higher version from the current one.  
-For example, if today's QM version is 0.6.2, rename it to 1.0 so that  
+Set the QM version to a higher number from the current one.  
+For example, if today's QM version is 0.6.2, set it to 1.0 so that  
 the RPM created is identifiable as yours.
-
-```bash
-mv qm qm-1.0
-```
 
 Use the following sed command to change the default Version (0, used for  
 automation) to the new version (1.0):
 
 ```bash
-pushd qm-1.0/rpm/
-   sed -i 's/Version: 0/Version: 1.0/g' qm.spec
-popd
+sed -i 's/Version: 0/Version: 1.0/g' qm.spec
 ```
 
 **3.** Execute the changes
 
+Make necessary changes using your preferred editor (e.g., vi/emacs).
+
+**4.** Build the RPM
+
 ```bash
-pushd qm-1.0/
-    # Make necessary changes using your preferred editor (e.g., vi/emacs)
-popd
+VERSION=1.0 make rpm
 ```
 
-**4.** Create the tarball to be include in the RPM
+The rpm is created at the `${RPM_TOPDIR}/RPMS` folder, by default
+`${PWD}/rpmbuild/RPMS`.
+You can export **RPM_TOPDIR** to change the path where the rpm will be placed.
+For example:
 
 ```bash
-tar cvz -f v1.0.tar.gz qm-1.0
-cp v1.0.tar.gz qm-1.0/rpm
-cp v1.0.tar.gz $HOME/rpmbuild/SOURCES/
-```
-
-**5.** Build the RPM
-
-```bash
-pushd qm-1.0/rpm
-    rpmbuild -ba qm.spec
-popd
+VERSION=1.0 RPM_TOPDIR=/USER/rpmbuild make rpm
 ```
 
 # Building CentOS AutoSD and QM manually

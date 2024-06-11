@@ -6,6 +6,9 @@ DATADIR ?= $(PREFIX)/share
 LIBDIR ?= $(PREFIX)/lib
 SYSCONFDIR?=/etc
 QMDIR=/usr/lib/qm
+SPECFILE=rpm/qm.spec
+RPM_TOPDIR ?= $(PWD)/rpmbuild
+VERSION ?= $(shell cat VERSION)
 
 .PHONY: file_contexts
 file_contexts: qm.fc
@@ -36,10 +39,24 @@ codespell:
 
 clean:
 	rm -f *~  *.tc *.pp *.pp.bz2
-	rm -rf tmp *.tar.gz
+	rm -rf tmp *.tar.gz ${RPM_TOPDIR}
 
 man: qm.8.md
 	go-md2man --in qm.8.md --out qm.8
+
+.PHONY: dist
+dist:
+	tar cvz --transform s/qm/qm-${VERSION}/ -f /tmp/v${VERSION}.tar.gz ../qm
+	mv /tmp/v${VERSION}.tar.gz ./rpm
+
+.PHONY: rpm
+rpm: clean dist
+	mkdir -p ${RPM_TOPDIR}/{RPMS,SRPMS,BUILD,SOURCES}
+	cp ./rpm/v${VERSION}.tar.gz ${RPM_TOPDIR}/SOURCES
+	rpmbuild -ba \
+		--define="_topdir ${RPM_TOPDIR}" \
+		--define="version ${VERSION}" \
+		${SPECFILE}
 
 install-policy: all
 	semodule -i ${TARGETS}.pp.bz2
