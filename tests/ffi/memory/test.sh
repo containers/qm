@@ -7,7 +7,6 @@
 export QM_HOST_REGISTRY_DIR="/var/qm/lib/containers/registry"
 export QM_REGISTRY_DIR="/var/lib/containers/registry"
 
-disk_cleanup
 prepare_test
 reload_config
 
@@ -24,6 +23,9 @@ fi
 podman exec -it qm /bin/bash -c \
          "podman run  --replace --name ffi-qm  dir:${QM_REGISTRY_DIR}/tools-ffi:latest \
          ./QM/90_percent_memory_eat > /dev/null"
+
+# Call cleanup
+disk_cleanup
 
 if [ $? -eq 137 ]; then
     echo ffi-qm was killed by SIGKILL

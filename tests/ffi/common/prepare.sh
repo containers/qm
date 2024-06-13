@@ -11,7 +11,6 @@ prepare_test() {
    # Remove 'DropCapability=sys_resource' enable nested container in QM
    exec_cmd "sed -i 's|DropCapability=sys_resource|#DropCapability=sys_resource|' \
             ${qm_service_file}"
-   exec_cmd "restorecon -RFv /var/lib/containers"
    # Changing QM score to 1000 to avoid full memory error on SoC
    if [[ -n "${PACKIT_COPR_PROJECT}" && "${PACKIT_COPR_PROJECT}" == "release" ]]; then
      exec_cmd "sed -i 's|OOMScoreAdjust.*|OOMScoreAdjust=1000|' ${qm_service_file}"
@@ -19,12 +18,13 @@ prepare_test() {
 }
 
 disk_cleanup() {
+   exec_cmd "podman exec qm bash -c \"podman container rm -f -t0 --all\""
    exec_cmd "systemctl stop qm"
    remove_file=$(find /var/qm -size  +2G)
    exec_cmd "rm -f $remove_file"
-   exec_cmd "systemctl start qm"
    remove_file=$(find /root -size  +1G)
    exec_cmd "rm -f $remove_file"
+   exec_cmd "systemctl start qm"
 }
 
 reload_config() {
@@ -41,6 +41,7 @@ prepare_images() {
        exec_cmd "podman push ${image_id} dir:${QM_HOST_REGISTRY_DIR}/tools-ffi:latest"
        # Remove image to save /var space
        exec_cmd "podman image rm -f ${image_id}"
+       exec_cmd "restorecon -RFv /var/lib/containers"
    fi
 }
 
