@@ -19,6 +19,6 @@ return_from_sched_setattr=$(podman exec -it qm /bin/bash -c \
 if [[ "${return_from_sched_setattr}" =~ "${expected_result}" ]]; then
     info_message "QM not allow SCHED_DEADLINE be set via sched_setattr() syscall."
 else
-    info_message "SCHED_DEADLINE can be set via sched_setattr() syscall in QM."
+    info_message "Failure: SCHED_DEADLINE can not be set via sched_setattr() syscall in QM."
     exit 1
 fi
