@@ -23,6 +23,8 @@ template(`qm_domain_template',`
 		attribute container_user_domain;
 		attribute unconfined_domain_type;
 
+		type ipc_t;
+		type ipc_var_run_t;
 		type cgroup_t;
 		type container_runtime_t;
 		type devpts_t;
@@ -77,6 +79,10 @@ template(`qm_domain_template',`
 	manage_files_pattern($1_t, $1_file_type, $1_file_type)
 	can_exec($1_t, $1_file_type)
 	allow $1_t $1_file_type:chr_file mounton;
+
+	list_dirs_pattern($1_t, ipc_var_run_t, ipc_var_run_t)
+	allow $1_t ipc_var_run_t:dir mounton;
+
 	manage_blk_files_pattern($1_t, $1_file_type, $1_file_type)
 	manage_chr_files_pattern($1_t, $1_file_type, $1_file_type)
 	manage_dirs_pattern($1_t, $1_file_type, $1_file_type)
@@ -315,6 +321,11 @@ template(`qm_domain_template',`
 	domain_type($1_container_t)
 	domain_user_exemption_target($1_container_t)
 	container_manage_files_template($1_container, $1_container)
+
+	type $1_container_ipc_t,  $1_container_domain;
+	domain_type($1_container_ipc_t)
+	domain_user_exemption_target($1_container_ipc_t)
+	container_manage_files_template($1_container_ipc, $1_container)
 
 	type $1_container_file_t, $1_file_type;
 	files_type($1_container_file_t)
@@ -608,4 +619,23 @@ interface(`qm_container_template',`
 	read_files_pattern($1_container_$2_t, $1_container_ro_file_t, $1_container_ro_file_t,)
 	read_lnk_files_pattern($1_container_$2_t, $1_container_ro_file_t, $1_container_ro_file_t,)
 	list_dirs_pattern($1_container_$2_t, $1_container_ro_file_t, $1_container_ro_file_t,)
+')
+
+########################################
+## <summary>
+##	Connect to IPC containers over a unix stream socket.
+## </summary>
+## <param name="domain">
+##	<summary>
+##	Domain allowed access.
+##	</summary>
+## </param>
+#
+interface(`container_ipc_stream_connect',`
+	gen_require(`
+		type ipc_t, ipc_var_run_t;
+	')
+
+	files_search_pids($1)
+	allow $1 ipc_t:unix_stream_socket connectto;
 ')

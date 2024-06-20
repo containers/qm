@@ -1,3 +1,29 @@
 policy_module(qm, 0.6.4)
 
+gen_require(`
+	attribute container_file_type;
+	attribute container_runtime_domain;
+')
+
+type ipc_t;
+domain_type(ipc_t)
+role system_r types ipc_t;
+unconfined_domain_noaudit(ipc_t)
+
+type ipc_exec_t;
+application_executable_file(ipc_exec_t)
+allow ipc_t { ipc_exec_t container_file_type}:file entrypoint;
+
+init_system_domain(ipc_t, ipc_exec_t)
+role system_r types ipc_t;
+domtrans_pattern(container_runtime_domain, ipc_exec_t, ipc_t)
+
+type ipc_var_run_t;
+files_pid_file(ipc_var_run_t)
+files_mountpoint(ipc_var_run_t)
+
+files_pid_filetrans(ipc_t, ipc_var_run_t, { dir file lnk_file sock_file })
+
+unconfined_domain(ipc_t)
+
 qm_domain_template(qm)
