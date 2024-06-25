@@ -3,6 +3,7 @@ policy_module(qm, 0.6.4)
 gen_require(`
 	attribute container_file_type;
 	attribute container_runtime_domain;
+	type init_t;
 ')
 
 type ipc_t;
@@ -23,6 +24,8 @@ files_pid_file(ipc_var_run_t)
 files_mountpoint(ipc_var_run_t)
 
 files_pid_filetrans(ipc_t, ipc_var_run_t, { dir file lnk_file sock_file })
+files_pid_filetrans(init_t, ipc_var_run_t, dir, "ipc-demo")
+files_pid_filetrans(init_t, ipc_var_run_t, dir, "ipc")
 
 unconfined_domain(ipc_t)
 
