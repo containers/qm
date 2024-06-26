@@ -118,7 +118,7 @@ To change default values, use the [defaults.ipp.yml](https://gitlab.com/CentOS/a
 ## Installing software inside QM partition
 
 ```bash
-dnf --installroot /usr/lib/qm/rootfs/ remove vim -y
+dnf --installroot /usr/lib/qm/rootfs/ install vim -y
 ```
 
 ## Removing software inside QM partition
