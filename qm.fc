@@ -10,6 +10,4 @@
 /etc/qm(/.*)?	gen_context(system_u:object_r:qm_file_t,s0)
 
 # File context for ipc programs
-/usr/bin/ipc-demo	gen_context(system_u:object_r:ipc_exec_t,s0)
-/var/run/ipc-demo(/.*)?	gen_context(system_u:object_r:ipc_var_run_t,s0)
 /var/run/ipc(/.*)?	gen_context(system_u:object_r:ipc_var_run_t,s0)
