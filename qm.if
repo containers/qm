@@ -327,6 +327,7 @@ template(`qm_domain_template',`
 	domain_user_exemption_target($1_container_ipc_t)
 	container_manage_files_template($1_container_ipc, $1_container)
 	container_ipc_stream_connect($1_container_ipc_t)
+	container_stream_connect($1_container_ipc_t)
 
 	type $1_container_file_t, $1_file_type;
 	files_type($1_container_file_t)
