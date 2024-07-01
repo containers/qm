@@ -12,10 +12,12 @@ prepare_test() {
    exec_cmd "sed -i 's|DropCapability=sys_resource|#DropCapability=sys_resource|' \
             ${qm_service_file}"
    exec_cmd "restorecon -RFv /var/lib/containers"
-   # Changing QM score to 1000 to avoid full memory error on SoC
-   if [[ -n "${PACKIT_COPR_PROJECT}" && "${PACKIT_COPR_PROJECT}" == "release" ]]; then
-     exec_cmd "sed -i 's|OOMScoreAdjust.*|OOMScoreAdjust=1000|' ${qm_service_file}"
-   fi
+   # FIXME: This action should be performed if necessary through systemd drop-in files.
+   #
+   # # Changing QM score to 1000 to avoid full memory error on SoC
+   # if [[ -n "${PACKIT_COPR_PROJECT}" && "${PACKIT_COPR_PROJECT}" == "release" ]]; then
+   #   exec_cmd "sed -i 's|OOMScoreAdjust.*|OOMScoreAdjust=1000|' ${qm_service_file}"
+   # fi
 }
 
 disk_cleanup() {
