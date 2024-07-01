@@ -64,7 +64,6 @@ run_test_containers(){
     done
 }
 
-disk_cleanup
 prepare_test
 reload_config
 prepare_images
@@ -85,6 +84,9 @@ for ((i=1;i<=NUMBER_OF_NODES;i++)); do
         exit 1
     fi
 done
+
+# Call cleanup
+disk_cleanup
 
 #check ASIL bluechi-agent is connected
 connection_cnt="$(grep -e Connected -e "'localrootfs'" \

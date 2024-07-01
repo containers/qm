@@ -70,8 +70,6 @@ jobs:
           hardware:
             disk:
              - size: ">= 20 GB"
-
-
   - job: tests
     trigger: pull_request
     identifier: e2e-ffi

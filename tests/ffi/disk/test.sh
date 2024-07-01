@@ -4,7 +4,6 @@
 
 . ../common/prepare.sh
 
-disk_cleanup
 prepare_test
 reload_config
 
@@ -22,5 +21,7 @@ if ! eval "fallocate -l 2G /root/file.lock" ; then
 fi
 
 ls -lh /root/file.lock
+
+disk_cleanup
 
 

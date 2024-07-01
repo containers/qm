@@ -7,7 +7,6 @@
 export QM_HOST_REGISTRY_DIR="/var/qm/lib/containers/registry"
 export QM_REGISTRY_DIR="/var/lib/containers/registry"
 
-disk_cleanup
 prepare_test
 reload_config
 
@@ -20,6 +19,9 @@ run_container_in_qm ffi-qm
 # Get result message of './modprobe_module'
 msg=$(podman exec -it qm /bin/bash -c \
                "podman exec ffi-qm ./modprobe_module 2>&1")
+
+# Call cleanup
+disk_cleanup
 
 # Check result message displays right.
 if grep -eq "modprobe: FATAL: Module ext4 not found in directory /lib/modules/*" "$msg"; then

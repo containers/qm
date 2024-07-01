@@ -7,7 +7,6 @@
 export QM_HOST_REGISTRY_DIR="/var/qm/lib/containers/registry"
 export QM_REGISTRY_DIR="/var/lib/containers/registry"
 
-disk_cleanup
 prepare_test
 reload_config
 
@@ -26,7 +25,7 @@ podman exec -it qm /bin/bash -c \
 QM_PID=$(podman inspect qm --format '{{.State.Pid}}' | tr -d '\r')
 QM_FFI_PID=$(podman exec -it qm /bin/bash -c "podman inspect ffi-qm --format '{{.State.Pid}}'" | tr -d '\r')
 
-QM_OOM_SCORE_ADJ=$(cat /proc/$QM_PID/oom_score_adj)
+QM_OOM_SCORE_ADJ=$(cat /proc/"$QM_PID"/oom_score_adj)
 QM_FFI_OOM_SCORE_ADJ=$(podman exec -it qm /bin/bash -c "cat /proc/$QM_FFI_PID/oom_score_adj" | tr -d '\r')
 
 
@@ -49,5 +48,5 @@ else
 fi
 
 
-podman exec -it qm /bin/bash -c "podman stop ffi-qm > /dev/null"
-
+# Call cleanup
+disk_cleanup
