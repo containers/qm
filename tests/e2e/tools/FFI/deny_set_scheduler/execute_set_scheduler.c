@@ -6,7 +6,7 @@
 #include <string.h>
 
 int main() {
-    int pid = getpid(); 
+    int pid = getpid();
     int policy = SCHED_FIFO;  // Desired scheduling policy
     struct sched_param param;
 

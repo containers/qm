@@ -26,7 +26,7 @@ sysctl_num=$(podman exec qm /bin/bash -c \
 #  - Network subsystem
 #  - Virtual memory subsystem
 SYSCTL_DENIED_COUNT=5
-if [ $sysctl_num -eq "${SYSCTL_DENIED_COUNT}" ];then
+if [ "$sysctl_num" -eq "${SYSCTL_DENIED_COUNT}" ];then
    info_message "Attempt to change OS level are denied successfully inside QM container."
    exit 0
 fi

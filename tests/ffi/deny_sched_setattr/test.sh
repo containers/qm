@@ -1,5 +1,6 @@
 #!/bin/bash -euvx
 
+# shellcheck source=tests/ffi/common/prepare.sh
 . ../common/prepare.sh
 
 export QM_HOST_REGISTRY_DIR="/var/qm/lib/containers/registry"
@@ -16,6 +17,7 @@ run_container_in_qm "ffi-qm"
 return_from_sched_setattr=$(podman exec -it qm /bin/bash -c \
          'podman exec -it ffi-qm ./QM/execute_sched_setattr')
 
+# shellcheck disable=SC2076
 if [[ "${return_from_sched_setattr}" =~ "${expected_result}" ]]; then
     info_message "QM not allow SCHED_DEADLINE be set via sched_setattr() syscall."
 else

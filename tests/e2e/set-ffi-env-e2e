@@ -244,9 +244,6 @@ EOF
 
 install_autosd_repo() {
     # Install autosd repository
-    source /etc/os-release
-
-    releasever=${VERSION_ID}
     touch /etc/yum.repos.d/autosd.repo
     cat > "/etc/yum.repos.d/autosd.repo" << EOF
 [autosd]
