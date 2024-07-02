@@ -1,6 +1,6 @@
-An example of Android container running on top of kvm using quadlet and Wayland.
+# An example of Android container running on top of kvm using quadlet and Wayland
 
-```
+```console
 $ cat ~/.config/containers/systemd/android.container
 
 [Service]

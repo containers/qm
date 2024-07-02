@@ -1,11 +1,16 @@
-# What is setsysctl?
+# The `setsysctl` command
+
+## What is setsysctl?
+
 setsysctl is simple script that uses sysctl tool to try to change several parameters in the host OS.
 
-# How to use it?
+## How to use it?
+
 It must be executed inside QM environment as a container (nested) to make sure attemps to change OS level are denied.
 
 Example:
-```
+
+```console
 my-host# podman exec -it qm bash
 
 bash-5.1# podman run -it fedora bash

@@ -1,17 +1,21 @@
-# What is execute_sched_setattr ?
+# The `execute_sched_setattr` command
 
-A test tool to validate if SCHED_DEADLINE can be set via sched_setattr() syscall.
+## What is `execute_sched_setattr` ?
+
+A test tool to validate if `SCHED_DEADLINE` can be set via `sched_setattr()` syscall.
 
 ## Why?
-QM environment should not allow SCHED_DEADLINE be set via sched_setattr() syscall  
+
+QM environment should not allow `SCHED_DEADLINE` be set via `sched_setattr()` syscall
 and must validated via FFI tests.
 
 ## How to deny is made?
+
 During the QM service startup it passes arguments to Podman. One of these arguments is `seccomp=/usr/share/qm/seccomp.json` which contains rules that deny the `sched_setattr()`.
 
-## How to test? 
+## How to test?
 
-```
+```console
 host> gcc -o execute_sched_setattr execute_sched_setattr.c -Wall  # build the bin
 host> cp execute_sched_setattr /usr/lib/qm/rootfs/root/  # copy the bin to QM partition
 
