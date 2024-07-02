@@ -135,7 +135,7 @@ The systemd drop-in feature allows users to extend or modify the configuration o
 
 In this example, we will add the AllowedCPU to set as 1 to qm.service that quadlet generated:
 
-**Create allowedcpus.conf**
+### Create allowedcpus.conf
 
 ```console
 cat  /etc/systemd/system/qm.service.d/allowedcpus.conf
@@ -147,19 +147,20 @@ AllowedCPUs=1
 
 ## Tools
 
-**qm-rootfs**
+### qm-rootfs
 
 Prints the qm rootfs location previously configured during setup.
 
-**qm-storage-settings**
+### qm-storage-settings
 
 Setup the initial QM configuration for storage using the follow config files and changes:
-  - ${ROOTFS}/etc/containers/storage.conf
-    - uncomment additionalimagestores
-    - add /var/lib/shared into additionalimagestores
-    - uncomment and set to true the option transient_store
-  - ${ROOTFS}/etc/containers/container.conf
-    - add [engine] and TMPDIR
+
+- `${ROOTFS}/etc/containers/storage.conf`
+  - uncomment `additionalimagestores`
+  - add `/var/lib/shared` into `additionalimagestores`
+  - uncomment and set to `true` the option `transient_store`
+- `${ROOTFS}/etc/containers/container.conf`
+  - add `[engine]` and `TMPDIR`
 
 ## SEE ALSO
 

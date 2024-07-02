@@ -3,20 +3,25 @@
 Free-From-Interference (FFI) means applications within the QM environment do not interfere with applications in the ASIL environment.
 
 ## Memory
-QM environment will allocates 90% or greater of memory of the system. 
+
+QM environment will allocates 90% or greater of memory of the system.
 Launch application in the ASIL environment that requires > 10% of memory.
 Make sure swap is turned off.
 Make sure OOM Killer kills QM applications.
 
 Example:
-- memory/ASIL/20_percent_cpu_eat.c 
-- memory/QM/90_percent_cpu_eat.c 
+
+- `memory/ASIL/20_percent_cpu_eat.c`
+- `memory/QM/90_percent_cpu_eat.c`
 
 ## Disk
+
 Try to allocate as maximum possible disk space.
 
 ## Sysctl
+
 Running as nested container inside QM attempt to change settings in the host level (ASIL).
 
 ## deny_set_scheduler
-A tool to test if set_scheduler() is denied inside QM partition
+
+A tool to test if `set_scheduler()` is denied inside QM partition

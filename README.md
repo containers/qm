@@ -1,7 +1,7 @@
 # QM is a containerized environment for running Functional Safety qm (Quality Management) software
 
 The main purpose of this package is allow users to setup an environment which
-prevents applications and container tools from interfering with other processes 
+prevents applications and container tools from interfering with other processes
 on the system. For example ASIL (Automotive Safety Integrity Level) environments.
 
 The QM environment uses containerization tools like cgroups, namespaces, and
@@ -32,12 +32,13 @@ each other.
 For now all of the control processes in the qm other then containers will run
 with the same qm_t type.
 
-Still would like to discuss about a specific selinux prevision?  
+Still would like to discuss about a specific selinux prevision?
 Please open an [QM issue](https://github.com/containers/qm/issues) with the output of selinux error from a recent operation related to QM. The output of the following commands are appreciated for understanding the root cause.
-```
-ausearch -m avc -ts recent | audit2why  
-journalctl -t setroubleshoot  
-sealert -a /var/log/audit/audit.log  
+
+```console
+ausearch -m avc -ts recent | audit2why
+journalctl -t setroubleshoot
+sealert -a /var/log/audit/audit.log
 ```
 
 * [BlueChi](https://github.com/containers/qm/pull/57)
@@ -68,40 +69,46 @@ repository enabled in order to provide `golang-github-cpuguy83-md2man` package.
 ```
 
 ## How the OOM Score Adjustment (`om_score_adj`) is used in QM
+
 The om_score_adj refers to the "Out of Memory score adjustment" in Linux operating systems. This parameter is used by the Out of Memory (OOM) killer to decide which processes to terminate when the system is critically low on memory.
 
 ### Why use `om_score_adj` in QM?
+
 By fine-tuning which processes are more likely to be terminated during low memory situations, critical processes can be protected, thereby enhancing the overall stability of the system. For instance only, ASIL (Automotive Safety Integrity Level) applications, which are critical for ensuring functional safety in automotive systems, will be preserved in case of low resources.
 
 ### OOM Score Adjustment in QM
 
-**Nested Containers**
-- All nested containers created inside QM will have their OOM score adjustment set to *750*.
+#### Nested Containers
 
-```bash
+* All nested containers created inside QM will have their OOM score adjustment set to *750*.
+
+```console
 $ cat /usr/share/qm/containers.conf | grep oom_score_adj
 oom_score_adj = 750
 ```
 
-**QM Process**
-- The QM process has a default OOM score adjustment value set to *500*, configured via the *qm.container* file.
+#### QM Process
 
-```bash
+* The QM process has a default OOM score adjustment value set to *500*, configured via the *qm.container* file.
+
+```console
 cat /usr/share/containers/systemd/qm.container | grep OOMScoreAdjust
 # OOMScoreAdjust=500
 ```
 
 ### ASIL Applications
+
 If we consider the example of ASIL (Automotive Safety Integrity Level) applications, which are essential for maintaining functional safety in automotive systems, their OOM score adjustment values can range from -1 to -1000. Setting the value to -1000 makes the process immune to the OOM killer. This ensures that ASIL applications are the last to be terminated by the OOM killer, thus prioritizing their operation even in low memory situations.
 
-**Highlights**
+#### Highlights
 
-- Nested Containers inside QM: OOM score adjustment set to 750. (/usr/share/qm/containers.conf)
-- QM Process: OOM score adjustment value set to 500, configured via the qm.container file.
-- ASIL Applications: Can explore a range from -1 to -1000, with -1000 making the process immune to the OOM killer.
+* Nested Containers inside QM: OOM score adjustment set to 750. (/usr/share/qm/containers.conf)
+* QM Process: OOM score adjustment value set to 500, configured via the qm.container file.
+* ASIL Applications: Can explore a range from -1 to -1000, with -1000 making the process immune to the OOM killer.
 
-**ASCII Diagram**
-```
+#### ASCII Diagram
+
+```txt
 +-------------------------------------------------------------+
 | The Priority Process of OOM Killer in the QM Context        |
 +-------------------------------------------------------------+
@@ -178,7 +185,7 @@ If your looking for contribute to the project use our [development README guide]
 
 ## RPM Mirrors
 
-Looking for a specific version of QM? 
-Search in the mirrors list below.  
+Looking for a specific version of QM?
+Search in the mirrors list below.
 
 [CentOS Automotive SIG - qm package - noarch](https://mirror.stream.centos.org/SIGs/9-stream/automotive/aarch64/packages-main/Packages/q/)
