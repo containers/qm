@@ -1,5 +1,6 @@
 #!/bin/bash -euvx
 
+# shellcheck source=tests/ffi/common/prepare.sh
 . ../common/prepare.sh
 
 export QM_HOST_REGISTRY_DIR="/var/qm/lib/containers/registry"
