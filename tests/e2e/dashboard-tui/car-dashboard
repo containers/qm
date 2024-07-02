@@ -150,7 +150,7 @@ class Dashboard(object):
         if returncode != 0:
             print(
                 "{cmd} return code {ret}".format(
-                     cmd=cmd_str, ret=returncode
+                    cmd=cmd_str, ret=returncode
                 )
             )
 
@@ -316,7 +316,7 @@ class Dashboard(object):
         ]
 
         self.execute_cmd(
-                cmd
+            cmd
         )
 
     def make_layout(self) -> Layout:
@@ -421,8 +421,8 @@ class Dashboard(object):
                 padding=(1, 2),
                 title="[b white] " + titleName,
                 border_style="bright_blue",
-             )
-         )
+            )
+        )
 
     def bluechictl_action(
         self,
