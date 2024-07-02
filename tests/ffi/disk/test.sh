@@ -6,6 +6,12 @@
 
 disk_cleanup
 prepare_test
+
+cat << EOF > /etc/containers/systemd/qm.container.d/oom.conf
+[Service]
+OOMScoreAdjust=1000
+EOF
+
 reload_config
 
 exec_cmd "podman exec -it qm /bin/bash -c \

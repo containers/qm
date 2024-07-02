@@ -12,16 +12,22 @@ prepare_test() {
    exec_cmd "sed -i 's|DropCapability=sys_resource|#DropCapability=sys_resource|' \
             ${qm_service_file}"
    exec_cmd "restorecon -RFv /var/lib/containers"
-   # Changing QM score to 1000 to avoid full memory error on SoC
-   if [[ -n "${PACKIT_COPR_PROJECT}" && "${PACKIT_COPR_PROJECT}" == "release" ]]; then
-     exec_cmd "sed -i 's|OOMScoreAdjust.*|OOMScoreAdjust=1000|' ${qm_service_file}"
-   fi
+   # Create qm container custom config folder
+   exec_cmd "mkdir -p /etc/containers/systemd/qm.container.d"
+   # FIXME: This action should be performed if necessary through systemd drop-in files.
+   #
+   # # Changing QM score to 1000 to avoid full memory error on SoC
+   # if [[ -n "${PACKIT_COPR_PROJECT}" && "${PACKIT_COPR_PROJECT}" == "release" ]]; then
+   #   exec_cmd "sed -i 's|OOMScoreAdjust.*|OOMScoreAdjust=1000|' ${qm_service_file}"
+   # fi
 }
 
 disk_cleanup() {
    exec_cmd "systemctl stop qm"
    remove_file=$(find /var/qm -size  +2G)
    exec_cmd "rm -f $remove_file"
+   remove_qm_custom_conf_files=$(find /etc/containers/systemd/qm.container.d -type f)
+   exec_cmd "rm -f $remove_qm_custom_conf_files"
    exec_cmd "systemctl start qm"
    remove_file=$(find /root -size  +1G)
    exec_cmd "rm -f $remove_file"
