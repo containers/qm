@@ -395,9 +395,9 @@ template(`qm_domain_template',`
 
 	qm_container_template($1, wayland)
 
-	read_files_pattern($1_container_domain, $1_container_ro_file_t,$1_container_ro_file_t,)
-	read_lnk_files_pattern($1_container_domain, $1_container_ro_file_t,$1_container_ro_file_t,)
-	list_dirs_pattern($1_container_domain, $1_container_ro_file_t,$1_container_ro_file_t,)
+	read_files_pattern($1_container_domain, $1_container_ro_file_t,$1_container_ro_file_t)
+	read_lnk_files_pattern($1_container_domain, $1_container_ro_file_t,$1_container_ro_file_t)
+	list_dirs_pattern($1_container_domain, $1_container_ro_file_t,$1_container_ro_file_t)
 
 	#
 	# Rules for container domains in the qm
@@ -618,9 +618,9 @@ interface(`qm_container_template',`
 	allow $1_container_$2_t self:netlink_audit_socket nlmsg_relay;
 	container_manage_files_template($1_container_$2, $1_container)
 
-	read_files_pattern($1_container_$2_t, $1_container_ro_file_t, $1_container_ro_file_t,)
-	read_lnk_files_pattern($1_container_$2_t, $1_container_ro_file_t, $1_container_ro_file_t,)
-	list_dirs_pattern($1_container_$2_t, $1_container_ro_file_t, $1_container_ro_file_t,)
+	read_files_pattern($1_container_$2_t, $1_container_ro_file_t, $1_container_ro_file_t)
+	read_lnk_files_pattern($1_container_$2_t, $1_container_ro_file_t, $1_container_ro_file_t)
+	list_dirs_pattern($1_container_$2_t, $1_container_ro_file_t, $1_container_ro_file_t)
 ')
 
 ########################################
