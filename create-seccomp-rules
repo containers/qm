@@ -27,7 +27,6 @@ function remove_seccomp_entry_from_allow() {
     temp_file=$(mktemp)
     jq --tab \
         --arg syscall "$syscall_name" \
-	--arg action "$action_type" \
         '(.syscalls[] | select(.names[] == $syscall and .action == "SCMP_ACT_ALLOW").names) |= map(select(. != $syscall))' \
         "${seccomp_file_path}" > "$temp_file" && mv "$temp_file" "${seccomp_file_path}"
 
@@ -41,7 +40,6 @@ function add_syscall_deny_list() {
     temp_file=$(mktemp)
     jq --tab \
        --arg syscall "$syscall_name" \
-       --arg action "$action_type" \
        '.syscalls += [{"names": [$syscall], "action": "SCMP_ACT_ERRNO", "args": [], "errnoRet": 1, "errno": "EPERM"}]' \
        "${seccomp_file_path}" > "$temp_file" && mv "$temp_file" "${seccomp_file_path}"
 
