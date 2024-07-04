@@ -48,8 +48,8 @@ setup_init() {
         "${ROOTFS}/usr/share/containers/storage.conf"
     )
 
-    for STORAGE_CONF_PATH in ${STORAGE_CONF_PATHS[@]}; do
-        if [ -f ${STORAGE_CONF_PATH} ]; then
+    for STORAGE_CONF_PATH in "${STORAGE_CONF_PATHS[@]}"; do
+        if [ -f "${STORAGE_CONF_PATH}" ]; then
             STORAGE_CONFIG="${STORAGE_CONF_PATH}"
             return
         fi
