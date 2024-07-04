@@ -27,7 +27,7 @@ After=local-fs.target
 
 [Container]
 Image=dir:/var/lib/containers/registry/tools-ffi:latest
-Exec=/root/tests/FFI/bin/bluechi-tester --url="tcp:host=localhost,port=842" \
+Exec=/root/tests/FFI/bin/bluechi-tester --url="tcp:host=${controller_host_ip},port=842" \
      --nodename=bluechi-tester-X \
      --numbersignals=11111111 \
      --signal="JobDone"
@@ -64,14 +64,42 @@ run_test_containers(){
     done
 }
 
+# Extract the Network mode from qm quadlet file
+get_qm_network_mode(){
+    qm_config_file="/usr/share/containers/systemd/qm.container"
+
+    # Check if the configuration file exists
+    if [ ! -f "$qm_config_file" ]; then
+        echo "Configuration file not found: $qm_config_file"
+        exit 1
+    fi
+
+    # Extract the Network using awk
+    qm_config_file="/usr/share/containers/systemd/qm.container"
+    qm_network_mode=$(awk -F'=' '/Network=private/ { print $2 }' "$qm_config_file")
+    echo "${qm_network_mode}"
+}
+
 disk_cleanup
 prepare_test
 reload_config
 prepare_images
 
+# Assign value to ${controller_host_ip} according to qm network mode
+controller_host_ip="localhost"
+if [ "$(get_qm_network_mode)" == "private" ]; then
+    controller_host_ip=$(hostname -I | awk '{print $1}')
+fi
+
 #Stop QM bluechi-agent
 exec_cmd "podman exec -it qm /bin/bash -c \
          \"systemctl stop bluechi-agent\""
+
+# This is the workaround when ControllerHost is not in /etc/qm/bluechi/agent.conf.d/agent.conf
+# Add ControllerHost to /etc/qm/bluechi/agent.conf.d/agent.conf
+if test -f "/etc/qm/bluechi/agent.conf.d/agent.conf"; then
+    sed -i '$a \ControllerHost='"${controller_host_ip}"'' /etc/qm/bluechi/agent.conf.d/agent.conf
+fi
 
 #Prepare quadlet files for testing containers
 setup_test_containers_in_qm
