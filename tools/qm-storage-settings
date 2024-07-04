@@ -43,8 +43,18 @@ exec_command() {
 setup_init() {
     ROOTFS=$(exec_command "/usr/share/qm/qm-rootfs")
 
-    # containers/storage.conf
-    STORAGE_CONFIG="${ROOTFS}/etc/containers/storage.conf"
+    STORAGE_CONF_PATHS=(
+        "${ROOTFS}/etc/containers/storage.conf"
+        "${ROOTFS}/usr/share/containers/storage.conf"
+    )
+
+    for STORAGE_CONF_PATH in ${STORAGE_CONF_PATHS[@]}; do
+        if [ -f ${STORAGE_CONF_PATH} ]; then
+            STORAGE_CONFIG="${STORAGE_CONF_PATH}"
+            return
+        fi
+    done
+
     if [  -d /run/osbuild/ostree ]; then # osbuild exist, let's try ostree approach
         STORAGE_CONFIG="/run/osbuild/tree/${STORAGE_CONFIG}"
         if [ ! -f "${STORAGE_CONFIG}" ]; then
