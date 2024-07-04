@@ -10,18 +10,12 @@ jobs:
 
     steps:
       - name: Install Python
-        uses: actions/setup-python@v4
+        uses: actions/setup-python@v5
         with:
           python-version: '3.10'
 
       - name: Checkout code
-        uses: actions/checkout@v3
-
-      - name: Setup environment
-        run: |
-          pip install pre-commit
-          pre-commit install
+        uses: actions/checkout@v4
 
       - name: Run precommit check
-        run: |
-          pre-commit run --file tests/* --files demos/*
+        uses: pre-commit/action@v3.0.1
