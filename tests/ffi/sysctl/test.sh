@@ -4,9 +4,6 @@
 
 . ../common/prepare.sh
 
-export QM_HOST_REGISTRY_DIR="/var/qm/lib/containers/registry"
-export QM_REGISTRY_DIR="/var/lib/containers/registry"
-
 disk_cleanup
 prepare_test
 reload_config

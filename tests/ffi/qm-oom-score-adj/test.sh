@@ -4,19 +4,9 @@
 
 . ../common/prepare.sh
 
-export QM_HOST_REGISTRY_DIR="/var/qm/lib/containers/registry"
-export QM_REGISTRY_DIR="/var/lib/containers/registry"
-
 disk_cleanup
-prepare_test
+prepare_images
 reload_config
-
-# Copy container image registry to /var/qm/lib/containers
-image_id=$(podman images | grep quay.io/centos-sig-automotive/ffi-tools | awk -F " " '{print $3}')
-if [ ! -d "${QM_HOST_REGISTRY_DIR}" ]; then
-    exec_cmd "mkdir -p ${QM_HOST_REGISTRY_DIR}"
-    exec_cmd "podman push ${image_id} dir:${QM_HOST_REGISTRY_DIR}/tools-ffi:latest"
-fi
 
 podman exec -it qm /bin/bash -c \
          "podman run -d --replace --name ffi-qm  dir:${QM_REGISTRY_DIR}/tools-ffi:latest \
