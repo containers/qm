@@ -39,12 +39,14 @@ template(`qm_domain_template',`
 		type sysctl_irq_t;
 		type sysctl_t;
 		type system_dbusd_t;
+		type systemd_hostnamed_t;
 		type systemd_logind_t;
 		type systemd_machined_t;
 		type unconfined_service_t;
 		type bpf_t;
 		type container_devpts_t;
 		type net_conf_t;
+		type getty_t;
 	')
 
 	type $1_t;
@@ -397,10 +399,14 @@ template(`qm_domain_template',`
 
 	qm_container_template($1, wayland)
 
-	allow $1_container_wayland_t $1_file_t:dir { add_name write };
+	allow $1_container_wayland_t $1_file_t:dir { add_name write watch };
 	allow $1_container_wayland_t $1_file_t:file { create write };
 	allow $1_container_wayland_t $1_file_t:sock_file { create write };
+	allow $1_container_wayland_t $1_t:unix_stream_socket connectto;
 	dev_read_sysfs($1_container_wayland_t)
+
+	allow getty_t $1_file_type:chr_file { read write };
+	systemd_dbus_chat_hostnamed(systemd_hostnamed_t)
 
 	read_files_pattern($1_container_domain, $1_container_ro_file_t,$1_container_ro_file_t)
 	read_lnk_files_pattern($1_container_domain, $1_container_ro_file_t,$1_container_ro_file_t)
