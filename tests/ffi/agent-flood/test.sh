@@ -64,9 +64,9 @@ run_test_containers(){
     done
 }
 
-# Extract the Network mode from qm quadlet file
+# Extract the Network mode from qm.service
 get_qm_network_mode(){
-    qm_config_file="/usr/share/containers/systemd/qm.container"
+    qm_config_file="/run/systemd/generator/qm.service"
 
     # Check if the configuration file exists
     if [ ! -f "$qm_config_file" ]; then
@@ -75,8 +75,7 @@ get_qm_network_mode(){
     fi
 
     # Extract the Network using awk
-    qm_config_file="/usr/share/containers/systemd/qm.container"
-    qm_network_mode=$(awk -F'=' '/Network=private/ { print $2 }' "$qm_config_file")
+    qm_network_mode=$(awk -F'=' '/Network=/ { print $2 }' "$qm_config_file")
     echo "${qm_network_mode}"
 }
 
@@ -86,9 +85,11 @@ reload_config
 prepare_images
 
 # Assign value to ${controller_host_ip} according to qm network mode
-controller_host_ip="localhost"
 if [ "$(get_qm_network_mode)" == "private" ]; then
     controller_host_ip=$(hostname -I | awk '{print $1}')
+else
+    echo "qm network mode should be private not: $(get_qm_network_mode)"
+    exit 1
 fi
 
 #Stop QM bluechi-agent
@@ -96,9 +97,13 @@ exec_cmd "podman exec -it qm /bin/bash -c \
          \"systemctl stop bluechi-agent\""
 
 # This is the workaround when ControllerHost is not in /etc/qm/bluechi/agent.conf.d/agent.conf
-# Add ControllerHost to /etc/qm/bluechi/agent.conf.d/agent.conf
-if test -f "/etc/qm/bluechi/agent.conf.d/agent.conf"; then
-    sed -i '$a \ControllerHost='"${controller_host_ip}"'' /etc/qm/bluechi/agent.conf.d/agent.conf
+# Add ControllerHost to this configuration file
+qm_bluechi_agent_config_file="/etc/qm/bluechi/agent.conf.d/agent.conf"
+if test -f "${qm_bluechi_agent_config_file}"; then
+    sed -i '$a \ControllerHost='"${controller_host_ip}"'' ${qm_bluechi_agent_config_file}
+else
+    echo "Configuration file not found: ${qm_bluechi_agent_config_file}"
+    exit 1
 fi
 
 #Prepare quadlet files for testing containers
