@@ -1,5 +1,5 @@
 summary: Test bluechi against stress agent
-test: SKIP_TEST=true /bin/bash ./test.sh
+test: /bin/bash ./test.sh
 duration: 10m
 tag: ffi
 order: 70
