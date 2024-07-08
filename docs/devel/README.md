@@ -100,18 +100,18 @@ The following commands will execute:
   - ssh enabled
 
 ```bash
-dnf install podman -y
+dnf install podman -y && dnf clean all
 git clone https://gitlab.com/CentOS/automotive/sample-images.git
-cd sample-images/osbuild-manifests/
-dnf clean all
+git submodule update --init
+cd sample-images/
 rm -rf _build
 rm -f cs9-qemu-qmcontainer-regular.x86_64.qcow2
 rm -f cs9-qemu-qmcontainer-ostree.x86_64.qcow2
-make cs9-qemu-qmcontainer-regular.x86_64.qcow2 'DEFINES=extra_repos=[{"id":"local","baseurl":"file:///root/rpmbuild/RPMS/noarch"}] extra_rpms=["qm-1.0","vim-enhanced","strace","dnf","gdb","polkit","rsync","python3","openssh-server","openssh-clients"] ssh_permit_root_login=true osname="autosd" ssh_permit_password_auth=true'
+./build --distro cs9 --target qemu --define 'extra_repos=[{\"id\":\"local\",\"baseurl\":\"file:///root/rpmbuild/RPMS/noarch\"}]' --define 'extra_rpms=[\"qm-1.0\",\"vim-enhanced\",\"strace\",\"dnf\",\"gdb\",\"polkit\",\"rsync\",\"python3\",\"openssh-server\",\"openssh-clients\"]' --define 'ssh_permit_root_login=true' --define 'ssh_permit_password_auth=true' cs9-qemu-qmcontainer-regular.x86_64.qcow2
 ```
 
 Run the virtual machine, default user: root, pass: password.
-To change default values, use the [defaults.ipp.yml](https://gitlab.com/CentOS/automotive/sample-images/-/blob/main/osbuild-manifests/include/defaults.ipp.ym) file.
+To change default values, use the [defaults.ipp.yml](https://gitlab.com/CentOS/automotive/src/automotive-image-builder/-/blob/main/include/defaults.ipp.yml) file.
 
 ```bash
 ./runvm --nographics ./cs9-qemu-qm-minimal-regular.x86_64.qcow2
