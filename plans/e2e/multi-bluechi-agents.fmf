@@ -1,0 +1,34 @@
+summary: multiple bluechi-agents test - QM Interconnect through bluechi
+
+discover:
+    how: fmf
+    filter: tag:multi-bluechi-agents
+
+provision:
+   how: local
+
+adjust:
+ - when: distro == centos-stream-9 or distro == fedora
+   prepare+:
+     - name: Prepare Repos
+       how: shell
+       script: |
+          dnf install -y dnf-plugin-config-manager epel-release
+          dnf config-manager -y --set-enabled crb
+
+     - name: install repos
+       how: install
+       package:
+          - podman
+
+     - name: Set QM env
+       how: shell
+       script: |
+          cd tests/e2e
+          ./run-test-e2e --skip-tests=yes
+
+execute:
+    how: tmt
+
+report:
+    how: junit

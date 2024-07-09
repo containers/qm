@@ -1,0 +1,19 @@
+summary: general data used by the test plans
+
+environment:
+  FFI_SETUP_OPTIONS: none
+  PACKAGE: qm
+  PACKIT_COPR_PROJECT: release
+
+prepare:
+  - name: Install podman
+    how: install
+    order: 20
+    package:
+      - podman
+
+adjust:
+ - when: run == manual
+   environment+:
+       # Sample code to use manual packit repo
+       PACKIT_COPR_PROJECT: packit/containers-qm-291
