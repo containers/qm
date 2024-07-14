@@ -1,0 +1,247 @@
+#!/bin/bash
+# shellcheck disable=SC2129
+#
+# Copyright 2023 The qm Authors
+#
+# This program is free software; you can redistribute it and/or
+# modify it under the terms of the GNU General Public License
+# as published by the Free Software Foundation; either version 2
+# of the License, or (at your option) any later version.
+#
+# This program is distributed in the hope that it will be useful,
+# but WITHOUT ANY WARRANTY; without even the implied warranty of
+# MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+# GNU General Public License for more details.
+#
+# You should have received a copy of the GNU General Public License
+# along with this program; If not, see <http://www.gnu.org/licenses/>.
+
+get_ip_container() {
+    local container_name="${1}"
+    local container_interface="${2}"
+    local ip_output
+
+    ip_output=$(podman exec \
+            "${container_name}" \
+            ip \
+            --brief \
+            address \
+            show \
+            "${container_interface}") || exit 1
+
+    echo "${ip_output}" | awk '{print $3}' | awk -F/ '{print $1}'
+}
+
+create_container() {
+    local container_file="${1}"
+    local container_name="${2}"
+    local container_tag="${3}"
+    local container_add_caps="${4}"
+    local image_name
+
+    image_name=$(podman images \
+            "${container_tag}" -n
+    )
+    if [ -z "${image_name}" ]; then
+      # Execute build with tag for latest
+      if [ -z "${container_add_caps}" ]; then
+         podman_build="podman build -q -f ${container_file} --tag ${container_tag} 1> /dev/null"
+      else
+         podman_build="podman build --cap-add ${container_add_caps} -q -f ${container_file} --tag ${container_tag} 1> /dev/null"
+      fi
+      eval "$podman_build"
+      if_error_exit "create_container: \
+podman build failed! \
+file: ${container_file} tag: ${container_tag}"
+      image_name=$(podman images \
+         "${container_tag}" -n
+      )
+    fi
+    IMAGE_ID=$(echo "${image_name}" | awk '{print $3}' | uniq)
+
+    # Execute the container
+    eval "$(podman run -d \
+                --privileged \
+                --network podmanDualStack \
+                --name "${container_name}" \
+                --hostname "${container_name}" \
+                "${IMAGE_ID}" 1> /dev/null
+    )"
+    if_error_exit "create_container: podman run failed! \
+name: ${container_name} \
+hostname: ${container_name} \
+imageID: ${IMAGE_ID}"
+}
+
+setup_node() {
+        local nodeID="${1}"
+        local use_copr_repo="${2}"
+
+        # copy control as template to node${number}
+        cp ./lib/ContainerFile.template ContainerFile.node"${nodeID}"
+        if_error_exit "failed to copy ContainerFile control template to node!"
+        if [ -n "${use_copr_repo}" ]; then
+          sed -e "/crb/a RUN dnf -y copr enable ${use_copr_repo} centos-stream-9" -i ContainerFile.node"${nodeID}"
+          if_error_exit "failed to sed ContainerFile node template!"
+        fi
+        # remove specific code from control mode (template)
+        sed '/start/,/end/d' -i ContainerFile.node"${nodeID}"
+        if_error_exit "failed to sed ContainerFile node template!"
+}
+
+set_nodename_all_nodes() {
+    for nodeID in $(seq 1 "${NUMBER_OF_NODES}") ;
+    do
+        eval "$(podman exec node"${nodeID}" \
+                sed -i 's/^#NodeName=/NodeName='node"${nodeID}"'/g' \
+                /etc/bluechi/agent.conf.d/agent.conf
+        )"
+        if_error_exit "node: unable to sed NodeName in bluechi agent.conf"
+
+        # restarting the qm bluechi-agent
+        eval "$(podman exec node"${nodeID}" \
+                systemctl restart bluechi-agent
+        )"
+        if_error_exit "node: unable to restart bluechi-agent service"
+    done
+}
+
+qm_set_nodename_all_nodes() {
+    for nodeID in $(seq 1 "${NUMBER_OF_NODES}") ;
+    do
+        qm_node_name="qm-node${nodeID}"
+        eval "$(podman exec node"${nodeID}" \
+                podman exec qm \
+                sed -i 's/^#NodeName=/NodeName='"${qm_node_name}"'/g' \
+                /etc/bluechi/agent.conf.d/agent.conf
+        )"
+        if_error_exit "qm node: unable to sed NodeName in bluechi agent.conf"
+
+        # restarting the qm bluechi-agent
+        eval "$(podman exec node"${nodeID}" \
+                podman exec qm \
+                systemctl restart bluechi-agent
+        )"
+        if_error_exit "qm node: unable to restart bluechi-agent service"
+    done
+}
+
+create_qm_node() {
+    # Generates 'N' containers QM nodes as required for the test scale
+
+    AllowedNodeNames=""
+    for nodeID in $(seq 1 "${NUMBER_OF_NODES}") ;
+    do
+        # Generates the Container.node${ID}
+        eval "IP_CONTROL_MACHINE=\$(get_ip_container \${CONTROL_CONTAINER_NAME} \${NET_INTERFACE_IP_CONTROL})"
+        if_error_exit "unable to get ip from ${CONTROL_CONTAINER_NAME}"
+
+        setup_node \
+            "${nodeID}" \
+            "${USE_QM_COPR}"
+        # Add final instructions
+        echo "RUN dnf install qm -y &> /dev/null" >> ContainerFile.node"${nodeID}"
+
+        if [ -n "${QM_GH_URL}" ]; then
+          curl "${QM_GH_URL}"  > /usr/share/qm/setup
+          chmod +x /usr/share/qm/setup
+        fi
+
+        # Execute qm setup
+        # Use --skip-systemctl true in podman build, systemd is not running
+        # Do not set --skip-systemctl inside running container with systemd in it.
+        echo "RUN /usr/share/qm/setup --skip-systemctl true 2>&1 > /tmp/qm-setup.log || echo "QM setup failed, please check /tmp/qm-setup.log."" >> ContainerFile.node"${nodeID}"
+
+        # Enable bluechi-agent
+        echo 'RUN cp /usr/share/bluechi-agent/config/*.conf /etc/bluechi/agent.conf.d/' >> ContainerFile.node"${nodeID}"
+        echo 'RUN sed -i -e "s/^#ControllerHost=/ControllerHost='"${IP_CONTROL_MACHINE}/"\" \
+                ' /etc/bluechi/agent.conf.d/agent.conf' >> ContainerFile.node"${nodeID}"
+        echo "RUN systemctl enable bluechi-agent &> /dev/null" >> ContainerFile.node"${nodeID}"
+
+        # Add systemd as CMD
+        echo "CMD [\"/usr/lib/systemd/systemd\"]" >> ContainerFile.node"${nodeID}"
+
+        # create the container ${nodeID}
+        info_message "Creating container \033[92mnode${nodeID}\033[0m [\033[92mQM mode\033[0m]"
+
+        CONTAINER_ADD_CAPS="SYS_ADMIN /tmp/"
+        create_container \
+                ContainerFile.node"${nodeID}" \
+                "node${nodeID}" \
+                "node:latest" \
+                "${CONTAINER_ADD_CAPS}"
+
+        # qm - after the setup, reload daemon and start qm
+        eval "$(podman exec \
+                node"${nodeID}" \
+                systemctl daemon-reload &> /dev/null
+        )"
+        if_error_exit "unable to execute systemctl daemon-load in node${nodeID}"
+
+        eval "$(podman exec \
+                node"${nodeID}" \
+                systemctl start qm &> /dev/null
+        )"
+        if_error_exit "unable to execute systemctl start qm"
+
+        # set in the QM container the ControllerHost (Control Machine) and restart bluechi-agent
+        eval "$(podman exec node"${nodeID}" \
+                podman exec qm \
+                cp \
+                /usr/share/bluechi-agent/config/agent.conf \
+                /etc/bluechi/agent.conf.d/agent.conf
+        )"
+        if_error_exit "unable to copy agent.conf template to agent.conf.d dir"
+
+        qm_node_name="qm-node${nodeID}"
+        NODES_FOR_TESTING+=("${qm_node_name}")
+
+        eval "$(podman exec node"${nodeID}" \
+            sed -i -e 's/^#ControllerHost=.*/ControllerHost='"${IP_CONTROL_MACHINE}"'/g' \
+                -e 's/^ControllerHost=.*/ControllerHost='"${IP_CONTROL_MACHINE}"'/g' \
+                /etc/bluechi/agent.conf.d/agent.conf
+        )"
+        if_error_exit "node: unable to sed ControllerHost in bluechi agent.conf"
+
+        # restarting the node bluechi-agent
+        eval "$(podman exec node"${nodeID}" \
+                systemctl restart bluechi-agent
+        )"
+        if_error_exit "node: unable to restart bluechi-agent service"
+
+        eval "$(podman exec node"${nodeID}" \
+                podman exec qm \
+                sed -i 's/^#ControllerHost=/ControllerHost='"${IP_CONTROL_MACHINE}"'/g' \
+                /etc/bluechi/agent.conf.d/agent.conf
+        )"
+        if_error_exit "qm node: unable to sed ControllerHost in bluechi agent.conf"
+
+        AllowedNodeNames="${AllowedNodeNames}\n  ${qm_node_name},\n  node${nodeID},"
+    done
+
+    # Remove the last , from the string, otherwise bluechi won't understand
+    AllowedNodeNames="${AllowedNodeNames%?}"
+
+    # CONTROL NODE: append QM node into /etc/bluechi/agent.conf.din the control node the new qm node name
+    eval "$(podman exec "${CONTROL_CONTAINER_NAME}" \
+                sed -i '/^AllowedNodeNames=/ s/$/,'"${AllowedNodeNames}"'/' \
+                /etc/bluechi/controller.conf
+    )"
+    if_error_exit "control node: unable to sed AllowedNodeName in controller.conf"
+
+    # restart the bluechi-controller service
+    eval "$(podman exec \
+        "${CONTROL_CONTAINER_NAME}" \
+        systemctl restart bluechi-controller
+    )"
+    if_error_exit "control node: unable to restart bluechi-controller service"
+}
+
+create_asil_node() {
+    # Creates the control container - a.k.a ASIL
+    info_message "Creating container \033[92m${CONTROL_CONTAINER_NAME}\033[0m [\033[92mASIL mode\033[0m]. It might take some time..."
+    create_container \
+        "./lib/ContainerFile.template" \
+        "${CONTROL_CONTAINER_NAME}" \
+        "${TAG_CONTROL_MACHINE}"
+}

@@ -1,0 +1,84 @@
+#!/bin/bash
+#
+# Copyright 2023 The qm Authors
+#
+# This program is free software; you can redistribute it and/or
+# modify it under the terms of the GNU General Public License
+# as published by the Free Software Foundation; either version 2
+# of the License, or (at your option) any later version.
+#
+# This program is distributed in the hope that it will be useful,
+# but WITHOUT ANY WARRANTY; without even the implied warranty of
+# MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+# GNU General Public License for more details.
+#
+# You should have received a copy of the GNU General Public License
+# along with this program; If not, see <http://www.gnu.org/licenses/>.
+
+create_stub_systemd_srv() {
+    container_target="${1}"
+    creates_on_qm_node="${2}"
+    shift
+
+    if [ -n "${creates_on_qm_node}" ]; then
+        command_on_qm_node="podman exec qm" # keep the space before podman
+    else
+        shift # remove the "" from qm param to the loop below
+    fi
+    services_to_be_stub=("$@")
+
+
+    for srv in "${services_to_be_stub[@]}"
+    do
+        if [ "${srv}" = "qm" ]; then
+             continue
+        fi
+
+	# QM container
+        if [ -n "${creates_on_qm_node}" ]; then
+            info_message "Creating quadlet container file: \033[92mcontainer-${srv}\033[0m in \033[92m${container_target}\033[0m and moving it to container \033[92mqm\033[0m to start the quadlet service..."
+            cmd_cp_systemd_srv="podman \
+cp \
+lib/quadlet/container-template.container \
+${container_target}:/tmp/container-${srv}.container"
+             #echo "${cmd_cp_systemd_srv}"
+             eval "${cmd_cp_systemd_srv}"
+             if_error_exit "cannot copy container-${srv} to qm container"
+
+             # Find configuration file from service
+             target_service_file=$(podman exec ${container_target} systemctl show -P  SourcePath qm.service)
+	     # START: remove DropCapability to run nested container
+             podman exec -it ${container_target} bash -c "sed -i '/^\s*DropCapability=sys_resource/ d' \"${target_service_file}\""
+	     if_error_exit "unable to remove DropCapability=sys_resource in qm.container"
+
+	     podman exec -it ${container_target} systemctl daemon-reload
+	     if_error_exit "unable to execute daemon-reload"
+
+	     podman exec -it ${container_target} systemctl restart qm
+	     if_error_exit "unable to restart qm service"
+	     # END: remove DropCapability to run nested container
+
+	     # START: copy template quadlet to qm container
+	     podman exec -it ${container_target} podman cp /tmp/container-${srv}.container qm:/etc/containers/systemd
+	     if_error_exit "unable to copy container-${srv}.container to qm container"
+
+	     podman exec -it ${container_target} podman exec -it qm systemctl daemon-reload
+	     if_error_exit "unable to execute on qm container systemctl daemon-reload"
+
+	     podman exec -it ${container_target} podman exec -it qm systemctl start container-${srv}
+	     if_error_exit "unable to start the quadlet service container-${srv}"
+
+	     # END: copy template quadlet to qm container
+	# Not a QM container, example: bluechi-controller
+        else
+             info_message "Creating and starting quadlet container: \033[92mcontainer-${srv}\033[0m in \033[92m${container_target}\033[0m. It might take some time..."
+	     cmd_cp_systemd_serv="podman \
+cp \
+lib/quadlet/container-template.container \
+${container_target}:/etc/containers/systemd/container-${srv}.container"
+             #echo "${cmd_cp_systemd_serv}"
+             eval "${cmd_cp_systemd_serv}"
+             if_error_exit "cannot copy container-${srv} to ${container_target} container"
+        fi
+    done
+}

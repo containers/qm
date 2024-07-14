@@ -1,0 +1,81 @@
+#!/bin/bash
+#
+# Copyright 2023 The qm Authors
+#
+# This program is free software; you can redistribute it and/or
+# modify it under the terms of the GNU General Public License
+# as published by the Free Software Foundation; either version 2
+# of the License, or (at your option) any later version.
+#
+# This program is distributed in the hope that it will be useful,
+# but WITHOUT ANY WARRANTY; without even the implied warranty of
+# MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+# GNU General Public License for more details.
+#
+# You should have received a copy of the GNU General Public License
+# along with this program; If not, see <http://www.gnu.org/licenses/>.
+
+if_error_exit() {
+    ###########################################################################
+    # Description:                                                            #
+    # Validate if previous command failed and show an error msg (if provided) #
+    #                                                                         #
+    # Arguments:                                                              #
+    #   $1 - error message if not provided, it will just exit                 #
+    ###########################################################################
+    local exit_code="$?"
+    if [ "${exit_code}" != "0" ]; then
+        RED="\033[91m"
+        ENDCOLOR="\033[0m"
+        echo -e "[ ${RED}FAILED${ENDCOLOR} ] ${1} with exit code: ${exit_code}"
+        kill $$ &> /dev/null
+    fi
+}
+
+info_message() {
+    ###########################################################################
+    # Description:                                                            #
+    # show [INFO] in blue and a message as the validation passed.             #
+    #                                                                         #
+    # Arguments:                                                              #
+    #   $1 - message to output                                                #
+    ###########################################################################
+    if [ -z "${1}" ]; then
+        echo "info_message() requires a message"
+        exit 1
+    fi
+    BLUE="\033[94m"
+    ENDCOLOR="\033[0m"
+    echo -e "[ ${BLUE}INFO${ENDCOLOR}  ] ${1}"
+}
+
+exec_cmd() {
+    local cmd="$1"
+    eval "$cmd"
+    if_error_exit "Error: Command $cmd failed"
+}
+
+cleanup() {
+    info_message "Cleaning any existing artifacts that were generated during previous runs"
+    output=$(podman ps -a --format "{{.Names}}")
+    IFS=$'\n' # Set the internal field separator to newline
+
+    # DO NOT use double quotes here
+    for node in ${output}; do
+        if [[ "${node}" == "control" ]] || [[ "${node}" =~ ^node.* ]]; then
+            info_message "  - Removing container: ${node}"
+            # Make sure we remove previous settings
+            podman rm --storage --force "${node}" &> /dev/null
+            if_error_exit "error removing storage ${1}"
+
+            podman rm "${node}" --force 1> /dev/null
+            if_error_exit "error removing container ${1}"
+
+            rm -f ./*.node*
+        fi
+    done
+    info_message "  - Removing podmanDualStack network..."
+    info_message " "
+    podman network rm podmanDualStack -f 1> /dev/null
+
+}
