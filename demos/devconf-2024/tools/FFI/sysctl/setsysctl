@@ -1,0 +1,35 @@
+#!/bin/bash
+
+if ! command -v sysctl &>/dev/null; then
+    echo "sysctl tool is not installed. Installing..."
+    sudo dnf install -y procps-ng
+fi
+
+echo "Setting sysctl parameters..."
+
+# Generate a random number within a given range
+generate_random_number() {
+    local min=$1
+    local max=$2
+    echo $((RANDOM % (max - min + 1) + min))
+}
+
+# Network tuning parameters
+sysctl -w net.ipv4.ip_forward="$(generate_random_number 0 1)"
+sysctl -w net.ipv4.conf.all.rp_filter="$(generate_random_number 0 2)"
+sysctl -w net.ipv4.tcp_max_syn_backlog="$(generate_random_number 128 1024)"
+
+# Buffer Sizes
+if [ -f "/proc/sys/net/core/rmem_max" ]; then
+    sysctl -w net.core.rmem_max="$(generate_random_number 4096 16777216)"
+fi
+
+if [ -f "/proc/sys/net/core/wmem_max" ]; then
+    sysctl -w net.core.wmem_max="$(generate_random_number 4096 16777216)"
+fi
+
+# Memory management settings
+sysctl -w vm.swappiness="$(generate_random_number 0 100)"
+sysctl -w vm.overcommit_memory="$(generate_random_number 0 2)"
+
+echo "done"

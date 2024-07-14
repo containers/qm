@@ -1,0 +1,130 @@
+FROM quay.io/centos/centos:stream9
+
+RUN dnf install -y \
+	dnf-plugin-config-manager \
+	epel-release
+
+RUN dnf config-manager -y --set-enabled crb
+
+RUN dnf install -y \
+	clang-tools-extra \
+	codespell \
+	bzip2 \
+	cargo \
+	rust \
+	gcc \
+	dbus-devel \
+	g++ \
+	go-toolset \
+	fpaste \
+	lcov \
+	hostname \
+	podman \
+	python3-podman \
+	python3-flake8 \
+	python3-pytest \
+	python3-pytest-timeout \
+	python3-dasbus \
+	pre-commit \
+	pcp \
+	sudo \
+	gpgme-devel \
+	libseccomp-devel \
+	iptables-nft \
+	iptables-services \
+	selinux-policy-targeted \
+	selinux-policy-devel \
+	ShellCheck \
+	systemd \
+	valgrind \
+	createrepo_c \
+	dnf-utils \
+	git \
+	gzip \
+	jq \
+	tmt \
+	container-selinux \
+	kernel \
+	kernel-modules \
+	passwd \
+	python3-gobject \
+	python3-pip \
+	meson \
+	npm \
+	rpm-build \
+	ruby \
+        ruby-devel \
+	sed \
+	vim-enhanced \
+	systemd-devel \
+	iputils \
+	tar \
+	golang-github-cpuguy83-md2man \
+	telnet \
+	net-tools \
+	iproute
+
+WORKDIR /root
+
+RUN gem install ruby-dbus
+RUN dnf -y copr enable @centos-automotive-sig/bluechi-snapshot centos-stream-9
+RUN dnf -y install bluechi bluechi-agent bluechi-ctl
+RUN alternatives --install /usr/bin/python python /usr/bin/python3 1
+RUN npm install markdownlint-cli2 --global
+
+# Script will remove the lines before the commands automatically
+# [manually install bluechi] RUN rpm -e bluechi bluechi-agent bluechi-ctl bluechi-selinux
+# [manually install bluechi] RUN git clone @BUILD_BLUECHI_FROM_GH_URL@
+# [manually install bluechi] WORKDIR /root/bluechi
+
+
+# Look for remote branches
+# [manually install bluechi] RUN if git branch -a | grep "remotes/origin/@BRANCH_BLUECHI@" &> /dev/null; then \
+# [manually install bluechi] git checkout @BRANCH_BLUECHI@ &> /dev/null; \
+# [manually install bluechi] else \
+# Look to see if the branch already exists, like main branch
+# [manually install bluechi] if git branch -a | grep -w @BRANCH_BLUECHI@ &> /dev/null; then \
+# [manually install bluechi] git checkout @BRANCH_BLUECHI@ || true &> /dev/null; \
+# The Branch doesn't exist, create one using -b
+# [manually install bluechi] else \
+# [manually install bluechi] git checkout -b @BRANCH_BLUECHI@ || true &> /dev/null; \
+# [manually install bluechi] fi \
+# [manually install bluechi] fi
+
+# Execute the build after selecting the branch
+# [manually install bluechi] RUN ./build-scripts/build-rpm.sh || true
+
+# Upgrade the current bluechi using the new rpm packages but exclude src.rpm
+# [manually install bluechi] RUN find . -not -name *.src* -name *.rpm | xargs dnf install -y
+# RUN cp /usr/share/bluechi/config/controller.conf /etc/bluechi/
+# [manually install bluechi] RUN cp /usr/share/bluechi/config/controller.conf /etc/bluechi/
+
+# [start] CONTROL - settings
+# Setting configuration, uncommenting:
+#	- ControllerPort to communicate via 842
+#	- Use journal for logging
+#	- Set AllowedNodeNames as control and node1
+# TODO: remove the static node1 here, dynamic by rune2e script via sed
+RUN cp /usr/share/bluechi/config/controller.conf /etc/bluechi/
+RUN cp /usr/share/bluechi-agent/config/agent.conf /etc/bluechi/agent.conf.d/
+RUN sed -e '/^#ControllerPort=/s/^#//g' \
+	-e '/#LogTarget/s/^#//' \
+	-e "s/^#AllowedNodeNames=/AllowedNodeNames=control,node1/" \
+	-i /etc/bluechi/controller.conf
+# [end] CONTROL - settings
+
+RUN echo 'Foobar!' | passwd --stdin root
+
+# [start] CONTROL - agent settings
+RUN cp /usr/share/bluechi-agent/config/*.conf /etc/bluechi/agent.conf.d/ &> /dev/null
+RUN IPv4_CONTROL="$(ip -brief address show eth0 | awk '{print $3}' | awk -F/ '{print $1}')" && \
+	sed -e "s/^#NodeName=/NodeName=control/" \
+		-i /etc/bluechi/agent.conf.d/agent.conf
+
+# [end] CONTROL - agent settings
+
+# [start] CONTROL - enable services and systemd
+RUN systemctl enable bluechi-controller &> /dev/null
+RUN systemctl enable bluechi-agent &> /dev/null
+CMD ["/usr/lib/systemd/systemd"]
+# [end] CONTROL - enable services and systemd
