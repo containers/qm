@@ -55,6 +55,29 @@ exec_cmd() {
     if_error_exit "Error: Command $cmd failed"
 }
 
+cleanup_node_services() {
+    bluechi_nodes=$(bluechictl status | grep online | cut -d'|' -f 1)
+    for node in ${bluechi_nodes}; do
+       containers_list=$(bluechictl list-units "{node}" | grep container- | cut -d"|" -f2)
+       for srv in ${containers_list}; do
+           bluechictl stop "${node} ${srv}"
+           bluechictl disable "${node} ${srv}"
+       done
+       if grep -q "qm" <<< "${node}"; then
+           rm -rf /etc/qm/containers/systemd/*
+           podman exec -t qm bash -c "systemctl daemon-reload"
+           podman exec -t qm bash -c "systemctl reset-failed"
+           podman exec -t qm bash -c \
+ "podman rmi -f $(podman images --quiet  --filter reference=ubi9*)"
+        else
+           rm -rf /etc/containers/systemd/*
+           systemctl daemon-reload
+           systemctl reset-failed
+           podman rmi -f "$(podman images --quiet  --filter reference=ubi9*)"
+        fi
+    done
+}
+
 cleanup() {
     info_message "Cleaning any existing artifacts that were generated during previous runs"
     output=$(podman ps -a --format "{{.Names}}")
