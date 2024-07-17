@@ -7,12 +7,14 @@
 disk_cleanup
 prepare_test
 
-cat << EOF > /etc/containers/systemd/qm.container.d/oom.conf
+cat << EOF > "${DROP_IN_DIR}"/oom.conf
 [Service]
+OOMScoreAdjust=
 OOMScoreAdjust=1000
 EOF
 
 reload_config
+prepare_images
 
 exec_cmd "podman exec -it qm /bin/bash -c \
          'podman run -d  --replace --name ffi-qm \

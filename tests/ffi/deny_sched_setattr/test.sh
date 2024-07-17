@@ -3,8 +3,6 @@
 # shellcheck source=tests/ffi/common/prepare.sh
 . ../common/prepare.sh
 
-export QM_HOST_REGISTRY_DIR="/var/qm/lib/containers/registry"
-export QM_REGISTRY_DIR="/var/lib/containers/registry"
 expected_result="sched_setattr failed: Operation not permitted"
 
 disk_cleanup

@@ -62,6 +62,7 @@ file: ${container_file} tag: ${container_tag}"
     # Execute the container
     eval "$(podman run -d \
                 --privileged \
+                --tz local \
                 --network podmanDualStack \
                 --name "${container_name}" \
                 --hostname "${container_name}" \

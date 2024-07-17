@@ -2,33 +2,31 @@
 # shellcheck disable=SC1091
 . ../../e2e/lib/utils
 
+DROP_IN_DIR="/etc/containers/systemd/qm.container.d/"
+export QM_HOST_REGISTRY_DIR="/var/qm/lib/containers/registry"
+export QM_REGISTRY_DIR="/var/lib/containers/registry"
+
 prepare_test() {
-   qm_service_file=$(systemctl show -P  SourcePath qm)
-   #create backup file for qm unit file
-   qm_service_backup=$(mktemp -d -p /tmp)/qm.service
-   if_error_exit "cannot create temp dir under /tmp/"
-   exec_cmd "cp ${qm_service_file} ${qm_service_backup}"
-   # Remove 'DropCapability=sys_resource' enable nested container in QM
-   exec_cmd "sed -i 's|DropCapability=sys_resource|#DropCapability=sys_resource|' \
-            ${qm_service_file}"
-   exec_cmd "restorecon -RFv /var/lib/containers"
-   # Create qm container custom config folder
-   exec_cmd "mkdir -p /etc/containers/systemd/qm.container.d"
-   # FIXME: This action should be performed if necessary through systemd drop-in files.
-   #
-   # # Changing QM score to 1000 to avoid full memory error on SoC
-   # if [[ -n "${PACKIT_COPR_PROJECT}" && "${PACKIT_COPR_PROJECT}" == "release" ]]; then
-   #   exec_cmd "sed -i 's|OOMScoreAdjust.*|OOMScoreAdjust=1000|' ${qm_service_file}"
-   # fi
+   # Search variables for update file in qm.container
+   # qm_service_file=$(systemctl show -P  SourcePath qm)
+   # Create qm container custom config folder for qm drop-in file.
+   # Use drop-in files to update qm_service_file
+   # please refer 'zcat $(man -w qm.8) | grep -i "^\.sh" | grep drop-in'
+   exec_cmd "mkdir -p ${DROP_IN_DIR}"
 }
 
 disk_cleanup() {
-   exec_cmd "systemctl stop qm"
+   exec_cmd "podman exec -it qm /bin/bash -c \"podman  rmi -f --all\""
+   # Clean large size files created by tests inside qm part
    remove_file=$(find /var/qm -size  +2G)
-   exec_cmd "rm -f $remove_file"
-   remove_qm_custom_conf_files=$(find /etc/containers/systemd/qm.container.d -type f)
-   exec_cmd "rm -f $remove_qm_custom_conf_files"
-   exec_cmd "systemctl start qm"
+   exec_cmd "rm -rf $remove_file"
+   # Clean drop-in files used for tests
+   if test -d "${DROP_IN_DIR=}"; then
+      exec_cmd "rm -rf ${DROP_IN_DIR}"
+   fi
+   exec_cmd "systemctl daemon-reload"
+   exec_cmd "systemctl restart qm"
+   # Clean large size files created by tests inside host part
    remove_file=$(find /root -size  +1G)
    exec_cmd "rm -f $remove_file"
 }
@@ -46,7 +44,7 @@ prepare_images() {
        exec_cmd "mkdir -p ${QM_HOST_REGISTRY_DIR}"
        exec_cmd "podman push ${image_id} dir:${QM_HOST_REGISTRY_DIR}/tools-ffi:latest"
        # Remove image to save /var space
-       exec_cmd "podman image rm -f ${image_id}"
+       exec_cmd "podman rmi -f ${image_id}"
    fi
 }
 
