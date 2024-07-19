@@ -103,7 +103,7 @@ template(`qm_domain_template',`
 	container_exec_share_files($1_container_domain)
 	allow $1_container_domain container_ro_file_t:file execmod;
 
-	allow init_t $1_file_type:file { open read };
+	allow init_t $1_file_type:file read_file_perms;
 	manage_blk_files_pattern(init_t, $1_file_type, $1_file_type)
 	manage_chr_files_pattern(init_t, $1_file_type, $1_file_type)
 	manage_dirs_pattern(init_t, $1_file_type, $1_file_type)
@@ -127,8 +127,8 @@ template(`qm_domain_template',`
 	rw_sock_files_pattern(systemd_machined_t, $1_file_type, $1_file_type)
 	manage_chr_files_pattern(systemd_machined_t, $1_file_type, $1_file_type)
 	allow systemd_machined_t $1_t:unix_stream_socket { connectto rw_stream_socket_perms };
-	allow system_dbusd_t $1_file_type:chr_file { read write };
-	allow systemd_machined_t unconfined_service_t:dir search;
+	allow system_dbusd_t $1_file_type:chr_file rw_chr_file_perms;
+	allow systemd_machined_t unconfined_service_t:dir search_dir_perms;
 	systemd_dbus_chat_machined($1_t)
 	allow systemd_machined_t self:cap_userns kill;
 
@@ -140,7 +140,7 @@ template(`qm_domain_template',`
 	manage_chr_files_pattern(systemd_logind_t, $1_file_type, $1_file_type)
 	allow systemd_logind_t $1_t:unix_stream_socket { connectto rw_stream_socket_perms };
 
-	allow system_dbusd_t $1_file_type:chr_file { read write };
+	allow system_dbusd_t $1_file_type:chr_file rw_chr_file_perms;
 
 	allow $1_t self:system all_system_perms;
 	allow $1_t self:user_namespace all_user_namespace_perms;
@@ -400,18 +400,17 @@ template(`qm_domain_template',`
 	qm_container_template($1, wayland)
 
 	allow $1_container_wayland_t $1_file_t:chr_file map;
-	allow $1_container_wayland_t $1_file_t:dir { add_name create write watch };
-	allow $1_container_wayland_t $1_file_t:file { create write };
-	allow $1_container_wayland_t $1_file_t:sock_file { create write };
+	manage_dirs_pattern($1_container_wayland_t, $1_file_t, $1_file_t)
+	manage_files_pattern($1_container_wayland_t, $1_file_t, $1_file_t)
+	manage_sock_files_pattern($1_container_wayland_t, $1_file_t, $1_file_t)
 	allow $1_container_wayland_t $1_t:unix_stream_socket connectto;
 	allow $1_container_wayland_t $1_t:dbus send_msg;
 	allow $1_t $1_container_wayland_t:dbus send_msg;
 	dev_read_sysfs($1_container_wayland_t)
 
-	allow getty_t $1_file_type:chr_file { read write };
+	allow getty_t $1_file_type:chr_file rw_chr_file_perms;
 
-	allow systemd_hostnamed_t $1_file_t:dir search;
-	allow systemd_hostnamed_t $1_file_t:file { getattr open read };
+	read_files_pattern(systemd_hostnamed_t, $1_file_t, $1_file_t)
 	systemd_dbus_chat_hostnamed(systemd_hostnamed_t)
 
 	read_files_pattern($1_container_domain, $1_container_ro_file_t,$1_container_ro_file_t)
