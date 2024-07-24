@@ -1,0 +1,6 @@
+summary: Test host and QM bluechi-agent are connected to controller
+test: /bin/bash ./check_bluechi_is_ok.sh
+duration: 10m
+tier: 0
+framework: shell
+id: 627318fa-b7bb-4d95-ab64-524911398a88

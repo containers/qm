@@ -1,0 +1,6 @@
+summary: Test podman run and exec container in qm with service file
+test: /bin/bash ./check_qm_podman_quadlet_is_ok.sh
+duration: 10m
+tier: 0
+framework: shell
+id: b2071703-f9d4-4945-aa2d-0cf3abeaecb7

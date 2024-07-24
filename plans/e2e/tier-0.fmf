@@ -1,36 +1,16 @@
-summary: Tier 0 - QM Interconnect through bluechi
+summary: Tier 0 - QM sanity test
 
 discover:
     how: fmf
     filter: tier:0
 
-provision:
-   how: local
-
-adjust:
- - when: run == manual
-   environment+:
-       # Sample code to use manual packit repo
-       PACKIT_COPR_PROJECT: packit/containers-qm-291
-
- - when: distro == centos-stream-9 or distro == fedora
-   prepare+:
-     - name: Prepare Repos
-       how: shell
-       script: |
-          dnf install -y dnf-plugin-config-manager epel-release
-          dnf config-manager -y --set-enabled crb
-
-     - name: install repos
-       how: install
-       package:
-          - podman
-
-     - name: Set QM env
-       how: shell
-       script: |
-          cd tests/e2e
-          ./run-test-e2e --skip-tests=yes
+prepare+:
+  - name: Set QM environment
+    how: shell
+    order: 50
+    script: |
+        cd tests/e2e
+        ./set-ffi-env-e2e "${FFI_SETUP_OPTIONS}"
 
 execute:
     how: tmt

@@ -1,0 +1,6 @@
+summary: Test /var partition exist
+test: /bin/bash ./check_var_partition_exist.sh
+duration: 10m
+tier: 0
+framework: shell
+id: 667cd490-299f-44fd-b0bf-07eff999c13a

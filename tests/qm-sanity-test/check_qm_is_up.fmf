@@ -1,0 +1,6 @@
+summary: Test qm is up and running
+test: /bin/bash ./check_qm_is_up.sh
+duration: 10m
+tier: 0
+framework: shell
+id: b82a5766-275b-4635-9c2a-7ab3d8c6dc05
