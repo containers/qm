@@ -1,9 +1,9 @@
-/tier0:
+/multi-bluechi-agents:
     environment:
         CONTROL_CONTAINER_NAME: node1
     summary: Test is calling e2e/lib/tests as stand alone test
     test: ./test.sh
-    tier: 0
+    tag: multi-bluechi-agents
     id: 68e8a9a8-a9f8-4c43-be58-71645d09bc5c
 /tier1:
     summary: Test is testing AutoSD container

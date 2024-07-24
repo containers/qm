@@ -228,6 +228,17 @@ cat > /etc/bluechi/agent.conf.d/00-default.conf << 'EOF'
 [bluechi-agent]
 NodeName=localrootfs
 EOF
+
+controller_host_ip=$(hostname -I | awk '{print $1}')
+qm_bluechi_agent_config_file="/etc/qm/bluechi/agent.conf.d/agent.conf"
+if [[ -f "${qm_bluechi_agent_config_file}" ]]; then
+    if ! grep "ControllerHost=${controller_host_ip}" "${qm_bluechi_agent_config_file}" >/dev/null; then
+        sed -i '$a \ControllerHost='"${controller_host_ip}"'' ${qm_bluechi_agent_config_file}
+    fi
+else
+    echo "Configuration file not found: ${qm_bluechi_agent_config_file}"
+fi
+
   # Enable services
   info_message "Setup qm services, enable bluechi services"
   info_message "=============================="

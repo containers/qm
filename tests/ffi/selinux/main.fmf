@@ -1,0 +1,5 @@
+summary: Check that inside QM command setenforce 0 must fail.
+test: /bin/bash ./test.sh
+duration: 10m
+tag: ffi
+framework: shell
