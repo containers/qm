@@ -2,8 +2,6 @@ summary: general data used by the test plans
 
 environment:
   FFI_SETUP_OPTIONS: none
-  PACKAGE: qm
-  PACKIT_COPR_PROJECT: release
 
 prepare:
   - name: Install podman
