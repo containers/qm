@@ -3,3 +3,4 @@ test: /bin/bash ./test.sh
 duration: 10m
 tag: ffi
 framework: shell
+id: 0ebfdd87-65ee-4ee9-a3d7-24acaa01ce43
