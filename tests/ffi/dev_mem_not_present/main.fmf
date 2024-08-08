@@ -1,0 +1,6 @@
+summary: Test /dev/mem is not present in QM partition.
+test: /bin/bash ./test.sh
+duration: 10m
+tag: ffi
+framework: shell
+id: daa57e78-58da-4792-8eef-59a6b32745a2

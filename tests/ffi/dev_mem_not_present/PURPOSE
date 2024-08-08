@@ -1,0 +1,10 @@
+Verifies that /dev/mem is not present in QM partition.
+
+This test execute `test -e /dev/mem` in QM partition, no other input.
+    podman exec qm test -e /dev/mem
+
+Expected result:
+    out: [ INFO  ] PASS: check_dev_mem_not_present: As expected, /dev/mem is not present in QM partition.
+
+Results location:
+    /plans/e2e/ffi/report/default-0/junit.xml

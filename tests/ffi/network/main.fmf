@@ -1,5 +1,0 @@
-summary: Check that changes to network settings inside QM doesn't change network settings on Host.
-test: /bin/bash ./test.sh
-duration: 10m
-tag: ffi
-framework: shell
