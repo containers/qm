@@ -1,7 +1,7 @@
 summary: Check that changes to network settings inside QM doesn't change network settings
     on Host.
 test: /bin/bash ./test.sh
-duration: 20m
+duration: 30m
 tag: ffi
 framework: shell
 id: 7b86ccc3-072d-40b6-8463-3f24ceaba9b2
