@@ -1,0 +1,5 @@
+summary: Test that the file created in /dev/shm/ outside the QM partition that are not visible in /dev/shm inside the QM partition.
+test: /bin/bash ./check_dev_shm.sh
+duration: 10m
+tag: ffi
+framework: shell

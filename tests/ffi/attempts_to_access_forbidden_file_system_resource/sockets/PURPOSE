@@ -1,0 +1,18 @@
+Title:
+    Validate that the network resources present in the file system match the expectations based on the QM partition configuration.
+
+Description:
+    Check that /run/systemd/journal/socket have different inode number inside and outside of the QM partition. Various sockets should not be available in the QM container, check that /run/udev/control doesn't exists.
+
+Input:
+    This test set executes the following commands:
+        `stat --printf='%i' /run/systemd/journal/socket`
+        `podman exec qm stat --printf='%i' /run/systemd/journal/socket`
+        `podman exec qm test -e /run/udev/control`
+
+Expected Result:
+    out: [ INFO  ] PASS: check_run_systemd_journal_socket_inode_number: As expected, /run/systemd/journal/socket have different inode number inside and outside of the QM partition.
+    out: [ INFO  ] PASS: check_run_udev_control_not_exist: As expected, /run/udev/control dose not exist in the QM partition.
+
+Jira:
+    https://issues.redhat.com/browse/VROOM-21932

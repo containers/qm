@@ -1,0 +1,20 @@
+Title:
+    Validate that some devices are not available inside the QM partition.
+
+Description:
+    The QM partition configuration defines a set of available filesystem resources (devices, networks, shared memory, etc).
+    These and only these resources are expected to be present in the QM partition's file system.
+
+Input:
+    This test set executes the following commands respectively:
+        `podman exec qm test -c /dev/console`
+        `podman exec qm test -d /dev/disk`
+        `podman exec qm test -c /dev/kmsg`
+
+Expected Result:
+    out: [ INFO  ] PASS: check_dev_console_not_available: As expected, /dev/console is not available in the QM partition.
+    out: [ INFO  ] PASS: check_dev_disk_not_available: As expected, /dev/disk is not available in the QM partition.
+    out: [ INFO  ] PASS: check_dev_kmsg_not_available: As expected, /dev/kmsg is not available in the QM partition.
+
+Jira:
+    https://issues.redhat.com/browse/VROOM-21932

@@ -1,0 +1,15 @@
+Title:
+    Validate that SharedMemory files present in the file system match the expectations based on the QM partition configuration.
+
+Description:
+    Create a file /dev/shm/on-host outside the QM partition, ensure it is not visible in /dev/shm inside the QM partition.
+
+Input:
+    `touch /dev/shm/on-host`
+
+Expected Result:
+    out: [ INFO  ] Successfully created the file /dev/shm/on-host outside the QM partition.
+    out: [ INFO  ] PASS: check_dev_shm_file_not_visible_in_qm: As expected, /dev/shm/on-host is not visible in the QM partition.
+
+Jira:
+    https://issues.redhat.com/browse/VROOM-21932

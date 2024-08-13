@@ -1,0 +1,5 @@
+summary: Test that /run/systemd/journal/socket have different inode number inside and outside of the QM partition.
+test: /bin/bash ./check_run_systemd_journal_socket.sh
+duration: 10m
+tag: ffi
+framework: shell

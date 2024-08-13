@@ -1,0 +1,5 @@
+summary: Test that the directory /etc/qm cannot be accessed in the QM partition.
+test: /bin/bash ./check_etc_qm.sh
+duration: 10m
+tag: ffi
+framework: shell
