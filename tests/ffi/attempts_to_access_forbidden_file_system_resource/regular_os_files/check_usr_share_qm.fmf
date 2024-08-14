@@ -1,0 +1,5 @@
+summary: Test that the directory /usr/share/qm cannot be accessed in the QM partition.
+test: /bin/bash ./check_usr_share_qm.sh
+duration: 10m
+tag: ffi
+framework: shell

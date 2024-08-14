@@ -1,0 +1,5 @@
+summary: Test that the device /dev/kmsg is not available in the QM partition.
+test: /bin/bash ./check_dev_kmsg.sh
+duration: 10m
+tag: ffi
+framework: shell

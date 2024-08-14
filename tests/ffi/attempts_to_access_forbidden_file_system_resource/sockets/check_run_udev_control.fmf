@@ -1,0 +1,5 @@
+summary: Test that the socket /run/udev/control does not exist in the QM partition.
+test: /bin/bash ./check_run_udev_control.sh
+duration: 10m
+tag: ffi
+framework: shell

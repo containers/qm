@@ -1,0 +1,19 @@
+Title:
+    Validate that the QM directories on the host are not accessible inside the QM partition.
+
+Description:
+    The qm package is not installed in the QM partition (its only on the host). So check that you cannot access its directories.
+
+Input:
+    This test set executes the following commands respectively:
+        `podman exec qm test -d /etc/qm`
+        `podman exec qm test -d /usr/lib/qm`
+        `podman exec qm test -d /usr/share/qm`
+
+Expected Result:
+    out: [ INFO  ] PASS: check_etc_qm_not_accessible: As expected, /etc/qm is not accessible in the QM partition.
+    out: [ INFO  ] PASS: check_usr_lib_qm_not_accessible: As expected, /usr/lib/qm is not accessible in the QM partition.
+    out: [ INFO  ] PASS: check_usr_share_qm_not_accessible: As expected, /usr/share/qm is not accessible in the QM partition.
+
+Jira:
+    https://issues.redhat.com/browse/VROOM-21932

@@ -1,0 +1,5 @@
+summary: Test that the device /dev/console is not available in the QM partition.
+test: /bin/bash ./check_dev_console.sh
+duration: 10m
+tag: ffi
+framework: shell
