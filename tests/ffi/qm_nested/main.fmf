@@ -1,0 +1,6 @@
+summary: Check that QM executing well the nested container via podman.
+test: /bin/bash ./test.sh
+duration: 15m
+tag: ffi
+framework: shell
+id: 48f41863-b785-46f5-8ec6-6f9176af84de
