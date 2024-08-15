@@ -15,4 +15,4 @@ Expected Result:
     out: [ INFO  ] PASS: check_run_udev_control_not_exist: As expected, /run/udev/control dose not exist in the QM partition.
 
 Jira:
-    https://issues.redhat.com/browse/VROOM-21932
+    VROOM-21932
