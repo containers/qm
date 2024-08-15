@@ -3,3 +3,4 @@ test: /bin/bash ./check_dev_disk.sh
 duration: 10m
 tag: ffi
 framework: shell
+id: fc7af8ad-7646-4057-9729-2e267558ec3d

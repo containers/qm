@@ -3,3 +3,4 @@ test: /bin/bash ./check_dev_kmsg.sh
 duration: 10m
 tag: ffi
 framework: shell
+id: 99cd018f-c854-444a-8f32-dac3ada8b770

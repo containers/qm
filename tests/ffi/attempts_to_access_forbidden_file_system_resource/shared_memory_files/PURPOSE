@@ -12,4 +12,4 @@ Expected Result:
     out: [ INFO  ] PASS: check_dev_shm_file_not_visible_in_qm: As expected, /dev/shm/on-host is not visible in the QM partition.
 
 Jira:
-    https://issues.redhat.com/browse/VROOM-21932
+    VROOM-21932

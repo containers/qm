@@ -3,3 +3,4 @@ test: /bin/bash ./check_etc_qm.sh
 duration: 10m
 tag: ffi
 framework: shell
+id: bf516bb5-c016-43d8-8510-487e3dfe5f8a

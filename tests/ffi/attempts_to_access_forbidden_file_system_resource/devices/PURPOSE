@@ -17,4 +17,4 @@ Expected Result:
     out: [ INFO  ] PASS: check_dev_kmsg_not_available: As expected, /dev/kmsg is not available in the QM partition.
 
 Jira:
-    https://issues.redhat.com/browse/VROOM-21932
+    VROOM-21932

@@ -16,4 +16,4 @@ Expected Result:
     out: [ INFO  ] PASS: check_usr_share_qm_not_accessible: As expected, /usr/share/qm is not accessible in the QM partition.
 
 Jira:
-    https://issues.redhat.com/browse/VROOM-21932
+    VROOM-21932
