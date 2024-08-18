@@ -42,12 +42,12 @@ dnf install git python3-pip podman
 Under root directory run the following git commands
 
 ``` bash
-git clone --depth=1 https://github.com/Yarboa/qm.git
+git clone --depth=1 https://github.com/containers/qm.git
 cd qm
 git checkout -b devconf-update
 git pull origin devconf-update
 git sparse-checkout set --no-cone demos/devconf-2024
-git sparse-cehckout add tests/e2e
+git sparse-checkout add tests/e2e
 ```
 
 Run setup script, it installs & prepares QM partition filesystem

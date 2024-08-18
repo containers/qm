@@ -3,3 +3,4 @@ test: /bin/bash ./check_dev_console.sh
 duration: 10m
 tag: ffi
 framework: shell
+id: 24560ba3-b64b-40da-bb53-0f057e87889a

@@ -3,3 +3,4 @@ test: /bin/bash ./check_run_udev_control.sh
 duration: 10m
 tag: ffi
 framework: shell
+id: 8bf35c3c-4993-497c-86f0-14fb17dfe83b

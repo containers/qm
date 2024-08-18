@@ -1,7 +1,0 @@
-Description: Check that QM executing well the nested container via podman.
-Owner: 
-RunFor: 
-RunTest: /bin/bash ./test.sh
-Path: /mnt/tests/tests/ffi/qm_nested
-Requires: 
-TestTime: 15m

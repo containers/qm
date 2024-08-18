@@ -3,3 +3,4 @@ test: /bin/bash ./check_usr_lib_qm.sh
 duration: 10m
 tag: ffi
 framework: shell
+id: 9595f570-bdc2-47c8-b73f-5cf937d70bd8
