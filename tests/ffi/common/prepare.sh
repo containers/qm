@@ -40,12 +40,15 @@ prepare_images() {
    exec_cmd "podman pull quay.io/centos-sig-automotive/ffi-tools:latest"
    # Copy container image registry to /var/qm/lib/containers
    image_id=$(podman images | grep quay.io/centos-sig-automotive/ffi-tools | awk -F " " '{print $3}')
-   if [ ! -d "${QM_HOST_REGISTRY_DIR}" ]; then
-       exec_cmd "mkdir -p ${QM_HOST_REGISTRY_DIR}"
-       exec_cmd "podman push ${image_id} dir:${QM_HOST_REGISTRY_DIR}/tools-ffi:latest"
-       # Remove image to save /var space
-       exec_cmd "podman rmi -f ${image_id}"
+
+   if [ -d "${QM_HOST_REGISTRY_DIR}" ]; then
+      rm -rf ${QM_HOST_REGISTRY_DIR}
    fi
+
+   exec_cmd "mkdir -p ${QM_HOST_REGISTRY_DIR}"
+   exec_cmd "podman push ${image_id} dir:${QM_HOST_REGISTRY_DIR}/tools-ffi:latest"
+   # Remove image to save /var space
+   exec_cmd "podman rmi -f ${image_id}"
 }
 
 run_container_in_qm() {
