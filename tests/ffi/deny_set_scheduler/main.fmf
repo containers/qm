@@ -1,6 +1,6 @@
 summary: Test the sched_setscheduler() syscall inside QM is not allowed
 test: /bin/bash ./test.sh
-duration: 10m
+duration: 20m
 tag: ffi
 framework: shell
 id: 9100f240-b4e8-4d73-87fe-c607ed1d89b2

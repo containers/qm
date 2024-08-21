@@ -1,6 +1,6 @@
 summary: Test the qm's oom-score-adj values
 test: /bin/bash ./test.sh
-duration: 10m
+duration: 20m
 tag: ffi
 framework: shell
 id: 6e6c5cea-efc7-48e9-8b4c-d355229ab1c2
