@@ -273,6 +273,29 @@ then
     exit
 fi
 
+echo
+info_message "Checking if QM already installed"
+info_message "=============================="
+QM_STATUS="$(systemctl is-enabled qm 2>&1)"
+if [ "$QM_STATUS" == "generated" ]; then
+   if [ "$(systemctl is-active qm)" == "active" ]; then
+       info_message "QM Enabled and Active"
+       info_message "=============================="
+       exit 0
+   fi
+   if test -d /var/qm -a -d /etc/qm ; then
+      info_message "QM Enabled and not Active"
+      info_message "=============================="
+      exit 1
+   fi
+fi
+
+if stat /run/ostree-booted > /dev/null 2>&1; then
+   info_message "Warning: script can not run on ostree image"
+   info_message "=============================="
+   exit 0
+fi
+
 info_message "Cleaning any previous e2e files"
 info_message "=============================="
 cleanup
