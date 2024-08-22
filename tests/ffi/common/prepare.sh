@@ -67,3 +67,9 @@ run_container_in_qm() {
       tail -f /dev/null\""
    exec_cmd "${run_ctr_in_qm}"
 }
+
+init_ffi() {
+        disk_cleanup
+        prepare_test
+        reload_config
+}
