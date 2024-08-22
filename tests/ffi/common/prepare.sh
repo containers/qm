@@ -68,6 +68,7 @@ run_container_in_qm() {
    exec_cmd "${run_ctr_in_qm}"
 }
 
+# Agregates 3 functions from this tool to a single init_ffi function, used to initialize environments before tests with a single function, instead of using three separate functions.
 init_ffi() {
         disk_cleanup
         prepare_test

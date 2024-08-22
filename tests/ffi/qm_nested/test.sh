@@ -1,16 +1,12 @@
-#!/bin/bash -euvx
+#!/bin/bash
 
 # shellcheck disable=SC1091
 . ../common/prepare.sh
 
-# init_ffi() uses functions from common.sh to init the env before tests.
-init_ffi() {
-	disk_cleanup
-	prepare_test
-	reload_config
-}
+# init_ffi uses 3in1 function from common.sh to initialize the environment before tests.
+init_ffi
 
-# Declare global variables and initialize to 0
+# Declare global variables and initialize to "".
 NESTED_NAME=""
 NESTED_STATUS=""
 
@@ -55,7 +51,6 @@ compare_values() {
 }
 
 # Execute the functions
-init_ffi
 create_nested
 compare_values
 
