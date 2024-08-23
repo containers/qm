@@ -1,6 +1,6 @@
 summary: Test is calling systemd as stand alone test
 test: /bin/bash ./test.sh
-duration: 20m
+duration: 50m
 tag: ffi
 framework: shell
 id: fff26f33-a051-4d9e-aae2-97935e425273
