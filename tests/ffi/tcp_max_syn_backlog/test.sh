@@ -55,12 +55,12 @@ execute_on_host() {
 #   HOST_NET_IPV4_TCP_MAX_SYN_BACKLOG_VALUE: The sysctl value exists on the host
 compare_values() {
 	if [ "$QM_NET_IPV4_TCP_MAX_SYN_BACKLOG_VALUE" == 0 ] || [ "$HOST_NET_IPV4_TCP_MAX_SYN_BACKLOG_VALUE" == 0 ] || [ "$HOST_DEFAULT_NET_IPV4_TCP_MAX_SYN_BACKLOG_VALUE" == 0 ]; then
-		echo -e "\e[1;31mFAIL:\e[0m One or multiple tcp_max_syn_backlog values are 0. Ensure the sysctl command executed correctly."
+		echo "FAIL: One or multiple tcp_max_syn_backlog values are 0. Ensure the sysctl command executed correctly."
 		exit 1
 	elif [ "$HOST_DEFAULT_NET_IPV4_TCP_MAX_SYN_BACKLOG_VALUE" -eq "$HOST_NET_IPV4_TCP_MAX_SYN_BACKLOG_VALUE" ]; then
 		echo "PASS: tcp_max_syn_backlog wasn't changed."
 	else
-		echo -e "\e[1;31mFAIL:\e[0m tcp_max_syn_backlog value have been changed."
+		echo "FAIL: tcp_max_syn_backlog value have been changed."
 		exit 1
 	fi
 }
