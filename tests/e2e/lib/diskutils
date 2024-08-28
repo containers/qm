@@ -1,0 +1,109 @@
+#!/bin/bash
+#
+# Copyright 2023 The qm Authors
+#
+# This program is free software; you can redistribute it and/or
+# modify it under the terms of the GNU General Public License
+# as published by the Free Software Foundation; either version 2
+# of the License, or (at your option) any later version.
+#
+# This program is distributed in the hope that it will be useful,
+# but WITHOUT ANY WARRANTY; without even the implied warranty of
+# MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+# GNU General Public License for more details.
+#
+# You should have received a copy of the GNU General Public License
+# along with this program; If not, see <http://www.gnu.org/licenses/>.
+
+select_disk_to_partition(){
+  ###########################################################################
+  # Description:                                                            #
+  # Select free partition with size in "G"                                  #
+  #                                                                         #
+  # Arguments: should be be exported by calling script                      #
+  #   DEVICE,  set free /dev/ device                                        #
+  #   PART_ID, set device partition                                         #
+  ###########################################################################
+
+  local disk_table
+  disk_table=$(lsblk --noheadings --raw)
+  local disks_arr
+  disks_arr=$(echo "$disk_table" | awk '$1~// && $6=="disk" {print $1}')
+  info_message "select_disk_to_partition, found ${disks_arr}"
+  info_message "=============================="
+
+  for disk in $disks_arr; do
+     if [[ ${disk} == "vda" || \
+           $(echo "${disk_table}" | grep -c "${disk}" ) -eq 1 && ${disk} != "zram0" ]];then
+         new_part="$( (echo n; echo p; echo ; echo ; echo ; echo w) | fdisk "/dev/${disk}")"
+         part_id="$(echo "${new_part}" | grep -Po "new partition \K([0-9])")"
+         DISK="${disk}"
+         if [[ $(echo "${DISK}" | grep -c nvme) -eq 1 ]]; then
+           PART_ID="p${part_id}"
+           info_message "select_disk_to_partition, found /dev/${DISK}${PART_ID}"
+           info_message "=============================="
+           break;
+         fi
+      fi
+      if [ -e "${SOC_DISTRO_FILE}" ]; then
+        if grep -qi "${QC_SOC}" "${SOC_DISTRO_FILE}"; then
+           if [[ "${disk}" == "${QC_SOC_DISK}" ]]; then
+             DISK=${disk}
+             part=$(echo "${disk_table}" | grep "G" | grep "${QC_SOC_DISK}[0-9]." | grep -v "/" | cut -d" " -f1 )
+             PART_ID=${part:3}
+             break;
+           fi
+        fi
+      fi
+  done
+}
+
+create_qm_var_part() {
+  ###########################################################################
+  # Description:                                                            #
+  #  Create relevant filesystem                                             #
+  #    support fstype, non ostree, xfs (c9s vm), ext4(soc)                  #
+  # ARGUMENTS: should be be exported by calling script                      #
+  #   DEVICE,  set free /dev/ device                                        #
+  #   PART_ID, set device partition                                         #
+  ###########################################################################
+
+  select_disk_to_partition
+
+  local slash_var
+  slash_var="/var"
+
+  # Check is SoC aboot exist, else regular image
+  if [ -e "${SOC_DISTRO_FILE}" ]; then
+        if grep -qi "${QC_SOC}" "${SOC_DISTRO_FILE}"; then
+          mkfs.ext4 "/dev/${DISK}${PART_ID}"
+          if_error_exit "Error: mkfs.ext4 /dev/${DISK}${PART_ID} failed on ${QC_SOC}"
+          info_message "Create_qm_disks, prepare SoC ext4 fs"
+          info_message "=============================="
+        fi
+  else
+  # VM use case
+       mkfs.xfs "/dev/${DISK}${PART_ID}"
+       if_error_exit "Error: mkfs.xfs /dev/${DISK}${PART_ID} failed on VM"
+       info_message "Create_qm_disks, prepare regular xfs fs"
+       info_message "=============================="
+
+  fi
+
+  mkdir -p /new_var
+  mount "/dev/${DISK}${PART_ID}" /new_var
+  rsync -aqxXP /var/* /new_var
+  if_error_exit "Error: rsync failed"
+  systemctl stop var-lib-nfs-rpc_pipefs.mount
+  umount /new_var
+  rm -rf "${slash_var:?}"/*
+  info_message "Create_qm_disks, prepare and mount ${slash_var}"
+  info_message "=============================="
+  mount "/dev/${DISK}${PART_ID}" "${slash_var}"
+  if_error_exit "Error: mount /dev/${DISK}${PART_ID} on ${slash_var} failed"
+  systemctl start var-lib-nfs-rpc_pipefs.mount
+  if_error_exit "Error: service var-lib-nfs-rpc_pipefs.mount start failed"
+}
+
+
+
