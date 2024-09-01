@@ -15,6 +15,9 @@
 # You should have received a copy of the GNU General Public License
 # along with this program; If not, see <http://www.gnu.org/licenses/>.
 #
+# flake8: noqa E501
+from invoke import run, UnexpectedExit
+
 from rich import print
 from rich import box
 from rich.align import Align
@@ -26,7 +29,6 @@ from rich.prompt import Prompt
 
 from enum import Enum
 
-import subprocess
 import sys
 import re
 
@@ -124,60 +126,59 @@ class Dashboard(object):
         self.node_car_state = {}
         self.control_car_state = {}
 
-    def execute_cmd(
-        self,
-        command,
-        shell=False
-    ):
+    def execute_cmd(self, command):
         """Execute command."""
         """
         Parameters:
-            command - command to be executed, use ['cmd' 'argument']
-            shell - True or False
-                    If shell is True, the specified command will be
-                    executed through the shell
+            command - command to be executed, use ['cmd', 'argument'] as a list
+
         Returns: return code or exit in case of failure
         """
 
-        cmd_str = ' '.join(command)
+        try:
+            # Ensure command is a list of strings
+            if isinstance(command, str):
+                raise ValueError("Command should be a list of arguments, not a string.")
 
-        p = subprocess.Popen(
-            command,
-            shell=shell,
-        )
-        returncode = p.wait()
+            result = run(command, shell=False)
+            returncode = result.return_code
 
-        if returncode != 0:
-            print(
-                "{cmd} return code {ret}".format(
-                    cmd=cmd_str, ret=returncode
+            if returncode != 0:
+                print(
+                    "{cmd} return code {ret}".format(
+                        cmd=' '.join(command),
+                        ret=returncode
+                    )
                 )
-            )
+
+        except UnexpectedExit as e:
+            print("Command '{cmd}' failed with error: {err}".format(cmd=' '.join(command), err=str(e)))
+            returncode = e.result.return_code
+        except ValueError as e:
+            print(f"Invalid command: {e}")
+            returncode = 1
 
         return returncode
 
-    def execute_cmd_check_output(
-        self,
-        command,
-        shell=True
-    ):
+    def execute_cmd_check_output(self, command):
         """Execute command returning output."""
         """
         Parameters:
-            command - command to be executed
-            shell - True or False
-                    If shell is True, the specified command will be
-                    executed through the shell
+            command - command to be executed as a list of strings, e.g., ['ls', '-l', '/some/path']
 
         Returns: output from command or exit
         """
         try:
-            output = subprocess.check_output(
-                command,
-                shell=shell
-            )
-        except subprocess.CalledProcessError:
+            # Ensure command is a list of strings
+            if isinstance(command, str):
+                raise ValueError("Command should be a list of arguments, not a string.")
+            result = run(command, shell=False, hide=True)
+            output = result.stdout
+        except UnexpectedExit:
             sys.exit(2)
+        except ValueError as e:
+            print(f"Invalid command: {e}")
+            sys.exit(1)
 
         return output
 
