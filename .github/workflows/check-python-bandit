@@ -1,0 +1,41 @@
+#!/bin/bash
+
+# Licensed under the Apache License, Version 2.0 (the "License");
+# you may not use this file except in compliance with the License.
+# You may obtain a copy of the License at
+#
+#     http://www.apache.org/licenses/LICENSE-2.0
+#
+# Unless required by applicable law or agreed to in writing, software
+# distributed under the License is distributed on an "AS IS" BASIS,
+# WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+# See the License for the specific language governing permissions and
+# limitations under the License.
+
+# Function to check if a file is a Python script
+is_python_script() {
+    local file="$1"
+    # Check if the file extension is .py or .python
+    if [[ "$file" == *.py ]]; then
+        return 0  # It's a Python script
+    fi
+
+    # Check if the file starts with a Python shebang
+    if head -n 1 "$file" | grep -qE '^#!/usr/bin/env python(3)?|^#!/usr/bin/python(3)?'; then
+        return 0  # It's a Python script
+    else
+        return 1  # Not a Python script
+    fi
+}
+
+# Directory to search (default is current directory)
+search_dir="${1:-.}"
+
+# Find all files (excluding directories)
+find "$search_dir" -type f | while read -r file; do
+    if is_python_script "$file"; then
+        echo "Python script found: $file"
+        # Execute Bandit on the found Python script
+        bandit -r "$file"
+    fi
+done

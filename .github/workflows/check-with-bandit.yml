@@ -1,0 +1,38 @@
+name: Python Security Check
+
+on:
+  push:
+    branches:
+      - main
+  pull_request:
+    branches:
+      - main
+
+jobs:
+  bandit-check:
+    runs-on: ubuntu-latest
+
+    steps:
+    - name: Checkout code
+      uses: actions/checkout@v3
+
+    - name: Set up Python
+      uses: actions/setup-python@v4
+      with:
+        python-version: '3.x'
+
+    - name: Install Bandit
+      run: |
+        python -m pip install --upgrade pip
+        pip install bandit
+
+    - name: Run Python Security Check script
+      run: |
+        ./.github/workflows/check-python-bandit .
+
+    - name: Upload Bandit report
+      if: always()
+      uses: actions/upload-artifact@v3
+      with:
+        name: bandit-report
+        path: bandit-output.txt
