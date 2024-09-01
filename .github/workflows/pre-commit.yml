@@ -9,6 +9,12 @@ jobs:
     runs-on: ubuntu-latest
 
     steps:
+      - name: Update distro
+        run: sudo apt-get update
+
+      - name: Upgrade installed packages
+        run: sudo apt-get upgrade -y
+
       - name: Install Python
         uses: actions/setup-python@v5
         with:
