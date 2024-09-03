@@ -26,7 +26,7 @@ get_pid_with_retries() {
     local retries=10
     local pid=""
 
-    while [ $retries -gt 0 ]; do
+    while [[ $retries -gt 0 ]]; do
         pid=$(podman inspect "$container_name" --format '{{.State.Pid}}' | tr -d '\r')
         if [[ -n "$pid" && "$pid" =~ ^[0-9]+$ ]]; then
             echo "$pid"
@@ -68,19 +68,19 @@ if [[ -z "$QM_FFI_PID" || ! "$QM_FFI_PID" =~ ^[0-9]+$ ]]; then
 fi
 
 # Get the oom_score_adj values and strip any trailing newlines or carriage returns
-QM_OOM_SCORE_ADJ=$(tr -d '\r' < "/proc/$QM_PID/oom_score_adj")
-QM_FFI_OOM_SCORE_ADJ=$(podman exec -it qm /bin/bash -c "tr -d '\r' < /proc/$QM_FFI_PID/oom_score_adj")
+QM_OOM_SCORE_ADJ=$(tr -d '\r\n' < "/proc/$QM_PID/oom_score_adj")
+QM_FFI_OOM_SCORE_ADJ=$(podman exec -it qm /bin/bash -c "tr -d '\r\n' < /proc/$QM_FFI_PID/oom_score_adj")
 
 # Debugging: Output the retrieved oom_score_adj values
-echo "Retrieved QM_OOM_SCORE_ADJ: $QM_OOM_SCORE_ADJ"
-echo "Retrieved QM_FFI_OOM_SCORE_ADJ: $QM_FFI_OOM_SCORE_ADJ"
+echo "Retrieved QM_OOM_SCORE_ADJ: '$QM_OOM_SCORE_ADJ'"
+echo "Retrieved QM_FFI_OOM_SCORE_ADJ: '$QM_FFI_OOM_SCORE_ADJ'"
 
 # Define the expected oom_score_adj values
 OOM_SCORE_ADJ_EXPECTED=500
 FFI_OOM_SCORE_ADJ_EXPECTED=750
 
 # Check the oom_score_adj for the outer container
-if [ "$QM_OOM_SCORE_ADJ" -eq "$OOM_SCORE_ADJ_EXPECTED" ]; then
+if [[ "$QM_OOM_SCORE_ADJ" -eq "$OOM_SCORE_ADJ_EXPECTED" ]]; then
     echo "PASS: qm.container oom_score_adj value == $OOM_SCORE_ADJ_EXPECTED"
 else
     echo "FAIL: qm.container oom_score_adj value != $OOM_SCORE_ADJ_EXPECTED. Current value is ${QM_OOM_SCORE_ADJ}"
@@ -88,10 +88,10 @@ else
 fi
 
 # Check the oom_score_adj for the inner container
-if [ "$QM_FFI_OOM_SCORE_ADJ" -eq "$FFI_OOM_SCORE_ADJ_EXPECTED" ]; then
+if [[ "$QM_FFI_OOM_SCORE_ADJ" -eq "$FFI_OOM_SCORE_ADJ_EXPECTED" ]]; then
     echo "PASS: qm containers oom_score_adj == $FFI_OOM_SCORE_ADJ_EXPECTED"
 else
-    echo "FAIL: qm containers oom_score_adj != $FFI_OOM_SCORE_ADJ_EXPECTED. Current value is ${QM_FFI_OOM_SCORE_ADJ}"
+    echo "FAIL: qm containers oom_score_adj != $FFI_OOM_SCORE_ADJ_EXPECTED. Current value is '${QM_FFI_OOM_SCORE_ADJ}'"
     exit 1
 fi
 
