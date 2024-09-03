@@ -1,5 +1,17 @@
 #!/bin/bash -euvx
 
+# Licensed under the Apache License, Version 2.0 (the "License");
+# you may not use this file except in compliance with the License.
+# You may obtain a copy of the License at
+#
+#     http://www.apache.org/licenses/LICENSE-2.0
+#
+# Unless required by applicable law or agreed to in writing, software
+# distributed under the License is distributed on an "AS IS" BASIS,
+# WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+# See the License for the specific language governing permissions and
+# limitations under the License.
+
 # shellcheck disable=SC1091
 
 . ../common/prepare.sh
@@ -8,40 +20,80 @@ disk_cleanup
 prepare_images
 reload_config
 
+# Function to retrieve the PID with retries for the host container (qm)
+get_pid_with_retries() {
+    local container_name=$1
+    local retries=10
+    local pid=""
+
+    while [[ $retries -gt 0 ]]; do
+        pid=$(podman inspect "$container_name" --format '{{.State.Pid}}' | tr -d '\r')
+        if [[ -n "$pid" && "$pid" =~ ^[0-9]+$ ]]; then
+            echo "$pid"
+            return
+        fi
+        retries=$((retries - 1))
+        sleep 1
+    done
+
+    echo "Error: Failed to retrieve a valid PID for the container '$container_name' after multiple attempts." >&2
+    exit 1
+}
+
+# Start the FFI container inside qm
 podman exec -it qm /bin/bash -c \
-         "podman run -d --replace --name ffi-qm  dir:${QM_REGISTRY_DIR}/tools-ffi:latest \
-          /usr/bin/sleep infinity > /dev/null"
+    "podman run -d --replace --name ffi-qm dir:${QM_REGISTRY_DIR}/tools-ffi:latest \
+    /usr/bin/sleep infinity > /dev/null"
 
+# Retrieve the PID of the outer container (qm) with retries
+QM_PID=$(get_pid_with_retries "qm")
 
-QM_PID=$(podman inspect qm --format '{{.State.Pid}}' | tr -d '\r')
+# Retrieve the PID of the inner container (ffi-qm) directly within the qm container
 QM_FFI_PID=$(podman exec -it qm /bin/bash -c "podman inspect ffi-qm --format '{{.State.Pid}}'" | tr -d '\r')
 
-QM_OOM_SCORE_ADJ=$(cat "/proc/$QM_PID/oom_score_adj")
-QM_FFI_OOM_SCORE_ADJ=$(podman exec -it qm /bin/bash -c "cat /proc/$QM_FFI_PID/oom_score_adj" | tr -d '\r')
+# Debugging: Output the retrieved PIDs
+echo "Retrieved QM_PID: $QM_PID"
+echo "Retrieved QM_FFI_PID: $QM_FFI_PID"
 
-
-# Define a constant for the oom_score_adj value
-# "500" is the oom_score_adj defined for the qm/qm.container.
-OOM_SCORE_ADJ_EXPECTED=500
-
-if [ "$QM_OOM_SCORE_ADJ" -eq "$OOM_SCORE_ADJ_EXPECTED" ]; then
-    info_message "PASS: qm.container oom_score_adj value == $OOM_SCORE_ADJ_EXPECTED"
-else
-    info_message "FAIL: qm.container oom_score_adj value != $OOM_SCORE_ADJ_EXPECTED. Current value is ${QM_OOM_SCORE_ADJ}"
+# Ensure that PIDs are valid before proceeding
+if [[ -z "$QM_PID" || ! "$QM_PID" =~ ^[0-9]+$ ]]; then
+    echo "Error: Invalid QM_PID: $QM_PID" >&2
     exit 1
 fi
 
-# "750" is the oom_score_adj defined in the qm/containers.conf as default value
-# for the containers that would run inside of the qm container.
-# Check the oom_score_adj value for QM FFI
+if [[ -z "$QM_FFI_PID" || ! "$QM_FFI_PID" =~ ^[0-9]+$ ]]; then
+    echo "Error: Invalid QM_FFI_PID: $QM_FFI_PID" >&2
+    echo "Check if the ffi-qm container was successfully started."
+    exit 1
+fi
+
+# Get the oom_score_adj values and strip any trailing newlines or carriage returns
+QM_OOM_SCORE_ADJ=$(tr -d '\r\n' < "/proc/$QM_PID/oom_score_adj")
+QM_FFI_OOM_SCORE_ADJ=$(podman exec -it qm /bin/bash -c "tr -d '\r\n' < /proc/$QM_FFI_PID/oom_score_adj")
+
+# Debugging: Output the retrieved oom_score_adj values
+echo "Retrieved QM_OOM_SCORE_ADJ: '$QM_OOM_SCORE_ADJ'"
+echo "Retrieved QM_FFI_OOM_SCORE_ADJ: '$QM_FFI_OOM_SCORE_ADJ'"
+
+# Define the expected oom_score_adj values
+OOM_SCORE_ADJ_EXPECTED=500
 FFI_OOM_SCORE_ADJ_EXPECTED=750
 
-if [ "$QM_FFI_OOM_SCORE_ADJ" -eq "$FFI_OOM_SCORE_ADJ_EXPECTED" ]; then
-    info_message "PASS: qm containers oom_score_adj == $FFI_OOM_SCORE_ADJ_EXPECTED"
+# Check the oom_score_adj for the outer container
+if [[ "$QM_OOM_SCORE_ADJ" -eq "$OOM_SCORE_ADJ_EXPECTED" ]]; then
+    echo "PASS: qm.container oom_score_adj value == $OOM_SCORE_ADJ_EXPECTED"
 else
-    info_message "FAIL: qm containers oom_score_adj != $FFI_OOM_SCORE_ADJ_EXPECTED. Current value is ${QM_FFI_OOM_SCORE_ADJ}"
+    echo "FAIL: qm.container oom_score_adj value != $OOM_SCORE_ADJ_EXPECTED. Current value is ${QM_OOM_SCORE_ADJ}"
     exit 1
 fi
 
-podman exec -it qm /bin/bash -c "podman stop ffi-qm > /dev/null"
+# Check the oom_score_adj for the inner container
+if [[ "$QM_FFI_OOM_SCORE_ADJ" -eq "$FFI_OOM_SCORE_ADJ_EXPECTED" ]]; then
+    echo "PASS: qm containers oom_score_adj == $FFI_OOM_SCORE_ADJ_EXPECTED"
+else
+    echo "FAIL: qm containers oom_score_adj != $FFI_OOM_SCORE_ADJ_EXPECTED. Current value is '${QM_FFI_OOM_SCORE_ADJ}'"
+    exit 1
+fi
 
+# Stop the inner FFI container
+podman exec -it qm /bin/bash -c "podman stop ffi-qm > /dev/null"

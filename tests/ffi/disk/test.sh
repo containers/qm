@@ -27,7 +27,7 @@ exec_cmd "podman exec -it qm /bin/bash -c \
           tail -f /dev/null'"
 
 exec_cmd "podman exec -it qm /bin/bash -c \
-         'podman exec -it ffi-qm ./QM/file-allocate > /dev/null'"
+         'podman exec -it ffi-qm ./QM/file-allocate'"
 
 if ! eval "fallocate -l 2G /root/file.lock" ; then
    echo "No space left on device"
