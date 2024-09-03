@@ -51,6 +51,10 @@ QM_PID=$(get_pid_with_retries "qm")
 # Retrieve the PID of the inner container (ffi-qm) directly within the qm container
 QM_FFI_PID=$(podman exec -it qm /bin/bash -c "podman inspect ffi-qm --format '{{.State.Pid}}'" | tr -d '\r')
 
+# Debugging: Output the retrieved PIDs
+echo "Retrieved QM_PID: $QM_PID"
+echo "Retrieved QM_FFI_PID: $QM_FFI_PID"
+
 # Ensure that PIDs are valid before proceeding
 if [[ -z "$QM_PID" || ! "$QM_PID" =~ ^[0-9]+$ ]]; then
     echo "Error: Invalid QM_PID: $QM_PID" >&2
@@ -59,12 +63,17 @@ fi
 
 if [[ -z "$QM_FFI_PID" || ! "$QM_FFI_PID" =~ ^[0-9]+$ ]]; then
     echo "Error: Invalid QM_FFI_PID: $QM_FFI_PID" >&2
+    echo "Check if the ffi-qm container was successfully started."
     exit 1
 fi
 
 # Get the oom_score_adj values and strip any trailing newlines or carriage returns
 QM_OOM_SCORE_ADJ=$(tr -d '\r' < "/proc/$QM_PID/oom_score_adj")
 QM_FFI_OOM_SCORE_ADJ=$(podman exec -it qm /bin/bash -c "tr -d '\r' < /proc/$QM_FFI_PID/oom_score_adj")
+
+# Debugging: Output the retrieved oom_score_adj values
+echo "Retrieved QM_OOM_SCORE_ADJ: $QM_OOM_SCORE_ADJ"
+echo "Retrieved QM_FFI_OOM_SCORE_ADJ: $QM_FFI_OOM_SCORE_ADJ"
 
 # Define the expected oom_score_adj values
 OOM_SCORE_ADJ_EXPECTED=500
