@@ -359,11 +359,16 @@ template(`qm_domain_template',`
 	files_pid_filetrans($1_container_kvm_t, $1_container_kvm_var_run_t, { dir file lnk_file sock_file })
 	allow $1_container_kvm_t $1_container_kvm_var_run_t:{file dir} mounton;
 
+	manage_files_pattern($1_container_kvm_t, $1_file_t, $1_file_t)
+	manage_sock_files_pattern($1_container_kvm_t, $1_file_t, $1_file_t)
+
+	allow $1_container_kvm_t $1_container_wayland_t:unix_stream_socket rw_stream_socket_perms;
 	allow $1_container_kvm_t $1_t:unix_stream_socket rw_stream_socket_perms;
 	container_stream_connect($1_container_kvm_t)
 
 	allow $1_container_kvm_t $1_t:tun_socket attach_queue;
 
+	dev_read_sysfs($1_container_kvm_t)
 	dev_rw_inherited_vhost($1_container_kvm_t)
 	dev_rw_vfio_dev($1_container_kvm_t)
 
