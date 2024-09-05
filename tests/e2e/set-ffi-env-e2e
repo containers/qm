@@ -261,22 +261,20 @@ fi
 echo
 info_message "Checking if QM already installed"
 info_message "=============================="
-QM_STATUS="$(systemctl is-enabled qm 2>&1)"
-if [ "$QM_STATUS" == "generated" ]; then
-   if [ "$(systemctl is-active qm)" == "active" ]; then
-       # Restart QM after mount /var on separate partition
-       if grep -qi "${QC_SOC}" "${SOC_DISTRO_FILE}"; then
-          systemctl restart qm
-       fi
-       info_message "QM Enabled and Active"
-       info_message "=============================="
-       exit 0
-   fi
-   if test -d /var/qm -a -d /etc/qm ; then
-      info_message "QM Enabled and not Active"
-      info_message "=============================="
-      exit 1
-   fi
+if rpm -q qm &>/dev/null; then
+	QM_STATUS="$(systemctl is-enabled qm 2>&1)"
+	if [ "$QM_STATUS" == "generated" ]; then
+		if [ "$(systemctl is-active qm)" == "active" ]; then
+			info_message "QM Enabled and Active"
+			info_message "=============================="
+			exit 0
+   		fi
+		if test -d /var/qm -a -d /etc/qm ; then
+			info_message "QM Enabled and not Active"
+			info_message "=============================="
+			exit 1
+   		fi
+	fi
 fi
 
 info_message "Cleaning any previous e2e files"
