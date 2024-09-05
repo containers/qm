@@ -56,7 +56,7 @@ select_disk_to_partition(){
         fi
       fi
   done
-  partprobe
+  parted /dev/${DISK} rescan
 }
 
 create_qm_var_part() {
