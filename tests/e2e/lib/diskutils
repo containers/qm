@@ -15,48 +15,108 @@
 # You should have received a copy of the GNU General Public License
 # along with this program; If not, see <http://www.gnu.org/licenses/>.
 
-select_disk_to_partition(){
+select_disk_to_partition() {
   ###########################################################################
   # Description:                                                            #
-  # Select free partition with size in "G"                                  #
+  # Select a free partition with size in "G" and update the system           #
   #                                                                         #
-  # Arguments: should be be exported by calling script                      #
-  #   DEVICE,  set free /dev/ device                                        #
-  #   PART_ID, set device partition                                         #
+  # Arguments: Should be exported by calling script                         #
+  #   DEVICE:  Set free /dev/ device                                        #
+  #   PART_ID: Set device partition                                         #
   ###########################################################################
 
+  # Fetch the disk table, listing devices and partitions
   local disk_table
   disk_table=$(lsblk --noheadings --raw)
+
+  # Extract all disk names from the disk table
   local disks_arr
   disks_arr=$(echo "$disk_table" | awk '$1~// && $6=="disk" {print $1}')
+
+  # Log found disks for reference
   info_message "select_disk_to_partition, found ${disks_arr}"
   info_message "=============================="
 
+  # Iterate over the array of disks to find a suitable partition
   for disk in $disks_arr; do
-     if [[ ${disk} == "vda" || \
-           $(echo "${disk_table}" | grep -c "${disk}" ) -eq 1 && ${disk} != "zram0" ]];then
-         new_part="$( (echo n; echo p; echo ; echo ; echo ; echo w) | fdisk "/dev/${disk}")"
-         part_id="$(echo "${new_part}" | grep -Po "new partition \K([0-9])")"
-         DISK="${disk}"
-         if [[ $(echo "${DISK}" | grep -c nvme) -eq 1 ]]; then
-           PART_ID="p${part_id}"
-           info_message "select_disk_to_partition, found /dev/${DISK}${PART_ID}"
-           info_message "=============================="
-           break;
-         fi
+    # Check if the disk is "vda" or a valid disk (not zram0), and whether it exists in disk_table
+    if [[ ${disk} == "vda" || \
+      $(echo "${disk_table}" | grep -c "${disk}") -eq 1 && ${disk} != "zram0" ]]; then
+
+      # Check if any partitions of the disk are currently mounted
+      #mountpoints=$(grep "/dev/${disk}" /proc/mounts | awk '{print $2}')
+
+      # Debugging statement to print mountpoints status
+      #echo "Mountpoints for /dev/${disk}: ${mountpoints}"
+
+      # If any partitions are mounted, unmount them to avoid disk busy errors
+      #echo "Unmounting partitions on /dev/${disk}..."
+      #umount "/dev/${disk}"* || {
+      #  echo "Failed to unmount /dev/${disk}, skipping."
+      #    continue  # Skip to the next disk if unmount fails
+      #}
+
+      # Sync the system to flush any cached I/O operations to the disk
+      # This ensures that all file system operations are complete before modifying partitions
+      echo "Calling sync before partitioning /dev/${disk}..."
+      sync
+
+      # Proceed with partitioning using fdisk
+      # fdisk is used here in non-interactive mode to create a new primary partition
+      echo "Creating new partition on /dev/${disk}..."
+      new_part="$( (echo n; echo p; echo ; echo ; echo ; echo w) | fdisk "/dev/${disk}")" || {
+        echo "Failed to create partition on /dev/${disk}, skipping."
+        continue
+      }
+
+      # Extract the partition number from the fdisk output
+      part_id="$(echo "${new_part}" | grep -Po "new partition \K([0-9])")"
+      DISK="${disk}"
+
+      # Check if the disk is an NVMe device (which has partition naming like /dev/nvme0n1p1)
+      # Append the partition ID correctly for NVMe disks
+      if [[ $(echo "${DISK}" | grep -c nvme) -eq 1 ]]; then
+        PART_ID="p${part_id}"
+        info_message "select_disk_to_partition, found /dev/${DISK}${PART_ID}"
+        info_message "=============================="
+        break  # Stop further processing as we have found and partitioned the desired disk
+      else
+        PART_ID="${part_id}"
+        info_message "select_disk_to_partition, found /dev/${DISK}${PART_ID}"
+        info_message "=============================="
+        break  # Stop further processing after partitioning
       fi
-      if [ -e "${SOC_DISTRO_FILE}" ]; then
-        if grep -qi "${QC_SOC}" "${SOC_DISTRO_FILE}"; then
-           if [[ "${disk}" == "${QC_SOC_DISK}" ]]; then
-             DISK=${disk}
-             part=$(echo "${disk_table}" | grep "G" | grep "${QC_SOC_DISK}[0-9]." | grep -v "/" | cut -d" " -f1 )
-             PART_ID=${part:3}
-             break;
-           fi
+    fi
+
+    # Additional logic for SOC-specific disk selection (if necessary)
+    if [ -e "${SOC_DISTRO_FILE}" ]; then
+      if grep -qi "${QC_SOC}" "${SOC_DISTRO_FILE}"; then
+        if [[ "${disk}" == "${QC_SOC_DISK}" ]]; then
+          DISK=${disk}
+
+          # Get the partition ID for the SOC-specific disk (partition in GB)
+          part=$(echo "${disk_table}" | grep "G" | grep "${QC_SOC_DISK}[0-9]." | grep -v "/" | cut -d" " -f1)
+          PART_ID="${part:3}"  # Extract partition ID from the result
+          break  # Stop further processing after selecting the SOC-specific disk
         fi
       fi
+    fi
   done
-  parted /dev/${DISK} rescan
+
+  # Once a disk is found and partitioned, we need to notify the kernel about the changes
+  if [[ -n "${DISK}" ]]; then
+    echo "Rescanning partition table on /dev/${DISK}..."
+
+    # Run partprobe to inform the kernel about partition changes
+    # This avoids the need for a reboot, ensuring that partition changes are recognized immediately
+    partprobe /dev/${DISK} || {
+      echo "Warning: Failed to inform the kernel about partition changes on /dev/${DISK}"
+    }
+
+    echo "Partitioning and kernel update completed for /dev/${DISK}${PART_ID}"
+  else
+    echo "No suitable disk found for partitioning."
+  fi
 }
 
 create_qm_var_part() {
