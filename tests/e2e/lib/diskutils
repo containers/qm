@@ -109,7 +109,7 @@ select_disk_to_partition() {
 
     # Run partprobe to inform the kernel about partition changes
     # This avoids the need for a reboot, ensuring that partition changes are recognized immediately
-    partprobe /dev/${DISK} || {
+    partprobe || {
       echo "Warning: Failed to inform the kernel about partition changes on /dev/${DISK}"
     }
 
