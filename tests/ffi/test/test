@@ -1,0 +1,13 @@
+#!/bin/bash
+
+# test script prints user input
+input="Hello World!"
+output=$(echo "$input" | bash tests/ffi/test/test)
+if [[ $output == *"You entered: $input"* ]]; then
+    echo "Test passed!"
+else
+    echo "Test failed!"
+fi
+
+#werwer
+#sfddsfdgf
