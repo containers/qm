@@ -165,7 +165,7 @@ create_qm_var_part() {
   select_disk_to_partition
 
   local slash_var
-  slash_var="/var"
+  slash_var="/var/qm"
 
   # Check is SoC aboot exist, else regular image
   if [ -e "${SOC_DISTRO_FILE}" ]; then
@@ -186,21 +186,29 @@ create_qm_var_part() {
 
   mkdir -p /new_var
   mount "/dev/${DISK}${PART_ID}" /new_var
-  rsync -aqxXP /var/* /new_var
-  if_error_exit "Error: rsync failed"
-  systemctl stop var-lib-nfs-rpc_pipefs.mount
-  systemctl stop qm
-  systemctl stop podman
-  umount /new_var
-  remove_unmounted_subdirs "/var"
+  # Test if ${slash_var} exist
+  if test -d  ${slash_var}; then
+    rsync -aqxXP ${slash_var}/* /new_var
+    #if_error_exit "Error: rsync failed"
+    systemctl stop var-lib-nfs-rpc_pipefs.mount
+    systemctl stop qm
+    systemctl stop podman
+    umount /new_var
+    remove_unmounted_subdirs "${slash_var}"
+  else
+    mkdir -p "${slash_var}"
+  fi
   info_message "Create_qm_disks, prepare and mount ${slash_var}"
   info_message "=============================="
   mount "/dev/${DISK}${PART_ID}" "${slash_var}"
-  if_error_exit "Error: mount /dev/${DISK}${PART_ID} on ${slash_var} failed"
-  systemctl start var-lib-nfs-rpc_pipefs.mount
-  if_error_exit "Error: service var-lib-nfs-rpc_pipefs.mount start failed"
-  systemctl start qm
-  systemctl status qm -l
+  if [ -n "$(ls -A ${slash_var})" ]; then
+    #if_error_exit "Error: mount /dev/${DISK}${PART_ID} on ${slash_var} failed"
+    systemctl start var-lib-nfs-rpc_pipefs.mount
+    systemctl status var-lib-nfs-rpc_pipefs.mount -l
+    systemctl start qm
+    systemctl status qm
+    journalctl -xeu qm.service --no-pager
+  fi
 }
 
 
