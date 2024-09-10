@@ -1,0 +1,13 @@
+#!/bin/bash
+
+echo "Please enter some text:"
+read input
+echo "You entered: $input"
+     
+     The  test  script is a simple bash script that reads a line of text from the user and then prints it back. 
+     The  test  script is located in the  tests/ffi/test  directory. 
+     To run the  test  script, you can use the following command: 
+     bash tests/ffi/test/test
+     
+     The output will be: 
+     Please enter some text:
