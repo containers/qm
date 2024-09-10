@@ -1,0 +1,2 @@
+echo "This is the desired message"
+exit 0
