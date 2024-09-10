@@ -106,7 +106,9 @@ select_disk_to_partition() {
   # Once a disk is found and partitioned, we need to notify the kernel about the changes
   if [[ -n "${DISK}" ]]; then
     echo "Rescanning partition table on /dev/${DISK}..."
-
+    if ! rpm -qf qm &>/dev/null; then
+       dnf install -y parted
+    fi
     # Run partprobe to inform the kernel about partition changes
     # This avoids the need for a reboot, ensuring that partition changes are recognized immediately
     partprobe || {
@@ -156,6 +158,7 @@ create_qm_var_part() {
   rsync -aqxXP /var/* /new_var
   if_error_exit "Error: rsync failed"
   systemctl stop var-lib-nfs-rpc_pipefs.mount
+  systemctl stop qm
   umount /new_var
   rm -rf "${slash_var:?}"/*
   info_message "Create_qm_disks, prepare and mount ${slash_var}"
@@ -164,6 +167,8 @@ create_qm_var_part() {
   if_error_exit "Error: mount /dev/${DISK}${PART_ID} on ${slash_var} failed"
   systemctl start var-lib-nfs-rpc_pipefs.mount
   if_error_exit "Error: service var-lib-nfs-rpc_pipefs.mount start failed"
+  systemctl start qm
+  if_error_exit "Error: service qm start failed"
 }
 
 
