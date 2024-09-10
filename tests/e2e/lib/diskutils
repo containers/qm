@@ -121,6 +121,37 @@ select_disk_to_partition() {
   fi
 }
 
+remove_unmounted_subdirs() {
+  ###########################################################################
+  # Description:                                                            #
+  #  Removes only the subdirectories of the provided directory that are not #
+  #  mounted.                                                               #
+  #                                                                         #
+  # Arguments:                                                              #
+  #  $1: The directory whose subdirectories should be checked and removed   #
+  #                                                                         #
+  ###########################################################################
+
+  local parent_dir="$1"
+
+  # Ensure that the directory exists
+  if [[ ! -d "${parent_dir}" ]]; then
+    echo "Directory ${parent_dir} does not exist."
+    return 1
+  fi
+
+  # Loop over all subdirectories in the given directory
+  for dir in "${parent_dir}"/*; do
+    # Check if the subdirectory is mounted
+    if findmnt -r "$dir" > /dev/null; then
+      echo "Skipping $dir because it is mounted."
+    else
+      echo "Removing $dir because it is not mounted."
+      rm -rf "$dir" || echo "Failed to remove $dir"
+    fi
+  done
+}
+
 create_qm_var_part() {
   ###########################################################################
   # Description:                                                            #
@@ -159,8 +190,9 @@ create_qm_var_part() {
   if_error_exit "Error: rsync failed"
   systemctl stop var-lib-nfs-rpc_pipefs.mount
   systemctl stop qm
+  sysetmctl stop podman
   umount /new_var
-  rm -rf "${slash_var:?}"/*
+  remove_unmounted_subdirs "/var"
   info_message "Create_qm_disks, prepare and mount ${slash_var}"
   info_message "=============================="
   mount "/dev/${DISK}${PART_ID}" "${slash_var}"
