@@ -116,6 +116,7 @@ jobs:
       - fedora-39
       - fedora-38
       - epel-9
+      - epel-10
 
   - job: koji_build
     trigger: commit
@@ -125,6 +126,7 @@ jobs:
       - fedora-39
       - fedora-38
       - epel-9
+      - epel-10
 
   - job: bodhi_update
     trigger: commit
@@ -134,3 +136,4 @@ jobs:
       - fedora-39
       - fedora-38
       - epel-9
+      - epel-10
