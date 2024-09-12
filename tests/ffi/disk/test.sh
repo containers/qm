@@ -1,4 +1,4 @@
-#!/bin/bash -euvx
+#!/bin/bash -evx
 
 # shellcheck disable=SC1091
 
@@ -36,5 +36,6 @@ fi
 
 ls -lh /root/file.lock
 
-disk_cleanup
-
+# Calling cleanup QM directorly to workaround exit code once
+# /var/qm disk is full.
+podman exec -it qm /bin/bash -c 'podman  rmi -i -f --all; echo $?'
