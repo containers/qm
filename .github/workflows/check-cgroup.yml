@@ -15,3 +15,4 @@ jobs:
           grep cgroup /proc/filesystems
           mount | grep cgroup
           cat /proc/cgroups
+          cat /sys/fs/cgroup/cgroup.controllers
