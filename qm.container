@@ -8,7 +8,22 @@ CPUWeight=50
 Delegate=true
 IOWeight=50
 ManagedOOMSwap=kill
+
+# MemoryMax
+# -----------
+# Default is infinity - sets no upper bound on memory usage, allowing the
+# service to consume as much memory as the system allows, just like
+# MemoryMax=0 or omitting it.
+MemoryMax=infinity
+
+# MemoryHigh
+# -----------
+# Default is infinity - Disables the soft memory limit, meaning no throttling
+# will occur due to high memory usage, similar to MemoryHigh=0 or
+# omitting it.
+MemoryHigh=infinity
 MemorySwapMax=0
+
 # Containers within the qm contain default set OOMScoreAdj to 750
 OOMScoreAdjust=500
 Restart=always
