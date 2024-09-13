@@ -4,6 +4,12 @@
 . ../../../e2e/lib/utils
 
 check_run_systemd_journal_socket_inode_number(){
+
+    if [ ! -e /run/systemd/journal/socket ]; then
+        info_message "FAIL: Path /run/systemd/journal/socket does not exist. Exiting."
+        exit 1
+    fi
+
     # Get inode number of /run/systemd/journal/socket inside and outside of the QM partition.
     inode_number_in_host=$(stat --printf='%i' /run/systemd/journal/socket)
     inode_number_in_qm=$(podman exec qm stat --printf='%i' /run/systemd/journal/socket)
