@@ -37,6 +37,29 @@ reload_config() {
 }
 
 prepare_images() {
+   # Update container image_copy_tmp_dir if the image is an OStree.
+   # Default location for storing temporary container image content. Can be overridden with the TMPDIR environment
+   # variable. If you specify "storage", then the location of the
+   # container/storage tmp directory will be used.
+   # By default image_copy_tmp_dir="/var/tmp"
+   if [ -d /run/ostree ]; then
+   export QM_HOST_REGISTRY_DIR="/var/qm/tmp.dir"
+   export QM_REGISTRY_DIR="/var/tmp.dir"
+
+   ROOTFS=$(exec_command "/usr/share/qm/qm-rootfs")
+
+   #Change TMPDIR environment variable in QM to /var/tmp.dir
+      if test -f "${ROOTFS}/etc/containers/containers.conf"; then
+         if ! grep -q "TMPDIR=/var/tmp.dir" "${ROOTFS}/etc/containers/containers.conf"; then
+               mkdir -p "${ROOTFS}/var/tmp.dir"
+               cat >> "${ROOTFS}/etc/containers/containers.conf" <<EOF
+[engine]
+env = ["TMPDIR=${QM_REGISTRY_DIR}"]
+EOF
+         fi
+      fi
+   fi
+
    exec_cmd "podman pull quay.io/centos-sig-automotive/ffi-tools:latest"
    # Copy container image registry to /var/qm/lib/containers
    image_id=$(podman images | grep quay.io/centos-sig-automotive/ffi-tools | awk -F " " '{print $3}')
