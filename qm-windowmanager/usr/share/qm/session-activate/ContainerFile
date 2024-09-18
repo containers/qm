@@ -1,0 +1,5 @@
+# Documentation and example provided for users who wish to containerize the activate_session process.
+FROM fedora:40
+RUN dnf -y install systemd jq \
+    && dnf clean all && rm -rf /var/cache/dnf
+COPY qm_windowmanager_activate_sessione /usr/share/qm/qm_windowmanager_activate_session

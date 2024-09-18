@@ -76,6 +76,12 @@ qm_dropin_img_tempdir: ## - Creates a QM RPM sub-package qm_dropin_img_tempdir
 	sed -i 's/^Version:.*/Version: ${VERSION}/' ${SPECFILE}
 	make VERSION=${VERSION} rpm
 
+.PHONY: qm_dropin_window_manager
+qm_dropin_window_manager: ## - Creates a QM RPM sub-package qm_dropin_window_manager
+	sed -i 's/%define enable_qm_window_manager 0/%define enable_qm_window_manager 1/' ${SPECFILE}
+	sed -i 's/^Version:.*/Version: ${VERSION}/' ${SPECFILE}
+	make VERSION=${VERSION} rpm
+
 
 install-policy: all ##  - Install selinux policies only
 	semodule -i ${TARGETS}.pp.bz2

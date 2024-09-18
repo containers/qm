@@ -1,0 +1,19 @@
+[Unit]
+After=mutter.service
+Description=weston_terminal container
+Requires=mutter.service
+
+[Container]
+ContainerName=weston_terminal
+Environment=XDG_RUNTIME_DIR=/run/user/0
+Environment=WAYLAND_DISPLAY=wayland-0
+Exec=/usr/bin/weston-terminal
+Image=localhost/weston_terminal:latest
+SecurityLabelType=qm_container_wayland_t
+Volume=/run/user/0:/run/user/0
+
+[Install]
+WantedBy=multi-user.target
+
+[Service]
+Restart=always

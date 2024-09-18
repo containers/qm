@@ -1,0 +1,16 @@
+[Unit]
+Description=Session Activate Service
+After=network.target dbus.service
+
+[Service]
+ExecStart=/qm_windowmanager/session-activate/qm_windowmanager_activate_session
+Environment=XDG_RUNTIME_DIR=/run/user/0
+Environment=DBUS_SESSION_BUS_ADDRESS=unix:path=/run/dbus/system_bus_socket
+Restart=always
+SecurityLabelType=qm_container_wayland_t
+BindReadOnlyPaths=/run/systemd:/run/systemd
+BindPaths=/run/dbus/system_bus_socket:/run/dbus/system_bus_socket
+BindPaths=/run/user/0:/run/user/0
+
+[Install]
+WantedBy=multi-user.target

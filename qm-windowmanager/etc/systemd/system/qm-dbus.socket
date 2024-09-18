@@ -1,0 +1,9 @@
+[Unit]
+Description=QM D-Bus User Message Bus Socket
+After=dbus.socket
+
+[Socket]
+ListenStream=%t/dbus/qm_bus_socket
+
+[Install]
+WantedBy=sockets.target
