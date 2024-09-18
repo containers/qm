@@ -52,6 +52,10 @@ get_oom_score_adj() {
     fi
 }
 
+# debug stuff
+podman exec -it qm /bin/bash -c \
+    "grep . /proc/1/cgroup /proc/self/cgroup /sys/fs/cgroup/cgroup.*"
+
 # Start the FFI container inside qm
 podman exec -it qm /bin/bash -c \
     "podman run -d --replace --name ffi-qm dir:${QM_REGISTRY_DIR}/tools-ffi:latest /usr/bin/sleep infinity > /dev/null"
