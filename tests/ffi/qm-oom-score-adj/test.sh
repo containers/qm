@@ -17,8 +17,9 @@
 . ../common/prepare.sh
 
 disk_cleanup
-prepare_images
+prepare_test
 reload_config
+prepare_images
 
 # Function to retrieve the PID with retries for a container
 get_pid_with_retries() {
