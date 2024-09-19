@@ -363,7 +363,7 @@ template(`qm_domain_template',`
 	manage_sock_files_pattern($1_container_kvm_t, $1_file_t, $1_file_t)
 
 	allow $1_container_kvm_t $1_container_wayland_t:unix_stream_socket rw_stream_socket_perms;
-	allow $1_container_kvm_t $1_t:unix_stream_socket rw_stream_socket_perms;
+	allow $1_container_kvm_t $1_t:unix_stream_socket { connectto rw_stream_socket_perms };
 	container_stream_connect($1_container_kvm_t)
 
 	allow $1_container_kvm_t $1_t:tun_socket attach_queue;
