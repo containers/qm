@@ -43,21 +43,10 @@ prepare_images() {
    # container/storage tmp directory will be used.
    # By default image_copy_tmp_dir="/var/tmp"
    if [ -d /run/ostree ]; then
-   export QM_HOST_REGISTRY_DIR="/var/qm/tmp.dir"
-   export QM_REGISTRY_DIR="/var/tmp.dir"
-
-   ROOTFS=$(exec_command "/usr/share/qm/qm-rootfs")
-
-   #Change TMPDIR environment variable in QM to /var/tmp.dir
-      if test -f "${ROOTFS}/etc/containers/containers.conf"; then
-         if ! grep -q "TMPDIR=/var/tmp.dir" "${ROOTFS}/etc/containers/containers.conf"; then
-               mkdir -p "${ROOTFS}/var/tmp.dir"
-               cat >> "${ROOTFS}/etc/containers/containers.conf" <<EOF
-[engine]
-env = ["TMPDIR=${QM_REGISTRY_DIR}"]
+      exec_cmd "mkdir -p /var/qm/tmp.dir"
+      cat >> "/etc/containers/containers.conf" <<EOF
+image_copy_tmp_dir="/var/qm/tmp.dir"
 EOF
-         fi
-      fi
    fi
 
    exec_cmd "podman pull quay.io/centos-sig-automotive/ffi-tools:latest"
