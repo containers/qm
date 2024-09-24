@@ -50,8 +50,8 @@ prepare_images() {
    # This is a work around and it should not be used constantly.
    if [ -d /run/ostree ]; then
       exec_cmd "mkdir -p /var/qm/tmp.dir"
-      exec_cmd "mkdir -p /etc/containers/containers.conf.d"
-      exec_cmd "echo -e '[engine]\nimage_copy_tmp_dir=\"/var/qm/tmp.dir\"' > /etc/containers/containers.conf.d/qm_image_tmp_dir.conf"
+      exec_cmd "mkdir -p /etc/qm/containers/containers.conf.d"
+      exec_cmd "echo -e '[engine]\nimage_copy_tmp_dir=\"/var/tmp.dir\"' > /etc/qm/containers/containers.conf.d/qm_image_tmp_dir.conf"
    fi
 
    exec_cmd "podman pull quay.io/centos-sig-automotive/ffi-tools:latest"
