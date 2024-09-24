@@ -6,6 +6,11 @@ DROP_IN_DIR="/etc/containers/systemd/qm.container.d/"
 export QM_HOST_REGISTRY_DIR="/var/qm/lib/containers/registry"
 export QM_REGISTRY_DIR="/var/lib/containers/registry"
 
+exec_cmd() {
+    echo "Executing: $1"
+    eval "$1"
+}
+
 prepare_test() {
    # Search variables for update file in qm.container
    # qm_service_file=$(systemctl show -P  SourcePath qm)
@@ -46,7 +51,7 @@ prepare_images() {
    if [ -d /run/ostree ]; then
       exec_cmd "mkdir -p /var/qm/tmp.dir"
       exec_cmd "mkdir -p /etc/containers/containers.conf.d"
-      exec_cmd "echo 'image_copy_tmp_dir=\"/var/qm/tmp.dir\"' > /etc/containers/containers.conf.d/qm_image_tmp_dir.conf"
+      exec_cmd "echo -e '[engine]\nimage_copy_tmp_dir=\"/var/qm/tmp.dir\"' > /etc/containers/containers.conf.d/qm_image_tmp_dir.conf"
    fi
 
    exec_cmd "podman pull quay.io/centos-sig-automotive/ffi-tools:latest"
