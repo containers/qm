@@ -42,6 +42,7 @@ prepare_images() {
    # variable. If you specify "storage", then the location of the
    # container/storage tmp directory will be used.
    # By default image_copy_tmp_dir="/var/tmp"
+   # This is work around and it should not be used constantly.
    if [ -d /run/ostree ]; then
       exec_cmd "mkdir -p /var/qm/tmp.dir"
       exec_cmd "mkdir -p /etc/containers/containers.conf.d"
