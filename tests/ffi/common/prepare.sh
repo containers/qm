@@ -6,11 +6,6 @@ DROP_IN_DIR="/etc/containers/systemd/qm.container.d/"
 export QM_HOST_REGISTRY_DIR="/var/qm/lib/containers/registry"
 export QM_REGISTRY_DIR="/var/lib/containers/registry"
 
-exec_cmd() {
-    echo "Executing: $1"
-    eval "$1"
-}
-
 prepare_test() {
    # Search variables for update file in qm.container
    # qm_service_file=$(systemctl show -P  SourcePath qm)
