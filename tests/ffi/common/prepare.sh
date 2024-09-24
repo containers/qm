@@ -44,9 +44,8 @@ prepare_images() {
    # By default image_copy_tmp_dir="/var/tmp"
    if [ -d /run/ostree ]; then
       exec_cmd "mkdir -p /var/qm/tmp.dir"
-      cat >> "/etc/containers/containers.conf" <<EOF
-image_copy_tmp_dir="/var/qm/tmp.dir"
-EOF
+      exec_cmd "mkdir -p /etc/containers/containers.conf.d"
+      exec_cmd "echo 'image_copy_tmp_dir=\"/var/qm/tmp.dir\"' > /etc/containers/containers.conf.d/qm_image_tmp_dir.conf"
    fi
 
    exec_cmd "podman pull quay.io/centos-sig-automotive/ffi-tools:latest"
