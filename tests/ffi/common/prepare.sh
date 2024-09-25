@@ -39,7 +39,7 @@ reload_config() {
 prepare_images() {
    # Update container image_copy_tmp_dir if the image is an OStree.
    # Default location for storing temporary container image content. Can be overridden with the TMPDIR environment
-   # variable. If you specify "storage", then the location of the
+   # variable If you specify "storage", then the location of the
    # container/storage tmp directory will be used
    # By default image_copy_tmp_dir="/var/tmp"
    # This is a work around and it should not be used constantly
