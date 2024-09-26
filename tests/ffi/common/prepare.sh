@@ -3,8 +3,30 @@
 . ../../e2e/lib/utils
 
 DROP_IN_DIR="/etc/containers/systemd/qm.container.d/"
+OSTREE_PATH="/run/ostree"
 export QM_HOST_REGISTRY_DIR="/var/qm/lib/containers/registry"
 export QM_REGISTRY_DIR="/var/lib/containers/registry"
+export QM_TMP_DIR="/var/tmp.dir"
+export CONTAINERS_CONF_DIR="/etc/qm/containers/containers.conf.d"
+export QM_IMAGE_TMP_DIR_CONF="qm_image_tmp_dir.conf"
+
+# Checks if the system is running under OSTree.
+# This function determines if the system is using OSTree by checking for the
+# existence of the directory specified by the OSTREE_PATH environment variable.
+# Returns:
+# 0 (success) if the OSTREE_PATH directory exists, indicating the system is
+# running under OSTree.
+# 1 (failure) if the OSTREE_PATH directory does not exist, indicating the
+# system is not running under OSTree.
+is_ostree() {
+    if [ -d "${OSTREE_PATH}" ]; then
+        echo "The system is running under OSTree."
+        return 0
+    else
+        echo "The system is not running under OSTree."
+        return 1
+    fi
+}
 
 prepare_test() {
    # Search variables for update file in qm.container
@@ -37,6 +59,25 @@ reload_config() {
 }
 
 prepare_images() {
+   # Update container image_copy_tmp_dir if the image is an OStree.
+   # Default location for storing temporary container image content. Can be overridden with the TMPDIR environment
+   # variable. If you specify "storage", then the location of the
+   # container/storage tmp directory will be used.
+   # By default image_copy_tmp_dir="/var/tmp"
+   # This is a work around and it should not be used constantly
+   # This script checks if the directory /run/ostree exists.
+   # If it does, it executes the following commands:
+   # 1. Creates the directory /var/qm/tmp.dir if it does not already exist.
+   # 2. Creates the directory /etc/qm/containers/containers.conf.d if it does not already exist.
+   # 3. Writes a configuration file qm_image_tmp_dir.conf in /etc/qm/containers/containers.conf.d
+   #    with the content specifying the temporary directory for image copying as /var/tmp.dir.
+
+   if is_ostree; then
+      exec_cmd "mkdir -p /var/qm/tmp.dir"
+      exec_cmd "mkdir -p ${CONTAINERS_CONF_DIR}"
+      exec_cmd "echo -e '[engine]\nimage_copy_tmp_dir=\"${QM_TMP_DIR}\"' > ${CONTAINERS_CONF_DIR}/${QM_IMAGE_TMP_DIR_CONF}"
+   fi
+
    exec_cmd "podman pull quay.io/centos-sig-automotive/ffi-tools:latest"
    # Copy container image registry to /var/qm/lib/containers
    image_id=$(podman images | grep quay.io/centos-sig-automotive/ffi-tools | awk -F " " '{print $3}')
