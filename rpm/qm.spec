@@ -1,5 +1,9 @@
 %global debug_package %{nil}
 
+# Define the feature flag: 1 to enable, 0 to disable
+# By default it's disabled: 0
+%define enable_qm_dropin_img_tempdir 0
+
 # Some bits borrowed from the openstack-selinux package
 %global selinuxtype targeted
 %global moduletype services
@@ -21,8 +25,6 @@
 %else
 %bcond_without copr
 %endif
-
-
 
 %if 0%{?fedora}
 %global podman_epoch 5
@@ -91,6 +93,14 @@ sed -i 's/^install: man all/install:/' Makefile
 %{__make} all
 
 %install
+# Create the directory for drop-in configurations
+install -d %{buildroot}%{_sysconfdir}/qm/containers/containers.conf.d
+
+%if %{enable_qm_dropin_img_tempdir}
+    install -m 644 %{_builddir}/qm-%{version}/etc/qm/containers/containers.conf.d/qm_dropin_img_tempdir.conf \
+        %{buildroot}%{_sysconfdir}/qm/containers/containers.conf.d/qm_dropin_img_tempdir.conf
+%endif
+
 # install policy modules
 %_format MODULES $x.pp.bz2
 %{__make} DESTDIR=%{buildroot} DATADIR=%{_datadir} install
@@ -127,6 +137,7 @@ fi
 %license LICENSE
 %doc CODE-OF-CONDUCT.md NOTICE README.md SECURITY.md
 %dir %{_datadir}/selinux
+%dir %{_sysconfdir}/qm/containers/containers.conf.d
 %{_datadir}/selinux/*
 %dir %{_datadir}/qm
 %{_datadir}/qm/containers.conf
@@ -145,6 +156,21 @@ fi
 %ghost %dir %{_installscriptdir}
 %ghost %dir %{_installscriptdir}/rootfs
 %ghost %{_installscriptdir}/rootfs/*
+
+%if %{enable_qm_dropin_img_tempdir}
+%package -n qm-dropin-img-tempdir
+Summary: Drop-in configuration for QM containers
+Requires: %{name} = %{version}-%{release}
+BuildArch: noarch
+
+%description -n qm-dropin-img-tempdir
+This sub-package installs a drop-in configurations for the QM.
+It creates the `/etc/qm/containers/containers.conf.d/` directory for adding
+additional drop-in configurations.
+
+%files -n qm-dropin-img-tempdir
+%{_sysconfdir}/qm/containers/containers.conf.d/qm_dropin_img_tempdir.conf
+%endif
 
 %changelog
 %if %{defined autochangelog}

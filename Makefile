@@ -54,9 +54,21 @@ rpm: clean dist
 	mkdir -p ${RPM_TOPDIR}/{RPMS,SRPMS,BUILD,SOURCES}
 	cp ./rpm/v${VERSION}.tar.gz ${RPM_TOPDIR}/SOURCES
 	rpmbuild -ba \
+		--define="enable_qm_dropin_img_tempdir 0" \
 		--define="_topdir ${RPM_TOPDIR}" \
 		--define="version ${VERSION}" \
 		${SPECFILE}
+
+# ostree target is a helper for everything required for ostree
+.PHONY: ostree
+ostree: qm_dropin_img_tempdir
+
+.PHONY: qm_dropin_img_tempdir
+qm_dropin_img_tempdir:
+	sed -i 's/%define enable_qm_dropin_img_tempdir 0/%define enable_qm_dropin_img_tempdir 1/' ${SPECFILE}
+	sed -i 's/^Version:.*/Version: ${VERSION}/' ${SPECFILE}
+	make VERSION=${VERSION} rpm
+
 
 install-policy: all
 	semodule -i ${TARGETS}.pp.bz2
