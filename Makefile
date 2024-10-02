@@ -10,8 +10,15 @@ SPECFILE=rpm/qm.spec
 RPM_TOPDIR ?= $(PWD)/rpmbuild
 VERSION ?= $(shell cat VERSION)
 
+# Default help target
+.PHONY: help
+help:
+	@echo "Available targets:"
+	@grep -E '^[a-zA-Z_-]+:.*?## .*$$' $(MAKEFILE_LIST) | awk 'BEGIN {FS = ":.*?## "}; {printf "\033[36m%-20s\033[0m %s\n", $$1, $$2}'
+	@grep -E '^##@ .*$$' $(MAKEFILE_LIST) | sed 's/##@/\n\033[1;32m/' | sed 's/$$/\033[0m/'
+
 .PHONY: file_contexts
-file_contexts: qm.fc
+file_contexts: qm.fc ##  - Generates the qm_file_contexts
 	sed \
 	-e "s|${QMDIR}/rootfs||" \
 	 -e "s/gen_context(//g" \
@@ -21,7 +28,7 @@ file_contexts: qm.fc
 all: selinux file_contexts  man
 
 .PHONY: selinux
-selinux: qm.pp
+selinux: qm.pp ##  - Compresses the QM SELinux policy file (qm.pp)
 	@echo Compressing $^ -\> $@
 	bzip2 -f -9 $^
 
@@ -34,23 +41,23 @@ selinux: qm.pp
 	cp tmp/qm.pp .; rm -rf tmp
 
 .PHONY: codespell
-codespell:
+codespell: ##  - Runs codespell to check for spelling errors
 	@codespell -S tmp,.git -L te -w
 
-clean:
+clean: ##  - Removes generated files and dirs
 	rm -f *~  *.tc *.pp *.pp.bz2
 	rm -rf tmp *.tar.gz ${RPM_TOPDIR}
 
-man: qm.8.md
+man: qm.8.md ##  - Generates the QM man page
 	go-md2man --in qm.8.md --out qm.8
 
 .PHONY: dist
-dist:
+dist: ##  - Creates the QM distribution package
 	tar cvz --transform s/qm/qm-${VERSION}/ -f /tmp/v${VERSION}.tar.gz ../qm
 	mv /tmp/v${VERSION}.tar.gz ./rpm
 
 .PHONY: rpm
-rpm: clean dist
+rpm: clean dist ##  - Creates a local RPM package, useful for development
 	mkdir -p ${RPM_TOPDIR}/{RPMS,SRPMS,BUILD,SOURCES}
 	cp ./rpm/v${VERSION}.tar.gz ${RPM_TOPDIR}/SOURCES
 	rpmbuild -ba \
@@ -61,20 +68,20 @@ rpm: clean dist
 
 # ostree target is a helper for everything required for ostree
 .PHONY: ostree
-ostree: qm_dropin_img_tempdir
+ostree: qm_dropin_img_tempdir ##  - A helper for creating QM packages for ostree based distros
 
 .PHONY: qm_dropin_img_tempdir
-qm_dropin_img_tempdir:
+qm_dropin_img_tempdir: ## - Creates a QM RPM sub-package qm_dropin_img_tempdir
 	sed -i 's/%define enable_qm_dropin_img_tempdir 0/%define enable_qm_dropin_img_tempdir 1/' ${SPECFILE}
 	sed -i 's/^Version:.*/Version: ${VERSION}/' ${SPECFILE}
 	make VERSION=${VERSION} rpm
 
 
-install-policy: all
+install-policy: all ##  - Install selinux policies only
 	semodule -i ${TARGETS}.pp.bz2
 	sepolicy manpage --path . --domain ${TARGETS}_t
 
-install: man all
+install: man all ##  - Install QM files (including selinux)
 	install -D -pm 644 ${TARGETS}.pp.bz2 ${DESTDIR}${DATADIR}/selinux/packages/qm.pp.bz2
 	install -D -pm 644 qm.if ${DESTDIR}${DATADIR}/selinux/devel/include/services/qm.if
 	install -D -pm 644 qm_selinux.8 ${DESTDIR}${DATADIR}/man/man8/qm_selinux.8
