@@ -112,9 +112,9 @@ jobs:
     update_release: false
     dist_git_branches:
       - fedora-rawhide
+      - fedora-41
       - fedora-40
       - fedora-39
-      - fedora-38
       - epel-9
       - epel-10
 
@@ -122,9 +122,9 @@ jobs:
     trigger: commit
     dist_git_branches:
       - fedora-rawhide
+      - fedora-41
       - fedora-40
       - fedora-39
-      - fedora-38
       - epel-9
       - epel-10
 
@@ -132,8 +132,8 @@ jobs:
     trigger: commit
     dist_git_branches:
       # rawhide updates are created automatically
+      - fedora-41
       - fedora-40
       - fedora-39
-      - fedora-38
       - epel-9
       - epel-10
