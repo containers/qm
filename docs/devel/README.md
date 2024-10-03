@@ -34,18 +34,14 @@ Set the QM version to a higher number from the current one.
 For example, if today's QM version is 0.6.2, set it to 1.0 so that
 the RPM created is identifiable as yours.
 
-Use the following sed command to change the default Version (0, used for
-automation) to the new version (1.0):
+You can use the `version-update` tool available in the project to perform
+the changes required to update to the new version (1.0):
 
 ```bash
-sed -i 's/Version: 0/Version: 1.0/g' qm.spec
+./tools/version-update -v 1.0
 ```
 
-**3.** Execute the changes
-
-Make necessary changes using your preferred editor (e.g., vi/emacs).
-
-**4.** Build the RPM
+**3.** Build the RPM
 
 ```bash
 make clean && VERSION=1.0 make rpm
