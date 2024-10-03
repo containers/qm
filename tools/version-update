@@ -1,0 +1,66 @@
+#!/usr/bin/env bash
+
+BASEDIR="$(dirname "$(dirname "$(realpath "$0")")")"
+PREV_VERSION=$(cat "${BASEDIR}/VERSION")
+FILES=("qm.te" "VERSION")
+DEBUG=0
+VERSION=
+
+function print_usage {
+    echo "Usage: $0 [OPTIONS]"
+    echo "Options:"
+    echo "  -v,--version [VERSION]   Set the version to the received version number"
+    echo "  -d                       Display debug messages and commands as they are executed"
+    echo "  -h,--help                Show this message and exit"
+    exit 1
+}
+
+options=$(getopt -o v:d --long version: -n "$0" -- "$@") || print_usage
+eval set -- "${options}"
+
+while :; do
+    case "${1}" in
+        -v | --version)
+            VERSION=${2^^}
+            shift
+            ;;
+        -h | --help)
+            print_usage
+            ;;
+        -d)
+            DEBUG=1
+            ;;
+        --)
+            shift
+            break
+            ;;
+    esac
+    shift
+done
+
+if [ -z "${VERSION}" ]; then
+    ## No new version received from command line, take the current and
+    ## increase the minor version.
+    # shellcheck disable=SC2288,SC2004
+    [[ $PREV_VERSION =~ (.*[^0-9])([0-9]+)$ ]] && VERSION="${BASH_REMATCH[1]}$((${BASH_REMATCH[2]} + 1))"
+fi
+
+if [ -z "${VERSION}" ]; then
+    echo "Failed to obtain new version"
+    exit 1
+fi
+
+echo "Updating version from ${PREV_VERSION} to ${VERSION}"
+
+[ $DEBUG == 1 ] && set -x
+
+# If the spec file has already been versioned, update it.
+sed -i "s/Version: ${PREV_VERSION}$/Version: ${VERSION}/g" "${BASEDIR}/rpm/qm.spec"
+# Otherwise, set the new version.
+sed -i "s/Version: 0$/Version: ${VERSION}/g" "${BASEDIR}/rpm/qm.spec"
+# Execute the changes on the rest of the files.
+for file in "${FILES[@]}"; do
+    sed -i "s/${PREV_VERSION}/${VERSION}/g" "${BASEDIR}/${file}"
+done
+
+exit 0
