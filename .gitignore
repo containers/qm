@@ -1,4 +1,5 @@
 /*.tar.gz
+rpmbuild/
 tmp
 qm.pp.bz2
 *~
