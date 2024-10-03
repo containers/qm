@@ -21,6 +21,12 @@
 # it usually runs on this virtual console.
 %define enable_qm_mount_bind_tty7 0
 
+#######################################################################
+# subpackage QM - mount bind audio device from host to container and  #
+# nested container enabling sound                                     #
+#######################################################################
+%define enable_qm_mount_bind_sound 0
+
 # Some bits borrowed from the openstack-selinux package
 %global selinuxtype targeted
 %global moduletype services
@@ -133,6 +139,18 @@ install -d %{buildroot}%{_sysconfdir}/qm/containers/containers.conf.d
 %endif
 # END - qm dropin sub-package - mount bind /dev/tty7
 
+# START - qm dropin sub-package - mount bind /dev/snd
+%if %{enable_qm_mount_bind_sound}
+    # first step - add drop-in file in /etc/containers/containers.d.conf/qm_dropin_mount_bind_snd.conf
+    # to QM container mount bind /dev/snd
+    install -m 644 %{_builddir}/qm-%{version}/etc/qm/containers/containers.conf.d/qm_dropin_mount_bind_snd.conf %{buildroot}%{_sysconfdir}/containers/containers.conf.d/qm_dropin_mount_bind_snd.conf
+
+    # second step - add drop-in file in /etc/qm/containers/containers.d.conf/qm_dropin/mount_bind_snd.conf
+    # to nested containers in QM env mount bind it in /dev/snd
+    install -m 644 %{_builddir}/qm-%{version}/etc/qm/containers/containers.conf.d/qm_dropin_mount_bind_snd.conf %{buildroot}%{_sysconfdir}/qm/containers/containers.conf.d/qm_dropin_mount_bind_snd.conf
+%endif
+# END - qm dropin sub-package - mount bind /dev/snd
+
 # install policy modules
 %_format MODULES $x.pp.bz2
 %{__make} DESTDIR=%{buildroot} DATADIR=%{_datadir} install
@@ -189,7 +207,9 @@ fi
 %ghost %dir %{_installscriptdir}/rootfs
 %ghost %{_installscriptdir}/rootfs/*
 
-# sub-package QM Img TempDir
+#######################################
+# sub-package QM Img TempDir          #
+#######################################
 %if %{enable_qm_dropin_img_tempdir}
 %package -n qm-dropin-img-tempdir
 Summary: Drop-in configuration for QM nested containers to img tempdir
@@ -205,7 +225,9 @@ additional drop-in configurations.
 %{_sysconfdir}/qm/containers/containers.conf.d/qm_dropin_img_tempdir.conf
 %endif
 
-# sub-package QM Mount Bind /dev/tty7
+#######################################
+# sub-package QM Mount Bind /dev/tty7 #
+#######################################
 %if %{enable_qm_mount_bind_tty7}
 %package -n qm_mount_bind_tty7
 Summary: Drop-in configuration for QM containers to mount bind /dev/tty7
@@ -220,6 +242,25 @@ additional drop-in configurations.
 %files -n qm_mount_bind_tty7
 %{_sysconfdir}/containers/containers.conf.d/qm_dropin_mount_bind_tty7.conf
 %{_sysconfdir}/qm/containers/containers.conf.d/qm_dropin_mount_bind_tty7.conf
+%endif
+
+#######################################
+# sub-package QM Mount Bind /dev/snd  #
+#######################################
+%if %{enable_qm_mount_bind_sound}
+%package -n qm_mount_bind_sound
+Summary: Drop-in configuration for QM containers to mount bind /dev/snd
+Requires: %{name} = %{version}-%{release}
+BuildArch: noarch
+
+%description -n qm_mount_bind_sound
+This sub-package installs a drop-in configurations for the QM.
+It creates the `/etc/qm/containers/containers.conf.d/` directory for adding
+additional drop-in configurations.
+
+%files -n qm_mount_bind_sound
+%{_sysconfdir}/containers/containers.conf.d/qm_dropin_mount_bind_snd.conf
+%{_sysconfdir}/qm/containers/containers.conf.d/qm_dropin_mount_bind_snd.conf
 %endif
 
 %changelog
