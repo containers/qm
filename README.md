@@ -135,34 +135,13 @@ qm-0.6.7-1.fc40.noarch.rpm  qm_mount_bind_input-0.6.7-1.fc40.noarch.rpm
 
 ```bash
 $ sudo dnf install ./rpmbuild/RPMS/noarch/qm_mount_bind_input-0.6.7-1.fc40.noarch.rpm
-Last metadata expiration check: 1:06:03 ago on Thu 03 Oct 2024 11:22:52 PM EDT.
-Dependencies resolved.
-=====================================================================================================================================
- Package                               Architecture             Version                         Repository                      Size
-=====================================================================================================================================
-Installing:
- qm_mount_bind_input                   noarch                   0.6.7-1.fc40                    @commandline                   7.9 k
-
-Transaction Summary
-=====================================================================================================================================
-Install  1 Package
-
-Total size: 7.9 k
-Installed size: 3.1 k
-Is this ok [y/N]: y
-Downloading Packages:
-Running transaction check
-Transaction check succeeded.
-Running transaction test
-Transaction test succeeded.
-Running transaction
-  Preparing        :                                                                                                             1/1
-  Installing       : qm_mount_bind_input-0.6.7-1.fc40.noarch                                                                     1/1
-
-Installed:
-  qm_mount_bind_input-0.6.7-1.fc40.noarch
-
+<SNIP>
 Complete!
+```
+If QM is already running, restart or reload your QM container environment to apply the new configurations.
+
+```bash
+$ sudo podman restart qm
 ```
 
 ## Removing QM sub-packages
