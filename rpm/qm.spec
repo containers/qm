@@ -21,6 +21,11 @@
 # it usually runs on this virtual console.
 %define enable_qm_mount_bind_tty7 0
 
+###########################################
+# subpackage QM - input devices           #
+###########################################
+%define enable_qm_mount_bind_input 0
+
 # Some bits borrowed from the openstack-selinux package
 %global selinuxtype targeted
 %global moduletype services
@@ -114,14 +119,36 @@ sed -i 's/^install: man all/install:/' Makefile
 install -d %{buildroot}%{_sysconfdir}/containers/containers.conf.d
 install -d %{buildroot}%{_sysconfdir}/qm/containers/containers.conf.d
 
-# START - qm dropin sub-package - img tempdir
+########################################################
+# START - qm dropin sub-package - img tempdir          #
+########################################################
 %if %{enable_qm_dropin_img_tempdir}
     install -m 644 %{_builddir}/qm-%{version}/etc/qm/containers/containers.conf.d/qm_dropin_img_tempdir.conf \
         %{buildroot}%{_sysconfdir}/qm/containers/containers.conf.d/qm_dropin_img_tempdir.conf
 %endif
-# END - qm dropin sub-package - img tempdir
+########################################################
+# END - qm dropin sub-package - img tempdir            #
+########################################################
 
-# START - qm dropin sub-package - mount bind /dev/tty7
+########################################################
+# START - qm dropin sub-package - mount input          #
+########################################################
+%if %{enable_qm_mount_bind_input}
+    # first step - add drop-in file in /etc/containers/containers.d.conf/qm_dropin_mount_bind_input.conf
+    # to QM container mount input
+    install -m 644 %{_builddir}/qm-%{version}/etc/qm/containers/containers.conf.d/qm_dropin_mount_bind_input.conf %{buildroot}%{_sysconfdir}/containers/containers.conf.d/qm_dropin_mount_bind_input.conf
+
+    # second step - add drop-in file in /etc/qm/containers/containers.d.conf/qm_dropin/mount_bind_input.conf
+    # to nested containers in QM env mount bind input
+    install -m 644 %{_builddir}/qm-%{version}/etc/qm/containers/containers.conf.d/qm_dropin_mount_bind_input.conf %{buildroot}%{_sysconfdir}/qm/containers/containers.conf.d/qm_dropin_mount_bind_input.conf
+%endif
+########################################################
+# END - qm dropin sub-package - mount input            #
+########################################################
+
+########################################################
+# START - qm dropin sub-package - mount bind /dev/tty7 #
+########################################################
 %if %{enable_qm_mount_bind_tty7}
     # first step - add drop-in file in /etc/containers/containers.d.conf/qm_dropin_mount_bind_tty.conf
     # to QM container mount bind /dev/tty7
@@ -131,7 +158,9 @@ install -d %{buildroot}%{_sysconfdir}/qm/containers/containers.conf.d
     # to nested containers in QM env mount bind it in /dev/tty7
     install -m 644 %{_builddir}/qm-%{version}/etc/qm/containers/containers.conf.d/qm_dropin_mount_bind_tty7.conf %{buildroot}%{_sysconfdir}/qm/containers/containers.conf.d/qm_dropin_mount_bind_tty7.conf
 %endif
-# END - qm dropin sub-package - mount bind /dev/tty7
+########################################################
+# END - qm dropin sub-package - mount bind /dev/tty7   #
+########################################################
 
 # install policy modules
 %_format MODULES $x.pp.bz2
@@ -189,7 +218,9 @@ fi
 %ghost %dir %{_installscriptdir}/rootfs
 %ghost %{_installscriptdir}/rootfs/*
 
-# sub-package QM Img TempDir
+#######################################
+# sub-package QM Img TempDir          #
+#######################################
 %if %{enable_qm_dropin_img_tempdir}
 %package -n qm-dropin-img-tempdir
 Summary: Drop-in configuration for QM nested containers to img tempdir
@@ -205,7 +236,9 @@ additional drop-in configurations.
 %{_sysconfdir}/qm/containers/containers.conf.d/qm_dropin_img_tempdir.conf
 %endif
 
-# sub-package QM Mount Bind /dev/tty7
+#######################################
+# sub-package QM Mount Bind /dev/tty7 #
+#######################################
 %if %{enable_qm_mount_bind_tty7}
 %package -n qm_mount_bind_tty7
 Summary: Drop-in configuration for QM containers to mount bind /dev/tty7
@@ -221,6 +254,27 @@ additional drop-in configurations.
 %{_sysconfdir}/containers/containers.conf.d/qm_dropin_mount_bind_tty7.conf
 %{_sysconfdir}/qm/containers/containers.conf.d/qm_dropin_mount_bind_tty7.conf
 %endif
+
+#######################################
+# sub-package QM Mount Input          #
+#######################################
+%if %{enable_qm_mount_bind_input}
+%package -n qm_mount_bind_input
+Summary: Drop-in configuration for QM containers to mount bind input
+Requires: %{name} = %{version}-%{release}
+BuildArch: noarch
+
+%description -n qm_mount_bind_input
+This sub-package installs a drop-in configurations for the QM.
+It creates the `/etc/qm/containers/containers.conf.d/` directory for adding
+additional drop-in configurations.
+
+%files -n qm_mount_bind_input
+%{_sysconfdir}/containers/containers.conf.d/qm_dropin_mount_bind_input.conf
+%{_sysconfdir}/qm/containers/containers.conf.d/qm_dropin_mount_bind_input.conf
+%endif
+
+#######################################
 
 %changelog
 %if %{defined autochangelog}
