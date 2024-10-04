@@ -63,6 +63,7 @@ rpm: clean dist ##             - Creates a local RPM package, useful for develop
 	rpmbuild -ba \
 		--define="enable_qm_dropin_img_tempdir 0" \
 		--define="enable_qm_mount_bind_tty7 0" \
+		--define="enable_qm_mount_bind_input 0" \
 		--define="_topdir ${RPM_TOPDIR}" \
 		--define="version ${VERSION}" \
 		${SPECFILE}
@@ -81,6 +82,12 @@ qm_dropin_img_tempdir: ##            - Creates a QM RPM sub-package qm_dropin_im
 qm_dropin_mount_bind_tty7: ##        - Creates a QM RPM sub-package to mount bind /dev/tty7 in the nested containers
 	sed -i 's/%define enable_qm_mount_bind_tty7 0/%define enable_qm_mount_bind_tty7 1/' ${SPECFILE}
 	sed -i 's/^Version:.*/Version: ${VERSION}/' ${SPECFILE}
+	$(MAKE) VERSION=${VERSION} rpm
+
+.PHONY: qm_dropin_mount_bind_input
+qm_dropin_mount_bind_input: ##       - Creates a QM RPM sub-package to mount bind input in the nested containers
+	sed -i 's/%define enable_qm_mount_bind_input 0/%define enable_qm_mount_bind_input 1/' ${SPECFILE}
+	tools/version-update -v ${VERSION}
 	$(MAKE) VERSION=${VERSION} rpm
 
 install-policy: all ##             - Install selinux policies only
