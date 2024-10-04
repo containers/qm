@@ -111,29 +111,30 @@ jobs:
     trigger: release
     update_release: false
     dist_git_branches:
-      - fedora-rawhide
-      - fedora-41
-      - fedora-40
-      - fedora-39
-      - epel-9
-      - epel-10
+      - fedora-all-aarch64
+      - fedora-all-ppc64le
+      - fedora-all-x86_64
+      - epel-all-aarch64
+      - epel-all-ppc64le
+      - epel-all-x86_64
 
   - job: koji_build
     trigger: commit
     dist_git_branches:
-      - fedora-rawhide
-      - fedora-41
-      - fedora-40
-      - fedora-39
-      - epel-9
-      - epel-10
+      - fedora-all-aarch64
+      - fedora-all-ppc64le
+      - fedora-all-x86_64
+      - epel-all-aarch64
+      - epel-all-ppc64le
+      - epel-all-x86_64
 
   - job: bodhi_update
     trigger: commit
     dist_git_branches:
       # rawhide updates are created automatically
-      - fedora-41
-      - fedora-40
-      - fedora-39
-      - epel-9
-      - epel-10
+      - fedora-all-aarch64
+      - fedora-all-ppc64le
+      - fedora-all-x86_64
+      - epel-all-aarch64
+      - epel-all-ppc64le
+      - epel-all-x86_64
