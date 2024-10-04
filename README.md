@@ -1,5 +1,26 @@
 # QM is a containerized environment for running Functional Safety qm (Quality Management) software
 
+1. [QM is a containerized environment for running Functional Safety qm (Quality Management) software](#qm-is-a-containerized-environment-for-running-functional-safety-qm-quality-management-software)
+2. [QM Sub Packages](#qm-sub-packages)
+    - [Key Features of QM Sub-Packages](#key-features-of-qm-sub-packages)
+    - [Building QM sub-packages](#building-qm-sub-packages)
+    - [Installing QM sub-packages](Installing-qm-sub-packages)
+    - [Removing QM sub-packages](Removing-qm-sub-packages)
+3. [SELinux Policy](#selinux-policy)
+4. [BlueChi](#bluechi)
+5. [RPM building dependencies](#rpm-building-dependencies)
+6. [How the OOM Score Adjustment (`om_score_adj`) is used in QM](#how-the-oom-score-adjustment-om_score_adj-is-used-in-qm)
+    - [Why use `om_score_adj` in QM?](#why-use-om_score_adj-in-qm)
+    - [OOM Score Adjustment in QM](#oom-score-adjustment-in-qm)
+    - [Nested Containers](#nested-containers)
+    - [QM Process](#qm-process)
+    - [ASIL Applications](#asil-applications)
+    - [Highlights](#highlights)
+    - [ASCII Diagram](#ascii-diagram)
+7. [Examples](#examples)
+8. [Development](#development)
+9. [RPM Mirrors](#rpm-mirrors)
+
 The main purpose of this package is allow users to setup an environment which
 prevents applications and container tools from interfering with other processes
 on the system. For example ASIL (Automotive Safety Integrity Level) environments.
@@ -19,7 +40,7 @@ be automatically isolated from the host. But if developers want to further
 isolate these processes from other processes in the QM they can use container
 tools like Podman to further isolate.
 
-* SELinux Policy
+## SELinux Policy
 
 This policy is used to isolate Quality Management parts of the operating system
 from the other Domain-Specific Functional Safety Levels (ASIL).
@@ -41,7 +62,9 @@ journalctl -t setroubleshoot
 sealert -a /var/log/audit/audit.log
 ```
 
-* [BlueChi](https://github.com/containers/qm/pull/57)
+## Bluechi
+
+- [BlueChi](https://github.com/containers/qm/pull/57)
 
 The package configures the bluechi agent within the QM.
 
@@ -58,15 +81,100 @@ systems agent.conf file are reflected into the QM /etc/bluechi/agent.conf. You c
 further customize the QM bluechi agent by adding content to the
 /usr/lib/qm/rootfs/etc/bluechi/agent.conf.d/ directory.
 
-## RPM building dependencies
-
-In order to build qm package on CentOS Stream 9 you'll need Code Ready Builder
-repository enabled in order to provide `golang-github-cpuguy83-md2man` package.
-
 ```console
 # dnf install -y python3-dnf-plugins-core
 # dnf config-manager --set-enabled crb
 ```
+
+## QM Sub-packages
+
+The qm project is designed to provide a flexible and modular environment for managing
+Quality Management (QM) software in containerized environments. One of the key features
+of the qm package is its support for sub-package(s), such as the qm-dropin sub-packages.
+These sub-packages are not enabled by default and are optional. However,  allow users
+to easily extend or customize their QM environment by adding specific configurations,
+tools, or scripts to the containerized QM ecosystem by simple installing or uninstalling
+a RPM package into the system.
+
+## Key Features of QM Sub-Packages
+
+### Modularity
+
+- No configuration change, no typo or distribution rebuild/update.
+- Just dnf install/remove from the tradicional rpm schema.
+
+### Customizability
+
+- Users can easily add specific configurations to enhance or modify the behavior of their QM containers.
+
+### Maintainability
+
+- Sub-packages ensure that the base qm package remains untouched, allowing easy updates without breaking custom configurations.
+
+### Simplicity
+
+- Like qm-dropin provide a clear directory structure and templates to guide users in customizing their QM environment.
+
+## Building QM sub-packages
+
+Choose one of the following sub-packages and build using make.
+
+```bash
+$ git clone git@github.com:containers/qm.git && cd qm
+$ make | grep qm_dropin
+qm_dropin_img_tempdir            - Creates a QM RPM sub-package qm_dropin_img_tempdir
+qm_dropin_mount_bind_tty7        - Creates a QM RPM sub-package to mount bind /dev/tty7 in the nested containers
+qm_dropin_mount_bind_input       - Creates a QM RPM sub-package to mount bind input in the nested containers
+
+$ make qm_dropin_mount_bind_input
+$ ls rpmbuild/RPMS/noarch/
+qm-0.6.7-1.fc40.noarch.rpm  qm_mount_bind_input-0.6.7-1.fc40.noarch.rpm
+```
+
+## Installing QM sub-packages
+
+```bash
+$ sudo dnf install ./rpmbuild/RPMS/noarch/qm_mount_bind_input-0.6.7-1.fc40.noarch.rpm
+Last metadata expiration check: 1:06:03 ago on Thu 03 Oct 2024 11:22:52 PM EDT.
+Dependencies resolved.
+=====================================================================================================================================
+ Package                               Architecture             Version                         Repository                      Size
+=====================================================================================================================================
+Installing:
+ qm_mount_bind_input                   noarch                   0.6.7-1.fc40                    @commandline                   7.9 k
+
+Transaction Summary
+=====================================================================================================================================
+Install  1 Package
+
+Total size: 7.9 k
+Installed size: 3.1 k
+Is this ok [y/N]: y
+Downloading Packages:
+Running transaction check
+Transaction check succeeded.
+Running transaction test
+Transaction test succeeded.
+Running transaction
+  Preparing        :                                                                                                             1/1
+  Installing       : qm_mount_bind_input-0.6.7-1.fc40.noarch                                                                     1/1
+
+Installed:
+  qm_mount_bind_input-0.6.7-1.fc40.noarch
+
+Complete!
+```
+
+## Removing QM sub-packages
+
+```bash
+sudo rpm -e qm_mount_bind_input
+```
+
+## RPM building dependencies
+
+In order to build qm package on CentOS Stream 9 you'll need Code Ready Builder
+repository enabled in order to provide `golang-github-cpuguy83-md2man` package.
 
 ## How the OOM Score Adjustment (`om_score_adj`) is used in QM
 
@@ -80,7 +188,7 @@ By fine-tuning which processes are more likely to be terminated during low memor
 
 #### Nested Containers
 
-* All nested containers created inside QM will have their OOM score adjustment set to *750*.
+- All nested containers created inside QM will have their OOM score adjustment set to *750*.
 
 ```console
 $ cat /usr/share/qm/containers.conf | grep oom_score_adj
@@ -89,7 +197,7 @@ oom_score_adj = 750
 
 #### QM Process
 
-* The QM process has a default OOM score adjustment value set to *500*, configured via the *qm.container* file.
+- The QM process has a default OOM score adjustment value set to *500*, configured via the *qm.container* file.
 
 ```console
 cat /usr/share/containers/systemd/qm.container | grep OOMScoreAdjust
@@ -102,9 +210,9 @@ If we consider the example of ASIL (Automotive Safety Integrity Level) applicati
 
 #### Highlights
 
-* Nested Containers inside QM: OOM score adjustment set to 750. (/usr/share/qm/containers.conf)
-* QM Process: OOM score adjustment value set to 500, configured via the qm.container file.
-* ASIL Applications: Can explore a range from -1 to -1000, with -1000 making the process immune to the OOM killer.
+- Nested Containers inside QM: OOM score adjustment set to 750. (/usr/share/qm/containers.conf)
+- QM Process: OOM score adjustment value set to 500, configured via the qm.container file.
+- ASIL Applications: Can explore a range from -1 to -1000, with -1000 making the process immune to the OOM killer.
 
 #### ASCII Diagram
 
