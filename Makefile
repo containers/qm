@@ -75,13 +75,13 @@ ostree: qm_dropin_img_tempdir ##             - A helper for creating QM packages
 .PHONY: qm_dropin_img_tempdir
 qm_dropin_img_tempdir: ##            - Creates a QM RPM sub-package qm_dropin_img_tempdir
 	sed -i 's/%define enable_qm_dropin_img_tempdir 0/%define enable_qm_dropin_img_tempdir 1/' ${SPECFILE}
-	sed -i 's/^Version:.*/Version: ${VERSION}/' ${SPECFILE}
+	tools/version-update -v ${VERSION}
 	$(MAKE) VERSION=${VERSION} rpm
 
 .PHONY: qm_dropin_mount_bind_tty7
 qm_dropin_mount_bind_tty7: ##        - Creates a QM RPM sub-package to mount bind /dev/tty7 in the nested containers
 	sed -i 's/%define enable_qm_mount_bind_tty7 0/%define enable_qm_mount_bind_tty7 1/' ${SPECFILE}
-	sed -i 's/^Version:.*/Version: ${VERSION}/' ${SPECFILE}
+	tools/version-update -v ${VERSION}
 	$(MAKE) VERSION=${VERSION} rpm
 
 .PHONY: qm_dropin_mount_bind_input
