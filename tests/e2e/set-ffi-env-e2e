@@ -263,13 +263,14 @@ info_message "Checking if QM already installed"
 info_message "=============================="
 if rpm -q qm &>/dev/null; then
 	QM_STATUS="$(systemctl is-enabled qm 2>&1)"
+        CS_DISTRO="$(grep -oP '(CentOS Stream [0-9]{1,2}).*' /etc/os-release)"
 	if [ "$QM_STATUS" == "generated" ]; then
 		if [ "$(systemctl is-active qm)" == "active" ]; then
 			info_message "QM Enabled and Active"
 			info_message "=============================="
 			exit 0
    		fi
-		if test -d /var/qm -a -d /etc/qm ; then
+		if test -d /var/qm -a -d /etc/qm -a -z "$CS_DISTRO" ; then
 			info_message "QM Enabled and not Active"
 			info_message "=============================="
 			exit 1
