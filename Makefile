@@ -63,6 +63,7 @@ rpm: clean dist ##             - Creates a local RPM package, useful for develop
 	rpmbuild -ba \
 		--define="enable_qm_dropin_img_tempdir 0" \
 		--define="enable_qm_mount_bind_tty7 0" \
+		--define="enable_qm_mount_bind_ttyUSB0 0" \
 		--define="enable_qm_mount_bind_input 0" \
 		--define="_topdir ${RPM_TOPDIR}" \
 		--define="version ${VERSION}" \
@@ -75,6 +76,12 @@ ostree: qm_dropin_img_tempdir ##             - A helper for creating QM packages
 .PHONY: qm_dropin_img_tempdir
 qm_dropin_img_tempdir: ##            - Creates a QM RPM sub-package qm_dropin_img_tempdir
 	sed -i 's/%define enable_qm_dropin_img_tempdir 0/%define enable_qm_dropin_img_tempdir 1/' ${SPECFILE}
+	tools/version-update -v ${VERSION}
+	$(MAKE) VERSION=${VERSION} rpm
+
+.PHONY: qm_dropin_mount_bind_ttyUSB0
+qm_dropin_mount_bind_ttyUSB0: ##     - Creates a QM RPM sub-package to mount bind /dev/ttyUSB0 in the nested containers
+	sed -i 's/%define enable_qm_mount_bind_ttyUSB0 0/%define enable_qm_mount_bind_ttyUSB0 1/' ${SPECFILE}
 	tools/version-update -v ${VERSION}
 	$(MAKE) VERSION=${VERSION} rpm
 

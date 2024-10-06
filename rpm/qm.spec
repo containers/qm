@@ -21,6 +21,12 @@
 # it usually runs on this virtual console.
 %define enable_qm_mount_bind_tty7 0
 
+
+###########################################
+# subpackage QM - mount bind /dev/ttyUSB0 #
+###########################################
+%define enable_qm_mount_bind_ttyUSB0 0
+
 ###########################################
 # subpackage QM - input devices           #
 ###########################################
@@ -128,6 +134,22 @@ install -d %{buildroot}%{_sysconfdir}/qm/containers/containers.conf.d
 %endif
 ########################################################
 # END - qm dropin sub-package - img tempdir            #
+########################################################
+
+########################################################
+# START - qm dropin sub-package - mount ttyUSB0        #
+########################################################
+%if %{enable_qm_mount_bind_ttyUSB0}
+    # first step - add drop-in file in /etc/containers/containers.d.conf/qm_dropin_mount_bind_ttyUSB0.conf
+    # to QM container mount ttyUSB0
+    install -m 644 %{_builddir}/qm-%{version}/etc/qm/containers/containers.conf.d/qm_dropin_mount_bind_ttyUSB0.conf %{buildroot}%{_sysconfdir}/containers/containers.conf.d/qm_dropin_mount_bind_ttyUSB0.conf
+
+    # second step - add drop-in file in /etc/qm/containers/containers.d.conf/qm_dropin/mount_bind_ttyUSB0.conf
+    # to nested containers in QM env mount bind ttyUSB0
+    install -m 644 %{_builddir}/qm-%{version}/etc/qm/containers/containers.conf.d/qm_dropin_mount_bind_ttyUSB0.conf %{buildroot}%{_sysconfdir}/qm/containers/containers.conf.d/qm_dropin_mount_bind_ttyUSB0.conf
+%endif
+########################################################
+# END - qm dropin sub-package - mount ttyUSB0          #
 ########################################################
 
 ########################################################
@@ -272,6 +294,25 @@ additional drop-in configurations.
 %files -n qm_mount_bind_input
 %{_sysconfdir}/containers/containers.conf.d/qm_dropin_mount_bind_input.conf
 %{_sysconfdir}/qm/containers/containers.conf.d/qm_dropin_mount_bind_input.conf
+%endif
+
+#######################################
+# sub-package QM Mount ttyUSB0        #
+#######################################
+%if %{enable_qm_mount_bind_ttyUSB0}
+%package -n qm_mount_bind_ttyUSB0
+Summary: Drop-in configuration for QM containers to mount bind ttyUSB0
+Requires: %{name} = %{version}-%{release}
+BuildArch: noarch
+
+%description -n qm_mount_bind_ttyUSB0
+This sub-package installs a drop-in configurations for the QM.
+It creates the `/etc/qm/containers/containers.conf.d/` directory for adding
+additional drop-in configurations.
+
+%files -n qm_mount_bind_ttyUSB0
+%{_sysconfdir}/containers/containers.conf.d/qm_dropin_mount_bind_ttyUSB0.conf
+%{_sysconfdir}/qm/containers/containers.conf.d/qm_dropin_mount_bind_ttyUSB0.conf
 %endif
 
 #######################################
