@@ -6,6 +6,8 @@
     - [Building QM sub-packages](#building-qm-sub-packages)
     - [Installing QM sub-packages](Installing-qm-sub-packages)
     - [Removing QM sub-packages](Removing-qm-sub-packages)
+    - [Creating your own drop-in QM sub-package](Creating-your-own-drop-in-QM-sub-package)
+    - [QM sub-package Sound](QM-sub-package-Sound)
 3. [SELinux Policy](#selinux-policy)
 4. [BlueChi](#bluechi)
 5. [RPM building dependencies](#rpm-building-dependencies)
@@ -149,6 +151,141 @@ sudo podman restart qm
 
 ```bash
 sudo rpm -e qm_mount_bind_input
+```
+
+## QM sub-package Sound
+
+### Step 1: Install the QM Mount Bind Sound Package
+
+To set up sound cards in a QM environment using Podman, follow the steps below:
+Run the following commands to install the `qm_mount_bind_sound` package and restart QM (if previously in use):
+
+```bash
+# Build and install the RPM for QM sound
+git clone https://github.com/containers/qm.git && cd qm
+make qm_dropin_mount_bind_sound
+sudo dnf install -y rpmbuild/RPMS/noarch/qm_mount_bind_sound-0.6.7-1.fc40.noarch.rpm
+
+# To check if your system is using PulseAudio: pactl info
+$ pactl info
+Server String: /run/user/1000/pulse/native
+Library Protocol Version: 35
+Server Protocol Version: 35
+Is Local: yes
+Client Index: 118
+Tile Size: 65472
+User Name: douglas
+Host Name: fedora
+Server Name: PulseAudio (on PipeWire 1.0.8)
+Server Version: 15.0.0
+Default Sample Specification: float32le 2ch 48000Hz
+Default Channel Map: front-left,front-right
+Default Sink: alsa_output.pci-0000_00_1f.3-platform-skl_hda_dsp_generic.HiFi__hw_sofhdadsp__sink
+Default Source: alsa_input.pci-0000_00_1f.3-platform-skl_hda_dsp_generic.HiFi__hw_sofhdadsp_6__source
+Cookie: 9108:667a
+
+# Install PuseAudio (pactl) and alsa-utils (aplay) in the QM partition
+sudo dnf --installroot /usr/lib/qm/rootfs install pulseaudio-utils alsa-utils -y
+
+# Restart QM container (if already running)
+sudo podman restart qm
+
+# Showing /dev/snd data inside QM
+sudo podman exec -it qm bash
+controlC0  hwC0D0  hwC1D2    pcmC0D7p  pcmC0D9p  pcmC1D0p   pcmC1D3p  pcmC1D5p pcmC1D7c  timer
+controlC1  hwC1D0  pcmC0D3p  pcmC0D8p  pcmC1D0c  pcmC1D31p  pcmC1D4p  pcmC1D6c seq
+```
+
+### Step 2: Identify Sound Cards
+
+After installing the drop-in and restarting QM, you need to identify which sound card in the Linux system will be used in QM. If you're familiar with your sound card setup feel free to skip this step.
+
+To list the sound cards available on your system (in our case, we will pick the number 1):
+
+```bash
+cat /proc/asound/cards
+```
+
+**Example Output**:
+
+```bash
+ 0 [NVidia         ]: HDA-Intel - HDA NVidia
+                      HDA NVidia at 0x9e000000 irq 17
+ 1 [sofhdadsp      ]: sof-hda-dsp - sof-hda-dsp
+                      LENOVO-20Y5000QUS-ThinkPadX1ExtremeGen4i
+ 2 [USB            ]: USB-Audio - USB Audio Device
+                      Generic USB Audio at usb-0000:00:14.0-5, full speed
+```
+
+### Detecting Channels and Sample Rates
+
+To list the supported number of channels and samples use `pactl` command:
+
+```bash
+pactl list sinks | grep -i 48000 | uniq
+    Sample Specification: s24-32le 2ch 48000Hz
+```
+
+### Verify Sample Rate Support
+
+To show the supported sample rates for a specific sound card codec, you can also inspect the codec details:
+
+```bash
+cat /proc/asound/card1/codec#0 | grep -i rates
+```
+
+This will output the supported sample rates for the codec associated with `card1`.
+
+### Differentiating Between Cards
+
+Accessing Card 1 (sof-hda-dsp)
+
+```bash
+cat /proc/asound/cards | grep -A 1 '^ 1 '
+```
+
+Accessing Card 2 (USB Audio Device)
+
+```bash
+cat /proc/asound/cards | grep -A 1 '^ 2 '
+```
+
+### Step 3: Testing audio inside QM
+
+Inside QM, run the following command:
+
+```bash
+podman exec -it qm bash
+bash-# speaker-test -D hw:1,0 -c 2 -r 48000
+```
+
+This command runs a test with:
+
+```bash
+hw:1,0: sound card 1, device 0
+-c 2: two channels (stereo)
+-r 48000: sample rate of 48 kHz
+```
+
+If you want to test different sample rates, change the `-r` parameter to other values (e.g., 44100 for 44.1 kHz or 96000 for 96 kHz) to see which ones are supported by the hardware.
+
+## Creating your own drop-in QM sub-package
+
+We recommend using the existing drop-in files as a guide and adapting them to your specific needs. However, here are the step-by-step instructions:
+
+1) Create a drop-in file in the directory: `etc/qm/containers/containers.conf.d`
+2) Add it as a sub-package to `rpm/qm.spec`
+3) Test it by running: `make clean && VERSION=YOURVERSIONHERE make rpm`
+4) Additionally, test it with and without enabling the sub-package using (by default it should be disabled but there are cases where it will be enabled by default if QM community decide):
+
+Example changing the spec and triggering the build via make (feel free to automate via sed, awk etc):
+
+```bash
+# Define the feature flag: 1 to enable, 0 to disable
+# By default it's disabled: 0
+%define enable_qm_dropin_img_tempdir 1
+
+$ make clean && VERSION=YOURVERSIONHERE make rpm
 ```
 
 ## RPM building dependencies
