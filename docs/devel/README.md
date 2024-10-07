@@ -4,8 +4,6 @@
 
 - [Building QM rpm manually with changes](#building-qm-rpm-manually-with-changes)
 - [Building CentOS AutoSD and QM manually](#building-centos-autosd-and-qm-manually)
-- [QM Drop-in sub-packages](#qm-drop-in-sub-packages)
-  - [Creating your own drop-in QM sub-package](#creating-your-own-drop-in-qm-sub-package)
 - [Useful Commands](#useful-commands)
   - [Installing software inside QM partition](#installing-software-inside-qm-partition)
   - [Removing software inside QM partition](#removing-software-inside-qm-partition)
@@ -242,10 +240,6 @@ bash-5.1# podman --root /usr/share/containers/storage pull alpine
 Error: creating runtime static files directory "/usr/share/containers/storage/libpod":
 mkdir /usr/share/containers/storage: read-only file system
 ```
-
-## QM Drop-in sub-packages
-
-QM developers are always looking for ways to help new users and engineers onboard more easily. With this in mind, they decided to break complex configurations into drop-in sub-package(s) when possible for adjusting the Podman engine configurations specifically within the QM environment. Why? This approach provides an easy way to extend or override settings without modifying the core (original) configuration files.
 
 ### Creating your own drop-in QM sub-package
 
