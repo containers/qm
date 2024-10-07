@@ -26,20 +26,11 @@ especially for testing new features before submitting a pull request.
 git clone https://github.com/containers/qm.git
 ```
 
-**2.** Change the Version macro in the spec file
+**2.** Build the RPM
 
-Set the QM version to a higher number from the current one.
+Select a QM version that is a higher number from the current one.
 For example, if today's QM version is 0.6.2, set it to 1.0 so that
 the RPM created is identifiable as yours.
-
-You can use the `version-update` tool available in the project to perform
-the changes required to update to the new version (1.0):
-
-```bash
-./tools/version-update -v 1.0
-```
-
-**3.** Build the RPM
 
 ```bash
 make clean && VERSION=1.0 make rpm
