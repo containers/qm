@@ -33,6 +33,11 @@
 %define enable_qm_mount_bind_ttyUSB0 0
 
 ###########################################
+# subpackage QM - mount bind /dev/kvm #
+###########################################
+%define enable_qm_mount_bind_kvm 0
+
+###########################################
 # subpackage QM - input devices           #
 ###########################################
 %define enable_qm_mount_bind_input 0
@@ -139,6 +144,22 @@ install -d %{buildroot}%{_sysconfdir}/qm/containers/containers.conf.d
 %endif
 ########################################################
 # END - qm dropin sub-package - img tempdir            #
+########################################################
+
+########################################################
+# START - qm dropin sub-package - mount kvm            #
+########################################################
+%if %{enable_qm_mount_bind_kvm}
+    # first step - add drop-in file in /etc/containers/containers.d.conf/qm_dropin_mount_bind_kvm.conf
+    # to QM container mount bind /dev/kvm
+    install -m 644 %{_builddir}/qm-%{version}/etc/qm/containers/containers.conf.d/qm_dropin_mount_bind_kvm.conf %{buildroot}%{_sysconfdir}/containers/containers.conf.d/qm_dropin_mount_bind_kvm.conf
+
+    # second step - add drop-in file in /etc/qm/containers/containers.d.conf/qm_dropin/mount_bind_kvm.conf
+    # to nested containers in QM env mount bind it in /dev/kvm
+    install -m 644 %{_builddir}/qm-%{version}/etc/qm/containers/containers.conf.d/qm_dropin_mount_bind_kvm.conf %{buildroot}%{_sysconfdir}/qm/containers/containers.conf.d/qm_dropin_mount_bind_kvm.conf
+%endif
+########################################################
+# END - qm dropin sub-package - mount kvm            #
 ########################################################
 
 ########################################################
@@ -353,6 +374,25 @@ additional drop-in configurations.
 %files -n qm_mount_bind_sound
 %{_sysconfdir}/containers/containers.conf.d/qm_dropin_mount_bind_snd.conf
 %{_sysconfdir}/qm/containers/containers.conf.d/qm_dropin_mount_bind_snd.conf
+%endif
+
+#######################################
+# sub-package QM Mount Bind /dev/kvm  #
+#######################################
+%if %{enable_qm_mount_bind_kvm}
+%package -n qm_mount_bind_kvm
+Summary: Drop-in configuration for QM containers to mount bind /dev/kvm
+Requires: %{name} = %{version}-%{release}
+BuildArch: noarch
+
+%description -n qm_mount_bind_kvm
+This sub-package installs a drop-in configurations for the QM.
+It creates the `/etc/qm/containers/containers.conf.d/` directory for adding
+additional drop-in configurations.
+
+%files -n qm_mount_bind_kvm
+%{_sysconfdir}/containers/containers.conf.d/qm_dropin_mount_bind_kvm.conf
+%{_sysconfdir}/qm/containers/containers.conf.d/qm_dropin_mount_bind_kvm.conf
 %endif
 
 #######################################
