@@ -66,6 +66,7 @@ rpm: clean dist ##             - Creates a local RPM package, useful for develop
 		--define="enable_qm_mount_bind_tty7 0" \
 		--define="enable_qm_mount_bind_ttyUSB0 0" \
 		--define="enable_qm_mount_bind_sound 0" \
+		--define="enable_qm_mount_bind_kvm 0" \
 		--define="enable_qm_mount_bind_input 0" \
 		--define="_topdir ${RPM_TOPDIR}" \
 		--define="version ${VERSION}" \
@@ -76,27 +77,32 @@ rpm: clean dist ##             - Creates a local RPM package, useful for develop
 ostree: qm_dropin_img_tempdir ##             - A helper for creating QM packages for ostree based distros
 
 .PHONY: qm_dropin_img_tempdir
-qm_dropin_img_tempdir: ##            - Creates a QM RPM sub-package qm_dropin_img_tempdir
+qm_dropin_img_tempdir: ##            - QM RPM sub-package qm_dropin_img_tempdir
 	sed -i 's/%define enable_qm_dropin_img_tempdir 0/%define enable_qm_dropin_img_tempdir 1/' ${SPECFILE}
 	$(MAKE) VERSION=${VERSION} rpm
 
 .PHONY: qm_dropin_mount_bind_ttyUSB0
-qm_dropin_mount_bind_ttyUSB0: ##     - Creates a QM RPM sub-package to mount bind /dev/ttyUSB0 in the nested containers
+qm_dropin_mount_bind_ttyUSB0: ##     - QM RPM sub-package to mount bind /dev/ttyUSB0 in the nested containers
 	sed -i 's/%define enable_qm_mount_bind_ttyUSB0 0/%define enable_qm_mount_bind_ttyUSB0 1/' ${SPECFILE}
 	$(MAKE) VERSION=${VERSION} rpm
 
+.PHONY: qm_dropin_mount_bind_kvm
+qm_dropin_mount_bind_kvm: ##         - QM RPM sub-package to mount bind /dev/kvm in the nested containers
+	sed -i 's/%define enable_qm_mount_bind_kvm 0/%define enable_qm_mount_bind_kvm 1/' ${SPECFILE}
+	$(MAKE) VERSION=${VERSION} rpm
+
 .PHONY: qm_dropin_mount_bind_sound
-qm_dropin_mount_bind_sound: ##       - Creates a QM RPM sub-package to mount bind /dev/snd in the nested containers
+qm_dropin_mount_bind_sound: ##       - QM RPM sub-package to mount bind /dev/snd in the nested containers
 	sed -i 's/%define enable_qm_mount_bind_sound 0/%define enable_qm_mount_bind_sound 1/' ${SPECFILE}
 	$(MAKE) VERSION=${VERSION} rpm
 
 .PHONY: qm_dropin_mount_bind_tty7
-qm_dropin_mount_bind_tty7: ##        - Creates a QM RPM sub-package to mount bind /dev/tty7 in the nested containers
+qm_dropin_mount_bind_tty7: ##        - QM RPM sub-package to mount bind /dev/tty7 in the nested containers
 	sed -i 's/%define enable_qm_mount_bind_tty7 0/%define enable_qm_mount_bind_tty7 1/' ${SPECFILE}
 	$(MAKE) VERSION=${VERSION} rpm
 
 .PHONY: qm_dropin_mount_bind_input
-qm_dropin_mount_bind_input: ##       - Creates a QM RPM sub-package to mount bind /dev/input in the nested containers
+qm_dropin_mount_bind_input: ##       - QM RPM sub-package to mount bind /dev/input in the nested containers
 	sed -i 's/%define enable_qm_mount_bind_input 0/%define enable_qm_mount_bind_input 1/' ${SPECFILE}
 	$(MAKE) VERSION=${VERSION} rpm
 
