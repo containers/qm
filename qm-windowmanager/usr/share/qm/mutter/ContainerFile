@@ -1,0 +1,6 @@
+# Documentation and example only, users can adapt to their need when building
+# mutter image for their own Wayland quadlet
+FROM fedora:40
+
+RUN dnf -y install mutter \
+    && dnf clean all && rm -rf /var/cache/dnf

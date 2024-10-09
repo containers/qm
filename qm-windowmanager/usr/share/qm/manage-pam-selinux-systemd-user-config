@@ -1,0 +1,89 @@
+#!/bin/bash
+#
+# This program is free software; you can redistribute it and/or modify
+# it under the terms of the GNU General Public License as published by
+# the Free Software Foundation; either version 2 of the License, or
+# (at your option) any later version.
+#
+# This program is distributed in the hope that it will be useful,
+# but WITHOUT ANY WARRANTY; without even the implied warranty of
+# MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+# GNU General Public License for more details.
+#
+# You should have received a copy of the GNU General Public License
+# along with this program; if not, write to the Free Software Foundation,
+# Inc., 51 Franklin Street, Fifth Floor, Boston, MA 02110-1301 USA.
+
+COMMENT_TAG="commented-by-qm-windowmanager-rpm-package"
+
+create_systemd_user_pam() {
+    # Set default path if no argument is provided, or use the provided argument
+    local target_path="${1:-/usr/lib/qm/rootfs/etc/pam.d/systemd-user}"
+
+    # Create the directory if it doesn't exist
+    sudo mkdir -p "$(dirname "$target_path")"
+
+    # Create the systemd-user file with the standard content
+    cat << EOF | sudo tee "$target_path" > /dev/null
+#%PAM-1.0
+auth      include   system-auth
+account   include   system-auth
+password  include   system-auth
+session   required  pam_loginuid.so
+session   optional  pam_keyinit.so force revoke
+session   include   system-auth
+EOF
+
+    # Set the correct permissions (644)
+    sudo chmod 644 "$target_path"
+
+    # Restore SELinux context
+    sudo restorecon "$target_path"
+
+    # Check if file was created successfully and confirm
+    if [ ! -f "$target_path" ]; then
+        echo "Failed to create the file."
+        return 1
+    fi
+}
+
+# Function to comment pam_selinux lines and add the comment tag
+comment_pam_selinux() {
+  sed -i "/pam_selinux/ s|^|# |; s|# .*|& # $COMMENT_TAG|" "$1"
+}
+
+# Function to uncomment pam_selinux lines (removing both the comment and the tag)
+uncomment_pam_selinux() {
+  sed -i "/pam_selinux/ s|^# ||; s| # $COMMENT_TAG||" "$1"
+}
+
+# Check if sufficient arguments are provided
+if [[ $# -lt 2 ]]; then
+  echo "Usage: $0 <file_path> [--comment | --uncomment]"
+  exit 1
+fi
+
+FILE=$1
+ACTION=$2
+
+# Check if the file exists
+# if not, lets create a template
+# /usr/lib/qm/rootfs/etc/pam.d/systemd-user
+if [[ ! -f "$FILE" ]]; then
+  create_systemd_user_pam "$@"
+  exit 0
+fi
+
+# Execute the action based on the option
+case $ACTION in
+    --comment )
+        comment_pam_selinux "$FILE"
+        ;;
+    --uncomment )
+        uncomment_pam_selinux "$FILE"
+        ;;
+    * )
+        echo "Usage: $0 <file_path> [--comment | --uncomment]"
+        exit 1
+        ;;
+esac
