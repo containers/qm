@@ -76,6 +76,11 @@ rpm: clean dist ##             - Creates a local RPM package, useful for develop
 .PHONY: ostree
 ostree: qm_dropin_img_tempdir ##             - A helper for creating QM packages for ostree based distros
 
+.PHONY: qm_dropin_window_manager
+qm_dropin_window_manager: qm_dropin_mount_bind_kvm qm_dropin_mount_bind_sound qm_dropin_mount_bind_tty7 qm_dropin_mount_bind_input ##         - QM RPM sub-package qm_dropin_window_manager
+	sed -i 's/%define enable_qm_window_manager 0/%define enable_qm_window_manager 1/' ${SPECFILE}
+	$(MAKE) VERSION=${VERSION} rpm
+
 .PHONY: qm_dropin_img_tempdir
 qm_dropin_img_tempdir: ##            - QM RPM sub-package qm_dropin_img_tempdir
 	sed -i 's/%define enable_qm_dropin_img_tempdir 0/%define enable_qm_dropin_img_tempdir 1/' ${SPECFILE}

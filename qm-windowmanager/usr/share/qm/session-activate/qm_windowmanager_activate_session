@@ -1,0 +1,11 @@
+#!/bin/bash
+
+SESSION=
+while [ -z "$SESSION" ]; do
+    sleep 1
+    SESSION=$(loginctl list-sessions -o json | jq -re '.[] | select(.seat=="seat0").session')
+done
+
+loginctl activate "${SESSION}"
+
+exit 0
