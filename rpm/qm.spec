@@ -4,54 +4,6 @@
 %global rootfs_qm %{_prefix}/lib/qm/rootfs/
 %global rootfs_qm_window_manager %{_prefix}/lib/qm/rootfs/qm_windowmanager
 
-# Define the feature flag: 1 to enable, 0 to disable
-# By default it's disabled: 0
-
-###########################################
-# subpackage QM - img_tempdir             #
-###########################################
-# use img temp dir as /var/tmp
-%define enable_qm_dropin_img_tempdir 0
-
-###########################################
-# subpackage QM - mount bind /dev/tty7    #
-###########################################
-# mount bind /dev/tty7 from host to nested containers as /dev/tty7:rw
-# Please note: /dev/tty7 is typically the virtual terminal associated
-# with the graphical user interface (GUI) on Linux systems.
-# It is where the X server or the Wayland display server usually runs,
-# handling the graphical display, input, and windowing environment.
-# When you start a graphical session (such as GNOME, KDE, etc.),
-# it usually runs on this virtual console.
-%define enable_qm_mount_bind_tty7 0
-
-#######################################################################
-# subpackage QM - mount bind audio device from host to container and  #
-# nested container enabling sound                                     #
-#######################################################################
-%define enable_qm_mount_bind_sound 0
-
-
-###########################################
-# subpackage QM - Enable Window Manager   #
-###########################################
-%define enable_qm_window_manager 0
-
-###########################################
-# subpackage QM - mount bind /dev/ttyUSB0 #
-###########################################
-%define enable_qm_mount_bind_ttyUSB0 0
-
-###########################################
-# subpackage QM - mount bind /dev/kvm #
-###########################################
-%define enable_qm_mount_bind_kvm 0
-
-###########################################
-# subpackage QM - input devices           #
-###########################################
-%define enable_qm_mount_bind_input 0
-
 # Some bits borrowed from the openstack-selinux package
 %global selinuxtype targeted
 %global moduletype services
