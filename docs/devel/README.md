@@ -20,13 +20,19 @@
 Building QM locally with changes for tests is a recommended practice,
 especially for testing new features before submitting a pull request.
 
-**1.** Clone the repo
+**1.** Prerequisite
+
+```bash
+dnf install -y rpm-build golang-github-cpuguy83-md2man selinux-policy-devel
+```
+
+**2.** Clone the repo
 
 ```bash
 git clone https://github.com/containers/qm.git
 ```
 
-**2.** Build the RPM
+**3.** Build the RPM
 
 Select a QM version that is a higher number from the current one.
 For example, if today's QM version is 0.6.2, set it to 1.0 so that
@@ -71,7 +77,7 @@ cd /root/rpmbuild/RPMS/
 createrepo .
 ```
 
-**3.** Clone the CentOS Automotive distro for the build
+**4.** Clone the CentOS Automotive distro for the build
 
 Ensure you meet the requirements for the CentOS Automotive Stream by
 referring to [this link](https://sigs.centos.org/automotive/building/).
