@@ -1,0 +1,8 @@
+/:
+    inherit: false
+
+require:
+  - type: file
+    pattern:
+      - /tests/e2e/lib/utils
+      - /tests/ffi/common/prepare.sh
