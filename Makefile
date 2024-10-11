@@ -197,4 +197,4 @@ install: man all ##             - Install QM files (including selinux)
 	install -D -m 644 qm_file_contexts ${DESTDIR}${DATADIR}/qm/file_contexts
 	install -D -m 644 containers.conf ${DESTDIR}${DATADIR}/qm/containers.conf
 	install -D -m 644 qm.container ${DESTDIR}${DATADIR}/containers/systemd/qm.container
-	install -D -m 755 tools/comment-tz-local ${DESTDIR}${DATADIR}/qm/qm-is-ostree
+	install -D -m 755 tools/qm-is-ostree ${DESTDIR}${DATADIR}/qm/qm-is-ostree
