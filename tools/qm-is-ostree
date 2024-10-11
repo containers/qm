@@ -1,0 +1,34 @@
+#!/bin/bash
+#
+# This program is free software; you can redistribute it and/or modify
+# it under the terms of the GNU General Public License as published by
+# the Free Software Foundation; either version 2 of the License, or
+# (at your option) any later version.
+#
+# This program is distributed in the hope that it will be useful,
+# but WITHOUT ANY WARRANTY; without even the implied warranty of
+# MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+# GNU General Public License for more details.
+#
+# You should have received a copy of the GNU General Public License
+# along with this program; if not, write to the Free Software Foundation,
+# Inc., 51 Franklin Street, Fifth Floor, Boston, MA 02110-1301 USA.
+
+# Simple tool to check if the system is running under OSTree
+# Determines if the system is using OSTree by checking for the
+# existence of the directory /run/ostree
+# Returns:
+# 0 (success) if the directory path exists, indicating the system is
+# running under OSTree.
+# 1 (failure) if the directory does not exist, indicating the
+# system is not running under OSTree
+
+OSTREE_PATH="/run/ostree"
+
+if [ -d "${OSTREE_PATH}" ] || command -v ostree >/dev/null 2>&1; then
+    echo "QM is running on an OSTree-based system."
+    exit 0
+else
+    echo "QM is not running on an OSTree-based system."
+    exit 1
+fi

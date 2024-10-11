@@ -292,6 +292,7 @@ install -d %{buildroot}%{_sysconfdir}/qm/containers/containers.conf.d
 # Execute the script to create seccomp rules after the package is installed
 /usr/share/qm/create-seccomp-rules
 /usr/share/qm/comment-tz-local # FIX-ME GH-issue: 367
+/usr/share/qm/qm-is-ostree
 
 %preun
 if [ $1 = 0 ]; then
@@ -328,6 +329,7 @@ fi
 %{_datadir}/qm/qm-rootfs
 %{_datadir}/qm/qm-storage-settings
 %{_datadir}/qm/comment-tz-local
+%{_datadir}/qm/qm-is-ostree
 %ghost %dir %{_datadir}/containers
 %ghost %dir %{_datadir}/containers/systemd
 %{_datadir}/containers/systemd/qm.container
