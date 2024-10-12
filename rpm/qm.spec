@@ -48,6 +48,11 @@
 %define enable_qm_mount_bind_kvm 0
 
 ###########################################
+# subpackage QM - mount bind /dev/video   #
+###########################################
+%define enable_qm_mount_bind_video 0
+
+###########################################
 # subpackage QM - input devices           #
 ###########################################
 %define enable_qm_mount_bind_input 0
@@ -246,6 +251,25 @@ install -d %{buildroot}%{_sysconfdir}/qm/containers/containers.conf.d
 %endif
 ########################################################
 # END - qm dropin sub-package - mount ttyUSB0          #
+########################################################
+
+########################################################
+# START - qm dropin sub-package - mount video          #
+########################################################
+%if %{enable_qm_mount_bind_video}
+    mkdir -p %{buildroot}/%{rootfs_qm}/%{_sysconfdir}/containers/systemd/
+    # first step - add drop-in file in /etc/containers/containers.d.conf/qm_dropin_mount_bind_video.conf
+    # to QM container mount video
+    install -m 644 %{_builddir}/qm-%{version}/etc/qm/containers/containers.conf.d/qm_dropin_mount_bind_video.conf %{buildroot}%{_sysconfdir}/containers/containers.conf.d/qm_dropin_mount_bind_video.conf
+
+    # second step - add drop-in file in /etc/qm/containers/containers.d.conf/qm_dropin/mount_bind_video.conf
+    # to nested containers in QM env mount bind video
+    install -m 644 %{_builddir}/qm-%{version}/etc/qm/containers/containers.conf.d/qm_dropin_mount_bind_video.conf %{buildroot}%{_sysconfdir}/qm/containers/containers.conf.d/qm_dropin_mount_bind_video.conf
+
+    install -m 644 %{_builddir}/qm-%{version}/etc/containers/systemd/rear-camera.container %{buildroot}/%{rootfs_qm}/%{_sysconfdir}/containers/systemd/rear-camera.container
+%endif
+########################################################
+# END - qm dropin sub-package - mount video            #
 ########################################################
 
 ########################################################
@@ -503,6 +527,26 @@ done
 %postun windowmanager
 # Reload systemd daemon after uninstallation
 podman exec qm systemctl daemon-reload &> /dev/null
+%endif
+
+#######################################
+# sub-package QM Mount Bind /dev/video#
+#######################################
+%if %{enable_qm_mount_bind_video}
+%package -n qm_mount_bind_video
+Summary: Drop-in configuration for QM containers to mount bind /dev/video
+Requires: %{name} = %{version}-%{release}
+BuildArch: noarch
+
+%description -n qm_mount_bind_video
+This sub-package installs a drop-in configurations for the QM.
+It creates the `/etc/qm/containers/containers.conf.d/` directory for adding
+additional drop-in configurations.
+
+%files -n qm_mount_bind_video
+%{_sysconfdir}/containers/containers.conf.d/qm_dropin_mount_bind_video.conf
+%{_sysconfdir}/qm/containers/containers.conf.d/qm_dropin_mount_bind_video.conf
+%{rootfs_qm}/%{_sysconfdir}/containers/systemd/rear-camera.container
 %endif
 
 #######################################
