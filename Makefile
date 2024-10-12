@@ -68,6 +68,7 @@ rpm: clean dist ##             - Creates a local RPM package, useful for develop
 		--define="enable_qm_mount_bind_sound 0" \
 		--define="enable_qm_mount_bind_kvm 0" \
 		--define="enable_qm_mount_bind_input 0" \
+		--define="enable_qm_mount_bind_video 0" \
 		--define="_topdir ${RPM_TOPDIR}" \
 		--define="version ${VERSION}" \
 		${SPECFILE}
@@ -89,6 +90,11 @@ qm_dropin_img_tempdir: ##            - QM RPM sub-package qm_dropin_img_tempdir
 .PHONY: qm_dropin_mount_bind_ttyUSB0
 qm_dropin_mount_bind_ttyUSB0: ##     - QM RPM sub-package to mount bind /dev/ttyUSB0 in the nested containers
 	sed -i 's/%define enable_qm_mount_bind_ttyUSB0 0/%define enable_qm_mount_bind_ttyUSB0 1/' ${SPECFILE}
+	$(MAKE) VERSION=${VERSION} rpm
+
+.PHONY: qm_dropin_mount_bind_video0
+qm_dropin_mount_bind_video0: ##      - QM RPM sub-package to mount bind /dev/video0 in the nested containers
+	sed -i 's/%define enable_qm_mount_bind_video 0/%define enable_qm_mount_bind_video 1/' ${SPECFILE}
 	$(MAKE) VERSION=${VERSION} rpm
 
 .PHONY: qm_dropin_mount_bind_kvm
