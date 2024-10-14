@@ -129,7 +129,7 @@ rpm: clean dist ##             - Creates a local RPM package, useful for develop
 		--define="u_enable_qm_mount_bind_sound ${EN_QM_MNT_BIND_SOUND}" \
 		--define="u_enable_qm_mount_bind_kvm ${EN_QM_MNT_BIND_KVM}" \
 		--define="u_enable_qm_mount_bind_input ${EN_QM_MNT_BIND_INPUT}" \
-                --define="u_enable_qm_mount_bind_video ${EN_QM_MNT_BIND_VIDEO}"
+                --define="u_enable_qm_mount_bind_video ${EN_QM_MNT_BIND_VIDEO}" \
 		--define="_topdir ${RPM_TOPDIR}" \
 		--define="version ${VERSION}" \
 		${SPECFILE}
