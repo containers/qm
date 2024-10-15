@@ -113,7 +113,14 @@ man: qm.8.md ##             - Generates the QM man page
 
 .PHONY: dist
 dist: ##             - Creates the QM distribution package
-	tar cvz --transform s/qm/qm-${VERSION}/ -f /tmp/v${VERSION}.tar.gz ../qm
+	tar cvz \
+		--exclude='.git' \
+		--dereference \
+		--exclude='.gitignore' \
+		--exclude='demos' \
+		--exclude='.github' \
+		--transform s/qm/qm-${VERSION}/ \
+		-f /tmp/v${VERSION}.tar.gz ../qm
 	mv /tmp/v${VERSION}.tar.gz ./rpm
 
 .PHONY: rpm
