@@ -1,0 +1,48 @@
+name: Execute make qm_dropin targets
+
+on:
+  push:
+    branches:
+      - main
+  pull_request:
+    branches:
+      - main
+
+jobs:
+  run_qm_dropin_targets:
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v2
+
+      - name: Set up Makefile environment
+        run: sudo apt-get update && sudo apt-get install -y make bzip2
+
+      - name: Get qm_dropin targets
+        id: get_targets
+        run: |
+          # Extract all qm_dropin targets from Makefile
+          targets=$(grep -oE '^qm_dropin_[a-zA-Z0-9_-]+:' Makefile | sed 's/://g')
+          if [ -z "$targets" ]; then
+            echo "No qm_dropin targets found."
+            exit 0
+          fi
+          echo "Found qm_dropin targets: $targets"
+          echo "targets=$targets" >> $GITHUB_ENV
+
+      - name: Run qm_dropin targets
+        run: |
+          # Execute all qm_dropin targets
+          for target in ${{ env.targets }}; do
+            echo "Running target: $target"
+            make $target || exit 1
+          done
+
+      - name: Notify success
+        if: success()
+        run: echo "All qm_dropin targets executed successfully."
+
+      - name: Notify failure
+        if: failure()
+        run: echo "One or more qm_dropin targets failed." && exit 1
