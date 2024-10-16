@@ -22,7 +22,7 @@ jobs:
       fedora-latest: {}
       epel-9:
         additional_repos:
-          - https://download.copr.fedorainfracloud.org/results/@centos-automotive-sig/bluechi-snapshot/centos-stream-9-x86_64/
+          - copr://@centos-automotive-sig/bluechi-snapshot
 
   # Run on commit to main branch
   - &copr
@@ -53,7 +53,8 @@ jobs:
     tf_extra_params:
       environments:
         - artifacts:
-          - type: repository-file
+          - &bluechi_copr_repo
+            type: repository-file
             id: https://copr.fedorainfracloud.org/coprs/g/centos-automotive-sig/bluechi-snapshot/repo/centos-stream-9
           hardware:
             disk:
@@ -69,8 +70,7 @@ jobs:
     tf_extra_params:
       environments:
         - artifacts:
-          - type: repository-file
-            id: https://copr.fedorainfracloud.org/coprs/g/centos-automotive-sig/bluechi-snapshot/repo/centos-stream-9
+          - *bluechi_copr_repo
           tmt:
             context:
              scenario : "ffi"
@@ -88,8 +88,7 @@ jobs:
     tf_extra_params:
       environments:
         - artifacts:
-          - type: repository-file
-            id: https://copr.fedorainfracloud.org/coprs/g/centos-automotive-sig/bluechi-snapshot/repo/centos-stream-9
+          - *bluechi_copr_repo
           hardware:
             disk:
              - size: ">= 20 GB"
