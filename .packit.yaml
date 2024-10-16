@@ -18,7 +18,7 @@ jobs:
     # x86_64 is assumed by default
     # qm is noarch so we only need to test on one arch
     targets:
-      fedora-rawhide: {}
+      fedora-development: {}
       fedora-latest: {}
       centos-stream-9:
         additional_repos:
@@ -37,15 +37,9 @@ jobs:
   - <<: *copr
     project: qm
     targets:
-      fedora-40-aarch64: {}
-      fedora-40-ppc64le: {}
-      fedora-40-x86_64: {}
-      fedora-39-aarch64: {}
-      fedora-39-ppc64le: {}
-      fedora-39-x86_64: {}
-      fedora-38-aarch64: {}
-      fedora-38-ppc64le: {}
-      fedora-38-x86_64: {}
+      fedora-stable-aarch64: {}
+      fedora-stable-ppc64le: {}
+      fedora-stable-x86_64: {}
       centos-stream-9-aarch64:
         additional_repos:
           - https://dl.fedoraproject.org/pub/epel/9/Everything/aarch64/
@@ -109,32 +103,19 @@ jobs:
 
   - job: propose_downstream
     trigger: release
-    update_release: false
     dist_git_branches:
-      - fedora-all-aarch64
-      - fedora-all-ppc64le
-      - fedora-all-x86_64
-      - epel-all-aarch64
-      - epel-all-ppc64le
-      - epel-all-x86_64
+      - fedora-all
+      - epel-9
 
   - job: koji_build
     trigger: commit
     dist_git_branches:
-      - fedora-all-aarch64
-      - fedora-all-ppc64le
-      - fedora-all-x86_64
-      - epel-all-aarch64
-      - epel-all-ppc64le
-      - epel-all-x86_64
+      - fedora-all
+      - epel-9
 
   - job: bodhi_update
     trigger: commit
     dist_git_branches:
       # rawhide updates are created automatically
-      - fedora-all-aarch64
-      - fedora-all-ppc64le
-      - fedora-all-x86_64
-      - epel-all-aarch64
-      - epel-all-ppc64le
-      - epel-all-x86_64
+      - fedora-branched
+      - epel-9
