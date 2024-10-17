@@ -7,5 +7,5 @@
 # podman push quay.io/qm-images/wm_mutter:latest
 FROM fedora:40
 
-RUN dnf -y install mutter \
+RUN dnf -y install weston                                                      \
     && dnf clean all && rm -rf /var/cache/dnf
