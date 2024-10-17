@@ -9,7 +9,7 @@ Environment=XDG_RUNTIME_DIR=/run/user/0
 Environment=XDG_SESSION_TYPE=wayland
 Environment=DBUS_SESSION_BUS_ADDRESS=unix:path=/run/dbus/qm_bus_socket
 Exec=mutter --no-x11 --wayland --sm-disable --wayland-display=wayland-0
-Image=mutter:latest
+Image=quay.io/qm-images/wm_mutter:latest
 SecurityLabelType=qm_container_wayland_t
 Volume=/run/systemd:/run/systemd:ro
 Volume=/run/udev:/run/udev:ro

@@ -1,5 +1,12 @@
-# Documentation and example provided for users who wish to containerize the activate_session process.
+# ContainerFile used to create the image available at quay.io/qm-images/wm_active_session:latest
+#
+# How to build
+# ==================
+# podman login quay.io
+# podman build -t quay.io/qm-images/wm_active_session:latest -f ContainerFile
+# podman push quay.io/qm-images/wm_active_session:latest
+
 FROM fedora:40
 RUN dnf -y install systemd jq \
     && dnf clean all && rm -rf /var/cache/dnf
-COPY qm_windowmanager_activate_sessione /usr/share/qm/qm_windowmanager_activate_session
+COPY qm_windowmanager_activate_session /usr/share/qm/qm_windowmanager_activate_session
