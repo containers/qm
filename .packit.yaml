@@ -18,12 +18,11 @@ jobs:
     # x86_64 is assumed by default
     # qm is noarch so we only need to test on one arch
     targets:
-      fedora-rawhide: {}
+      fedora-development: {}
       fedora-latest: {}
-      centos-stream-9:
+      epel-9:
         additional_repos:
-          - https://dl.fedoraproject.org/pub/epel/9/Everything/x86_64/
-          - https://download.copr.fedorainfracloud.org/results/@centos-automotive-sig/bluechi-snapshot/centos-stream-9-x86_64/
+          - copr://@centos-automotive-sig/bluechi-snapshot
 
   # Run on commit to main branch
   - &copr
@@ -37,36 +36,25 @@ jobs:
   - <<: *copr
     project: qm
     targets:
-      fedora-40-aarch64: {}
-      fedora-40-ppc64le: {}
-      fedora-40-x86_64: {}
-      fedora-39-aarch64: {}
-      fedora-39-ppc64le: {}
-      fedora-39-x86_64: {}
-      fedora-38-aarch64: {}
-      fedora-38-ppc64le: {}
-      fedora-38-x86_64: {}
-      centos-stream-9-aarch64:
-        additional_repos:
-          - https://dl.fedoraproject.org/pub/epel/9/Everything/aarch64/
-      centos-stream-9-ppc64le:
-        additional_repos:
-          - https://dl.fedoraproject.org/pub/epel/9/Everything/ppc64le/
-      centos-stream-9-x86_64:
-        additional_repos:
-          - https://dl.fedoraproject.org/pub/epel/9/Everything/x86_64/
+      - fedora-stable-aarch64
+      - fedora-stable-ppc64le
+      - fedora-stable-x86_64
+      - epel-9-aarch64
+      - epel-9-ppc64le
+      - epel-9-x86_64
 
   - job: tests
     trigger: pull_request
     identifier: e2e-multi-bluechi-agents
     tmt_plan: /plans/e2e/multi-bluechi-agents
     targets:
-    - centos-stream-9-x86_64
+      - epel-9-x86_64
     manual_trigger: true
     tf_extra_params:
       environments:
         - artifacts:
-          - type: repository-file
+          - &bluechi_copr_repo
+            type: repository-file
             id: https://copr.fedorainfracloud.org/coprs/g/centos-automotive-sig/bluechi-snapshot/repo/centos-stream-9
           hardware:
             disk:
@@ -78,12 +66,11 @@ jobs:
     identifier: e2e-ffi
     tmt_plan: /plans/e2e/ffi
     targets:
-    - centos-stream-9-x86_64
+      - epel-9-x86_64
     tf_extra_params:
       environments:
         - artifacts:
-          - type: repository-file
-            id: https://copr.fedorainfracloud.org/coprs/g/centos-automotive-sig/bluechi-snapshot/repo/centos-stream-9
+          - *bluechi_copr_repo
           tmt:
             context:
              scenario : "ffi"
@@ -97,44 +84,30 @@ jobs:
     identifier: qm-tier-0
     tmt_plan: /plans/e2e/tier-0
     targets:
-    - centos-stream-9-x86_64
+      - epel-9-x86_64
     tf_extra_params:
       environments:
         - artifacts:
-          - type: repository-file
-            id: https://copr.fedorainfracloud.org/coprs/g/centos-automotive-sig/bluechi-snapshot/repo/centos-stream-9
+          - *bluechi_copr_repo
           hardware:
             disk:
              - size: ">= 20 GB"
 
   - job: propose_downstream
     trigger: release
-    update_release: false
     dist_git_branches:
-      - fedora-all-aarch64
-      - fedora-all-ppc64le
-      - fedora-all-x86_64
-      - epel-all-aarch64
-      - epel-all-ppc64le
-      - epel-all-x86_64
+      - fedora-all
+      - epel-9
 
   - job: koji_build
     trigger: commit
     dist_git_branches:
-      - fedora-all-aarch64
-      - fedora-all-ppc64le
-      - fedora-all-x86_64
-      - epel-all-aarch64
-      - epel-all-ppc64le
-      - epel-all-x86_64
+      - fedora-all
+      - epel-9
 
   - job: bodhi_update
     trigger: commit
     dist_git_branches:
       # rawhide updates are created automatically
-      - fedora-all-aarch64
-      - fedora-all-ppc64le
-      - fedora-all-x86_64
-      - epel-all-aarch64
-      - epel-all-ppc64le
-      - epel-all-x86_64
+      - fedora-branched
+      - epel-9
