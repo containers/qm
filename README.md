@@ -1,29 +1,31 @@
-# QM is a containerized environment for running Functional Safety qm (Quality Management) software
+# Topics
 
-1. [QM is a containerized environment for running Functional Safety qm (Quality Management) software](#qm-is-a-containerized-environment-for-running-functional-safety-qm-quality-management-software)
-2. [QM Sub Packages](#qm-sub-packages)
-    - [Key Features of QM Sub-Packages](#key-features-of-qm-sub-packages)
-    - [Building QM sub-packages](#building-qm-sub-packages)
-    - [Installing QM sub-packages](Installing-qm-sub-packages)
-    - [Removing QM sub-packages](Removing-qm-sub-packages)
-    - [Creating your own drop-in QM sub-package](Creating-your-own-drop-in-QM-sub-package)
-    - [QM sub-package kvm](QM-sub-package-kvm)
-    - [QM sub-package Sound](QM-sub-package-Sound)
-    - [QM sub-package Video](QM-sub-package-Video)
-3. [SELinux Policy](#selinux-policy)
-4. [BlueChi](#bluechi)
-5. [RPM building dependencies](#rpm-building-dependencies)
-6. [How the OOM Score Adjustment (`om_score_adj`) is used in QM](#how-the-oom-score-adjustment-om_score_adj-is-used-in-qm)
-    - [Why use `om_score_adj` in QM?](#why-use-om_score_adj-in-qm)
+1. [QM is a containerized environment for running Functional Safety QM (Quality Management) software](#qm-is-a-containerized-environment-for-running-functional-safety-qm-quality-management-software)
+2. [SELinux Policy](#selinux-policy)
+3. [BlueChi](#bluechi)
+4. [RPM Building Dependencies](#rpm-building-dependencies)
+5. [How the OOM Score Adjustment is Used in QM](#how-the-oom-score-adjustment-is-used-in-qm)
+    - [Why Use oom score adj in QM?](#why-use-oomscoreadj-in-qm)
     - [OOM Score Adjustment in QM](#oom-score-adjustment-in-qm)
     - [Nested Containers](#nested-containers)
     - [QM Process](#qm-process)
     - [ASIL Applications](#asil-applications)
     - [Highlights](#highlights)
     - [ASCII Diagram](#ascii-diagram)
+6. [QM Sub-Packages](#qm-sub-packages)
+    - [Key Features of QM Sub-Packages](#key-features-of-qm-sub-packages)
+    - [Building QM Sub-Packages](#building-qm-sub-packages)
+    - [Installing QM Sub-Packages](#installing-qm-sub-packages)
+    - [Removing QM Sub-Packages](#removing-qm-sub-packages)
+    - [Creating Your Own Drop-In QM Sub-Package](#creating-your-own-drop-in-qm-sub-package)
+    - [QM Sub-Package KVM](#qm-sub-package-kvm)
+    - [QM Sub-Package Sound](#qm-sub-package-sound)
+    - [QM Sub-Package Video](#qm-sub-package-video)
 7. [Examples](#examples)
 8. [Development](#development)
 9. [RPM Mirrors](#rpm-mirrors)
+
+## QM is a containerized environment for running Functional Safety QM (Quality Management) software
 
 The main purpose of this package is allow users to setup an environment which
 prevents applications and container tools from interfering with other processes
@@ -458,11 +460,11 @@ Last login: Tue Oct  8 06:01:18 on ttyS0
 In order to build qm package on CentOS Stream 9 you'll need Code Ready Builder
 repository enabled in order to provide `golang-github-cpuguy83-md2man` package.
 
-## How the OOM Score Adjustment (`om_score_adj`) is used in QM
+## How the OOM Score Adjustment is used in QM
 
 The om_score_adj refers to the "Out of Memory score adjustment" in Linux operating systems. This parameter is used by the Out of Memory (OOM) killer to decide which processes to terminate when the system is critically low on memory.
 
-### Why use `om_score_adj` in QM?
+### Why use oomscoreadj in QM?
 
 By fine-tuning which processes are more likely to be terminated during low memory situations, critical processes can be protected, thereby enhancing the overall stability of the system. For instance only, ASIL (Automotive Safety Integrity Level) applications, which are critical for ensuring functional safety in automotive systems, will be preserved in case of low resources.
 
