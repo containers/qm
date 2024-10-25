@@ -23,7 +23,12 @@
     - [QM Sub-Package Video](#qm-sub-package-video)
 7. [Examples](#examples)
 8. [Development](#development)
-9. [RPM Mirrors](#rpm-mirrors)
+9. [Talks and Videos](#talks-and-videos)
+    - [Paving the Way for Uninterrupted Car Operations - DevConf Boston 2024](https://www.youtube.com/watch?v=jTrLqpw7E6Q)
+    - [Security - Sample Analysis according to ISO26262](https://www.youtube.com/watch?v=jTrLqpw7E6Q&t=1268s)
+    - [ASIL and QM - Simulation and Service Monitoring by bluechi and podman](https://www.youtube.com/watch?v=jTrLqpw7E6Q&t=1680s)
+    - [Containers in a Car - DevConf.CZ 2023](https://www.youtube.com/watch?v=FPxka5uDA_4)
+10. [RPM Mirrors](#rpm-mirrors)
 
 ## QM is a containerized environment for running Functional Safety QM (Quality Management) software
 
@@ -574,6 +579,11 @@ Looking for quadlet examples files? See our [docs dir](docs/quadlet-examples/).
 ## Development
 
 If your looking for contribute to the project use our [development README guide](docs/devel/README.md) as start point.
+
+## Talks and Videos
+
+Let's spread the knowledge regarding QM, if you have any interesting video regarding any
+technology related to QM please with us.
 
 ## RPM Mirrors
 
