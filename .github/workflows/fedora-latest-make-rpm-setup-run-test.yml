@@ -1,0 +1,54 @@
+name: Execute make rpm and install
+
+on:
+  push:
+    branches:
+      - main
+  pull_request:
+    branches:
+      - main
+
+jobs:
+  build_and_install_rpm:
+    runs-on: ubuntu-latest
+
+    container:
+      image: fedora:latest
+      options: --privileged -v /sys/fs/cgroup:/sys/fs/cgroup:ro
+
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v2
+
+      - name: Install required tools and Podman
+        run: |
+          sudo dnf group install -y "Development Tools"
+          sudo dnf install -y make bzip2 grep sed podman rpm-build selinux-policy-devel selinux-policy container-selinux golang-github-cpuguy83-md2man hostname systemd
+
+      - name: Build RPM
+        run: |
+          # Build the RPM package
+          make rpm
+
+      - name: Verify RPM Build Path
+        run: |
+          # Check if the RPM package is in the expected path
+          ls rpmbuild/RPMS/noarch/
+
+      - name: Install RPM
+        run: |
+          # Install the generated RPM package
+          sudo dnf install rpmbuild/RPMS/noarch/qm* -y
+
+      - name: Run setup script
+        run: |
+          # Execute the setup script and check its return code
+          /usr/share/qm/setup
+
+      - name: Notify success
+        if: success()
+        run: echo "Setup completed successfully."
+
+      - name: Notify failure
+        if: failure()
+        run: echo "Setup failed." && exit 1
