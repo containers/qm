@@ -18,6 +18,7 @@
     - [Installing QM Sub-Packages](#installing-qm-sub-packages)
     - [Removing QM Sub-Packages](#removing-qm-sub-packages)
     - [Creating Your Own Drop-In QM Sub-Package](#creating-your-own-drop-in-qm-sub-package)
+    - [QM Sub-Package ROS2](#qm-sub-package-ros2)
     - [QM Sub-Package KVM](#qm-sub-package-kvm)
     - [QM Sub-Package Sound](#qm-sub-package-sound)
     - [QM Sub-Package Video](#qm-sub-package-video)
@@ -330,6 +331,26 @@ Example changing the spec and triggering the build via make (feel free to automa
 %define enable_qm_dropin_img_tempdir 1
 
 $ make clean && VERSION=YOURVERSIONHERE make rpm
+```
+
+## QM sub-package ROS2
+
+The QM sub-package ROS2 (a.k.a "The Robot Operating System" or middleware for robots) is widely used by open-source projects, enterprises, companies, edge env and government agencies, including NASA, to advance robotics and autonomous systems. Enabled by Quadlet in QM, ROS2 on top of QM provides a secure environment where robots can operate and communicate safely, benefiting from QM's "Freedom from Interference" frequently tested layer. This ensures robots can function without external interference, enhancing their reliability and security.
+
+The types of robots compatible with this environment are extensive, ranging from medical devices and aerial drones to aqua drones and space rockets. ROS2 within QM supports high availability, meaning these robotic systems can maintain continuous operations, crucial for mission-critical and industrial applications. This versatility makes it ideal for environments that demand robust communication and operational safety, from healthcare and aerospace to underwater exploration and autonomous land vehicles.
+
+How to test this env?
+
+```bash
+$host> git clone https://github.com/containers/qm.git && cd qm
+$host> make qm_dropin_ros2_rolling
+$host> sudo dnf install rpmbuild/RPMS/noarch/qm_ros2_rolling-0.6.7-1.fc40.noarch.rpm  -y
+$host> sudo podman restart qm  # if you have qm already running
+
+Testing using talked and listener examples
+$host> sudo podman exec -it qm bash
+QM> ros2 run demo_nodes_cpp talker &
+QM> ros2 run demo_nodes_cpp listener
 ```
 
 ## QM sub-package KVM

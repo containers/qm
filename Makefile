@@ -40,6 +40,12 @@ EN_QM_MNT_BIND_TTY7 ?= 0
 # export EN_QM_MNT_BIND_SOUND=1
 EN_QM_MNT_BIND_SOUND ?= 0
 
+############################################
+# subpackage QM - ros2-rolling             #
+############################################
+# export EN_QM_ROS2_ROLLING=1
+EN_QM_ROS2_ROLLING ?= 0
+
 ###########################################
 # subpackage QM - Enable Window Manager   #
 ###########################################
@@ -136,7 +142,8 @@ rpm: clean dist ##             - Creates a local RPM package, useful for develop
 		--define="u_enable_qm_mount_bind_sound ${EN_QM_MNT_BIND_SOUND}" \
 		--define="u_enable_qm_mount_bind_kvm ${EN_QM_MNT_BIND_KVM}" \
 		--define="u_enable_qm_mount_bind_input ${EN_QM_MNT_BIND_INPUT}" \
-                --define="u_enable_qm_mount_bind_video ${EN_QM_MNT_BIND_VIDEO}" \
+		--define="u_enable_qm_mount_bind_video ${EN_QM_MNT_BIND_VIDEO}" \
+		--define="u_enable_qm_dropin_ros2_rolling ${EN_QM_ROS2_ROLLING}" \
 		--define="_topdir ${RPM_TOPDIR}" \
 		--define="version ${VERSION}" \
 		${SPECFILE}
@@ -153,6 +160,11 @@ qm_dropin_window_manager: qm_dropin_mount_bind_kvm qm_dropin_mount_bind_sound qm
 .PHONY: qm_dropin_img_tempdir
 qm_dropin_img_tempdir: ##            - QM RPM sub-package qm_dropin_img_tempdir
 	sed -i 's/%define enable_qm_dropin_img_tempdir 0/%define enable_qm_dropin_img_tempdir 1/' ${SPECFILE}
+	$(MAKE) VERSION=${VERSION} rpm
+
+.PHONY: qm_dropin_ros2_rolling
+qm_dropin_ros2_rolling: ##           - QM RPM sub-package to creating a quadlet container with ROS2 rolling env
+	sed -i 's/%define enable_qm_ros2_rolling 0/%define enable_qm_ros2_rolling 1/' ${SPECFILE}
 	$(MAKE) VERSION=${VERSION} rpm
 
 .PHONY: qm_dropin_mount_bind_ttyUSB0

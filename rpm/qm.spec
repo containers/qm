@@ -43,6 +43,11 @@
 %define enable_qm_window_manager 0%{?u_enable_qm_window_manager}
 
 ###########################################
+# subpackage QM - ROS2 Rolling version    #
+###########################################
+%define enable_qm_ros2_rolling 1%{?u_enable_qm_ros2_rolling}
+
+###########################################
 # subpackage QM - mount bind /dev/ttyUSB0 #
 ###########################################
 %define enable_qm_mount_bind_ttyUSB0 0%{?u_enable_qm_mount_bind_ttyUSB0}
@@ -260,6 +265,17 @@ install -d %{buildroot}%{_sysconfdir}/qm/containers/containers.conf.d
 %endif
 ########################################################
 # END - qm dropin sub-package - mount ttyUSB0          #
+########################################################
+
+########################################################
+# START - qm dropin ROS2 - Rolling                     #
+########################################################
+%if %{enable_qm_ros2_rolling}
+    mkdir -p %{buildroot}/%{rootfs_qm}/%{_sysconfdir}/containers/systemd/
+    install -m 644 %{_builddir}/qm-%{version}/subsystems/ros2/ros2-rolling.container %{buildroot}/%{rootfs_qm}/etc/containers/systemd/ros2-rolling.container
+%endif
+########################################################
+# END - qm dropin sub-package - ROS2 - Rolling         #
 ########################################################
 
 ########################################################
@@ -557,6 +573,24 @@ additional drop-in configurations.
 %{_sysconfdir}/containers/containers.conf.d/qm_dropin_mount_bind_video.conf
 %{_sysconfdir}/qm/containers/containers.conf.d/qm_dropin_mount_bind_video.conf
 %{rootfs_qm}/%{_sysconfdir}/containers/systemd/rear-camera.container
+%endif
+
+#######################################
+# sub-package QM ROS2 rolling
+#######################################
+%if %{enable_qm_ros2_rolling}
+%package -n qm_ros2_rolling
+Summary: Subpackage container for quadlet container to ROS2 Rolling environment
+Requires: %{name} = %{version}-%{release}
+BuildArch: noarch
+
+%description -n qm_ros2_rolling
+This sub-package installs a drop-in configurations for the QM.
+It creates the `/etc/qm/containers/containers.conf.d/` directory for adding
+additional drop-in configurations.
+
+%files -n qm_ros2_rolling
+%{rootfs_qm}/%{_sysconfdir}/containers/systemd/ros2-rolling.container
 %endif
 
 #######################################
