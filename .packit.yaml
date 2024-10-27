@@ -1,4 +1,3 @@
----
 # See the documentation for more information:
 # https://packit.dev/docs/configuration/
 
@@ -15,8 +14,6 @@ actions:
 jobs:
   - job: copr_build
     trigger: pull_request
-    # x86_64 is assumed by default
-    # qm is noarch so we only need to test on one arch
     targets:
       fedora-development: {}
       fedora-latest: {}
@@ -24,7 +21,6 @@ jobs:
         additional_repos:
           - copr://@centos-automotive-sig/bluechi-snapshot
 
-  # Run on commit to main branch
   - &copr
     job: copr_build
     trigger: commit
@@ -43,6 +39,7 @@ jobs:
       - epel-9-ppc64le
       - epel-9-x86_64
 
+  # Testing jobs with setup script execution
   - job: tests
     trigger: pull_request
     identifier: e2e-multi-bluechi-agents
@@ -53,13 +50,23 @@ jobs:
     tf_extra_params:
       environments:
         - artifacts:
-          - &bluechi_copr_repo
-            type: repository-file
-            id: https://copr.fedorainfracloud.org/coprs/g/centos-automotive-sig/bluechi-snapshot/repo/centos-stream-9
+            - &bluechi_copr_repo
+              type: repository-file
+              id: https://copr.fedorainfracloud.org/coprs/g/centos-automotive-sig/bluechi-snapshot/repo/centos-stream-9
           hardware:
             disk:
-             - size: ">= 20 GB"
-
+              - size: ">= 20 GB"
+    tests:
+      - name: Run Setup Script
+        run:
+          script: |
+            sudo dnf install -y qm
+            # Execute the setup script and check if it succeeds
+            if /usr/share/qm/setup; then
+              echo "Setup script executed successfully with return code 0."
+            else
+              echo "Setup script failed with a non-zero return code."
+              exit 1
 
   - job: tests
     trigger: pull_request
@@ -70,14 +77,20 @@ jobs:
     tf_extra_params:
       environments:
         - artifacts:
-          - *bluechi_copr_repo
-          tmt:
-            context:
-             scenario : "ffi"
+            - *bluechi_copr_repo
           hardware:
             disk:
-             - size: ">= 20 GB"
-             - size: ">= 20 GB"
+              - size: ">= 20 GB"
+    tests:
+      - name: Run Setup Script
+        run:
+          script: |
+            sudo dnf install -y qm
+            if /usr/share/qm/setup; then
+              echo "Setup script executed successfully."
+            else
+              echo "Setup script failed with a non-zero return code."
+              exit 1
 
   - job: tests
     trigger: pull_request
@@ -88,10 +101,20 @@ jobs:
     tf_extra_params:
       environments:
         - artifacts:
-          - *bluechi_copr_repo
+            - *bluechi_copr_repo
           hardware:
             disk:
-             - size: ">= 20 GB"
+              - size: ">= 20 GB"
+    tests:
+      - name: Run Setup Script
+        run:
+          script: |
+            sudo dnf install -y qm
+            if /usr/share/qm/setup; then
+              echo "Setup script executed successfully."
+            else
+              echo "Setup script failed with a non-zero return code."
+              exit 1
 
   - job: propose_downstream
     trigger: release
@@ -108,6 +131,5 @@ jobs:
   - job: bodhi_update
     trigger: commit
     dist_git_branches:
-      # rawhide updates are created automatically
       - fedora-branched
       - epel-9
