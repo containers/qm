@@ -7,10 +7,21 @@ upstream_tag_template: v{version}
 
 srpm_build_deps:
   - make
+  - container-selinux
+  - golang-github-cpuguy83-md2man
+  - selinux-policy
+  - selinux-policy-devel
+  - selinux-policy-base
+  - selinux-policy-targeted
 
 actions:
   fix-spec-file:
     - bash .packit.sh
+    - git clone https://github.com/containers/qm /tmp/qm-0.6.7
+    - make dist DIST_DIR=/tmp/qm-0.6.7
+    - make rpm DIST_DIR=/tmp/qm-0.6.7
+    - sudo dnf install -y ./rpmbuild/RPMS/noarch/qm*.rpm
+    - bash tests/setup-test/test_setup.sh
 
 jobs:
   - job: copr_build
@@ -60,7 +71,6 @@ jobs:
             disk:
              - size: ">= 20 GB"
 
-
   - job: tests
     trigger: pull_request
     identifier: e2e-ffi
@@ -76,7 +86,6 @@ jobs:
              scenario : "ffi"
           hardware:
             disk:
-             - size: ">= 20 GB"
              - size: ">= 20 GB"
 
   - job: tests

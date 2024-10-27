@@ -4,6 +4,8 @@
 %global rootfs_qm %{_prefix}/lib/qm/rootfs/
 %global rootfs_qm_window_manager %{_prefix}/lib/qm/rootfs/qm_windowmanager
 
+%define _builddir %{_topdir}/BUILD
+
 # Define the feature flag: 1 to enable, 0 to disable
 # By default it's disabled: 0
 
@@ -145,6 +147,8 @@ use container tools like Podman.
 
 %prep
 %autosetup -Sgit -n %{name}-%{version}
+tar -xzf %{SOURCE0} -C %{_builddir}
+cd %{_builddir}/qm-0.6.7
 sed -i 's/^install: man all/install:/' Makefile
 
 %build

@@ -7,7 +7,7 @@ LIBDIR ?= $(PREFIX)/lib
 SYSCONFDIR?=/etc
 QMDIR=/usr/lib/qm
 SPECFILE=rpm/qm.spec
-RPM_TOPDIR ?= $(PWD)/rpmbuild
+RPM_TOPDIR ?= ${HOME}/rpmbuild
 VERSION ?= $(shell cat VERSION)
 
 ###########################################
@@ -105,29 +105,33 @@ codespell: ##             - Runs codespell to check for spelling errors
 	@codespell -S tmp,.git -L te -w
 
 clean: ##             - Removes generated files and dirs
-	rm -f *~  *.tc *.pp *.pp.bz2
-	rm -rf tmp *.tar.gz ${RPM_TOPDIR}
+	@rm -f *~  *.tc *.pp *.pp.bz2
+	@rm -rf tmp *.tar.gz ${HOME}/rpmbuild
 
 man: qm.8.md ##             - Generates the QM man page
 	go-md2man --in qm.8.md --out qm.8
 
 .PHONY: dist
+DIST_DIR ?= ../qm  # Set default path to ../qm, but allow overriding
+
 dist: ##             - Creates the QM distribution package
+	# Get the base directory
+	mkdir -p "${HOME}/"rpmbuild/{RPMS,SRPMS,BUILD,SOURCES}
+	cd $(dir $(DIST_DIR)) && \
 	tar cvz \
 		--exclude='.git' \
 		--dereference \
 		--exclude='.gitignore' \
 		--exclude='demos' \
-		--exclude='.github' \
 		--transform s/qm/qm-${VERSION}/ \
-		-f /tmp/v${VERSION}.tar.gz ../qm
-	mv /tmp/v${VERSION}.tar.gz ./rpm
+		--exclude='.github' \
+		-f "${HOME}/rpmbuild/SOURCES/qm-${VERSION}.tar.gz" $(notdir $(DIST_DIR)) && \
+	ln -sf "${HOME}/rpmbuild/SOURCES/qm-${VERSION}.tar.gz" "${HOME}/rpmbuild/SOURCES/v${VERSION}.tar.gz"
 
 .PHONY: rpm
 rpm: clean dist ##             - Creates a local RPM package, useful for development
-	mkdir -p ${RPM_TOPDIR}/{RPMS,SRPMS,BUILD,SOURCES}
+	mkdir -p ${HOME}/rpmbuild/{RPMS,SRPMS,BUILD,SOURCES}
 	tools/version-update -v ${VERSION}
-	cp ./rpm/v${VERSION}.tar.gz ${RPM_TOPDIR}/SOURCES
 	rpmbuild -ba \
 		--define="u_enable_qm_dropin_img_tempdir ${EN_QM_DROP_IMG_TMPDIR}" \
 		--define="u_enable_qm_window_manager ${EN_QM_WINDOW_MGR}" \
@@ -136,8 +140,8 @@ rpm: clean dist ##             - Creates a local RPM package, useful for develop
 		--define="u_enable_qm_mount_bind_sound ${EN_QM_MNT_BIND_SOUND}" \
 		--define="u_enable_qm_mount_bind_kvm ${EN_QM_MNT_BIND_KVM}" \
 		--define="u_enable_qm_mount_bind_input ${EN_QM_MNT_BIND_INPUT}" \
-                --define="u_enable_qm_mount_bind_video ${EN_QM_MNT_BIND_VIDEO}" \
-		--define="_topdir ${RPM_TOPDIR}" \
+		--define="u_enable_qm_mount_bind_video ${EN_QM_MNT_BIND_VIDEO}" \
+		--define="_topdir ${HOME}/rpmbuild" \
 		--define="version ${VERSION}" \
 		${SPECFILE}
 
