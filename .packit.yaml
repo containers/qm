@@ -85,6 +85,7 @@ jobs:
     tmt_plan: /plans/e2e/tier-0
     targets:
       - epel-9-x86_64
+      - fedora-latest
     tf_extra_params:
       environments:
         - artifacts:
