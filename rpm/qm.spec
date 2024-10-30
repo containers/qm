@@ -366,7 +366,6 @@ fi
 %ghost %dir %{_datadir}/containers
 %ghost %dir %{_datadir}/containers/systemd
 %{_datadir}/containers/systemd/qm.container
-%ghost %{_sysconfdir}/containers/systemd/qm.container
 %{_mandir}/man8/*
 %ghost %dir %{_installscriptdir}
 %ghost %dir %{_installscriptdir}/rootfs
