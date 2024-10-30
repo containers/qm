@@ -7,6 +7,12 @@ upstream_tag_template: v{version}
 
 srpm_build_deps:
   - make
+  - selinux-policy-targeted
+  - podman
+  - systemd
+  - procps-ng
+  - iptables-nft
+  - jq
 
 actions:
   fix-spec-file:
@@ -85,7 +91,7 @@ jobs:
     tmt_plan: /plans/e2e/tier-0
     targets:
       - epel-9-x86_64
-      - fedora-latest
+      - fedora-all
     tf_extra_params:
       environments:
         - artifacts:
