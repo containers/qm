@@ -147,27 +147,54 @@ while [ $# -gt 0 ]; do
     esac
 done
 
-install_qm_rpms() {
+install_fedora_base_repo() {
+    local repo_file="/etc/yum.repos.d/fedora.repo"
 
+    if [[ ! -f $repo_file ]]; then
+        echo "Creating Fedora repository file at $repo_file..."
+        cat <<EOL > "$repo_file"
+[fedora]
+name=Fedora \$releasever - \$basearch
+#baseurl=http://download.example/pub/fedora/linux/releases/\$releasever/Everything/\$basearch/os/
+metalink=https://mirrors.fedoraproject.org/metalink?repo=fedora-\$releasever&arch=\$basearch
+enabled=1
+countme=1
+metadata_expire=7d
+repo_gpgcheck=0
+type=rpm
+gpgcheck=1
+gpgkey=file:///etc/pki/rpm-gpg/RPM-GPG-KEY-fedora-\$releasever-\$basearch
+skip_if_unavailable=False
+EOL
+        echo "Fedora repository created."
+    else
+        echo "Fedora repository file already exists at $repo_file."
+    fi
+}
+
+install_qm_rpms() {
   info_message "Installing qm setup rpm"
   info_message "Installing qm using ${USE_QM_COPR} repo"
   info_message "=============================="
-  dnf install -y 'dnf-command(config-manager)'
-  dnf config-manager --set-enabled crb
+
+  # skip if it's fedora
+  if ! grep -iq "fedora" /etc/os-release; then
+      dnf install -y 'dnf-command(config-manager)'
+      dnf config-manager --set-enabled crb
+  fi
 
   local release_id
   release_id=$(grep ^ID= /etc/os-release | cut -d = -f 2)
 
   if [[ -n "${USE_QM_COPR}" ]]; then
       if [[ "${USE_QM_COPR}" != "release" ]]; then
-          dnf copr enable -y @centos-automotive-sig/bluechi-snapshot centos-stream-9
-          dnf copr enable -y "${USE_QM_COPR}" centos-stream-9
-      elif [[ "${USE_QM_COPR}" == "release" && "${release_id}" =~ "centos" ]]; then
-          if [ ! -f /etc/yum.repos.d/autosd.repo ]; then
+          dnf copr enable -y @centos-automotive-sig/bluechi-snapshot $1
+          dnf copr enable -y "${USE_QM_COPR}" $1
+      fi
+      if [ ! -f /etc/yum.repos.d/autosd.repo ]; then
               info_message "Installing autosd repository"
               info_message "=============================="
               install_autosd_repo
-          fi
       fi
   fi
 
@@ -286,7 +313,14 @@ echo
 info_message "Preparing QM environment"
 info_message "=============================="
 
-install_qm_rpms
+if grep -iq "fedora" /etc/os-release; then
+    install_fedora_base_repo
+    # FIX-ME: do not use static names here for fedora latest versions
+    install_qm_rpms "fedora-41-x86_64"
+else
+    install_qm_rpms "centos-stream-9"
+fi
+
 setup_qm_services
 
 info_message "${GRN}QM environment${CLR}"
