@@ -1,0 +1,6 @@
+-   id: validate-config
+    name: Validate package config
+    description: Check for missing values and incorrect types
+    entry: ./pre-commit-hooks/validate-config.sh
+    language: script
+    files: ^\.?packit.ya?ml$
