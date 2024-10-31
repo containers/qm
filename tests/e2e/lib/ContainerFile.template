@@ -101,7 +101,7 @@ RUN npm install markdownlint-cli2 --global
 
 # [start] CONTROL - settings
 # Setting configuration, uncommenting:
-#	- ControllerPort to communicate via 842
+#	- ControllerPort to communicate via 8420
 #	- Use journal for logging
 #	- Set AllowedNodeNames as control and node1
 # TODO: remove the static node1 here, dynamic by rune2e script via sed

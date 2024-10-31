@@ -190,7 +190,7 @@ setup_qm_services() {
   cat > /etc/bluechi/controller.conf << 'EOF'
 [bluechi-controller]
 AllowedNodeNames=qm.localrootfs,localrootfs
-ControllerPort=842
+ControllerPort=8420
 LogLevel=INFO
 LogTarget=journald
 LogIsQuiet=false
@@ -198,6 +198,7 @@ EOF
 cat > /etc/bluechi/agent.conf.d/00-default.conf << 'EOF'
 [bluechi-agent]
 NodeName=localrootfs
+ControllerPort=8420
 EOF
 
 controller_host_ip=$(hostname -I | awk '{print $1}')

@@ -27,7 +27,7 @@ After=local-fs.target
 
 [Container]
 Image=dir:/var/lib/containers/registry/tools-ffi:latest
-Exec=/root/tests/FFI/bin/bluechi-tester --url="tcp:host=${controller_host_ip},port=842" \
+Exec=/root/tests/FFI/bin/bluechi-tester --url="tcp:host=${controller_host_ip},port=8420" \
      --nodename=bluechi-tester-X \
      --numbersignals=11111111 \
      --signal="JobDone"
