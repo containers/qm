@@ -14,6 +14,7 @@
   - [SSH guest CentOS Automotive Stream Distro](#ssh-guest-centos-automotive-stream-distro)
   - [Check if HOST and Container are using different network namespace](#check-if-host-and-container-are-using-different-network-namespace)
   - [Debugging with podman in QM using --root](#debugging-with-podman-in-qm)
+  - [Debugging with quadlet](#debugging-with-quadlet)
 
 ## Building QM rpm manually with changes
 
@@ -256,3 +257,21 @@ Example changing the spec and triggering the build via make (feel free to automa
 
 $ make clean && VERSION=YOURVERSIONHERE make rpm
 ```
+
+### Debugging with quadlet
+
+Imagine a situation where you have a Quadlet container inside QM that isn't starting, and you're unsure why. The best approach is to log into the QM, run the ```quadlet --dryrun``` command, and analyze what's happening. Here's how you can troubleshoot the issue step by step.
+
+```bash
+$ sudo podman exec -it qm bash
+bash-5.1# cd /etc/containers/systemd/
+bash-5.1# ls
+ros2-rolling.container
+
+bash-5.1# /usr/libexec/podman/quadlet --dryrun
+quadlet-generator[1068]: Loading source unit file /etc/containers/systemd/ros2-rolling.container
+quadlet-generator[1068]: converting "ros2-rolling.container": unsupported key 'Command' in group 'Container' in /etc/containers/systemd/ros2-rolling.container
+bash-5.1#
+```
+
+As you can see above, the error occurs because the Quadlet is attempting to use an unsupported key from the Service section in the Container group. Removing the unsupported key ```Command``` from ```ros2-rolling.container``` and then reloading or restarting the service should resolve the issue.
