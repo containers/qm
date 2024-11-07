@@ -1,6 +1,6 @@
 summary: FFI - QM FreedomFromInterference
 
-environment:
+environment+:
     CONTROL_CONTAINER_NAME: host
 
 discover:
