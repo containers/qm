@@ -15,3 +15,7 @@ adjust:
    environment+:
        # Sample code to use manual packit repo
        PACKIT_COPR_PROJECT: packit/containers-qm-291
+
+ - when: distro == centos-stream-9, fedora
+   environment+:
+       CS_DISTRO: $@distro
