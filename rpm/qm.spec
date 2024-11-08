@@ -45,7 +45,7 @@
 ###########################################
 # subpackage QM - ROS2 Rolling version    #
 ###########################################
-%define enable_qm_ros2_rolling 1%{?u_enable_qm_ros2_rolling}
+%define enable_qm_ros2_rolling 0%{?u_enable_qm_ros2_rolling}
 
 ###########################################
 # subpackage QM - mount bind /dev/ttyUSB0 #
@@ -158,8 +158,8 @@ sed -i 's/^install: man all/install:/' Makefile
 %install
 # Create the directory for drop-in configurations
 install -d %{buildroot}%{_sysconfdir}/containers/containers.conf.d
+install -d %{buildroot}%{rootfs_qm}%{_sysconfdir}/containers/systemd
 install -d %{buildroot}%{_sysconfdir}/qm/containers/containers.conf.d
-
 
 ####################################################################
 ################# QM Window Manager ################################
@@ -241,7 +241,8 @@ install -d %{buildroot}%{_sysconfdir}/qm/containers/containers.conf.d
 %if %{enable_qm_mount_bind_sound}
     # first step - add drop-in file in /etc/containers/containers.d.conf/qm_dropin_mount_bind_snd.conf
     # to QM container mount bind /dev/snd
-    install -m 644 %{_builddir}/qm-%{version}/etc/qm/containers/containers.conf.d/qm_dropin_mount_bind_snd.conf %{buildroot}%{_sysconfdir}/containers/containers.conf.d/qm_dropin_mount_bind_snd.conf
+    install -m 644 %{_builddir}/qm-%{version}/subsystems/audio/audio.container %{buildroot}%{rootfs_qm}%{_sysconfdir}/containers/systemd/audio.container
+    install -m 644 %{_builddir}/qm-%{version}%{_sysconfdir}/qm/containers/containers.conf.d/qm_dropin_mount_bind_snd.conf %{buildroot}%{_sysconfdir}/containers/containers.conf.d/qm_dropin_mount_bind_snd.conf
 
     # second step - add drop-in file in /etc/qm/containers/containers.d.conf/qm_dropin/mount_bind_snd.conf
     # to nested containers in QM env mount bind it in /dev/snd
@@ -479,6 +480,7 @@ additional drop-in configurations.
 %files -n qm_mount_bind_sound
 %{_sysconfdir}/containers/containers.conf.d/qm_dropin_mount_bind_snd.conf
 %{_sysconfdir}/qm/containers/containers.conf.d/qm_dropin_mount_bind_snd.conf
+%{rootfs_qm}%{_sysconfdir}/containers/systemd/audio.container
 %endif
 
 #######################################
