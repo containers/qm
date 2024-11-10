@@ -56,6 +56,9 @@ jobs:
           - &bluechi_copr_repo
             type: repository-file
             id: https://copr.fedorainfracloud.org/coprs/g/centos-automotive-sig/bluechi-snapshot/repo/centos-stream-9
+          - &bluechi_copr_repo_fedora
+            type: repository-file
+            id: https://copr.fedorainfracloud.org/coprs/g/centos-automotive-sig/bluechi-snapshot/repo/fedora
           hardware:
             disk:
              - size: ">= 20 GB"
@@ -84,11 +87,13 @@ jobs:
     identifier: qm-tier-0
     tmt_plan: /plans/e2e/tier-0
     targets:
+      - fedora-latest
       - epel-9-x86_64
     tf_extra_params:
       environments:
         - artifacts:
           - *bluechi_copr_repo
+          - *bluechi_copr_repo_fedora
           hardware:
             disk:
              - size: ">= 20 GB"
