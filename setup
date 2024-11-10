@@ -146,7 +146,13 @@ install() {
     . /etc/os-release
     setupRW "${ROOTFS}" "${RWETCFS}" "${RWVARFS}"
 
-    cmd_dnf_install="dnf -y install --releasever=${VERSION_ID} --installroot ${ROOTFS} ${PACKAGES_TO_INSTALL}"
+    EXTRA_FLAG=""
+    if grep -qi "^ID=fedora" /etc/os-release; then
+        EXTRA_FLAG="--use-host-config"
+    fi
+
+    cmd_dnf_install="dnf -y install --releasever=${VERSION_ID} --installroot ${ROOTFS} ${PACKAGES_TO_INSTALL} ${EXTRA_FLAG}"
+    echo "$cmd_dnf_install"
     ${cmd_dnf_install}
 
     if dnf --installroot "${ROOTFS}" list installed "${PACKAGES_TO_REMOVE}" > /dev/null 2>&1; then

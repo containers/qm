@@ -5,8 +5,5 @@ After=network.target
 [Container]
 Image=quay.io/qm-images/ros2:rolling
 
-# Automatically restart the container if it stops
-Restart=always
-
 [Install]
 WantedBy=multi-user.target

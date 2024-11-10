@@ -13,7 +13,7 @@ jobs:
     runs-on: ubuntu-latest
 
     container:
-      image: fedora:latest   # Use Fedora as the container for this job
+      image: fedora:40   # Use Fedora as the container for this job
       #options: --privileged  # Enable privileged mode for nested containers if necessary (optional)
 
     steps:
