@@ -10,72 +10,6 @@ SPECFILE=rpm/qm.spec
 RPM_TOPDIR ?= $(PWD)/rpmbuild
 VERSION ?= $(shell cat VERSION)
 
-###########################################
-# subpackage QM - img_tempdir             #
-###########################################
-# use img temp dir as /var/tmp            #
-###########################################
-# export EN_QM_DROP_IMG_TMPDIR=1
-EN_QM_DROP_IMG_TMPDIR ?= 0
-
-#######################################################################
-# subpackage QM - mount bind /dev/tty7                                #
-#######################################################################
-# mount bind /dev/tty7 from host to nested containers as /dev/tty7:rw #
-# Please note: /dev/tty7 is typically the virtual terminal associated #
-# with the graphical user interface (GUI) on Linux systems.           #
-# It is where the X server or the Wayland display server usually runs,#
-# handling the graphical display, input, and windowing environment.   #
-# When you start a graphical session (such as GNOME, KDE, etc.),      #
-# it usually runs on this virtual console.                            #
-#######################################################################
-# export EN_QM_MNT_BIND_TTY7=1
-EN_QM_MNT_BIND_TTY7 ?= 0
-
-############################################
-# subpackage QM - mount bind audio device  #
-# from host to container and nested        #
-# container enabling sound                 #
-############################################
-# export EN_QM_MNT_BIND_SOUND=1
-EN_QM_MNT_BIND_SOUND ?= 0
-
-############################################
-# subpackage QM - ros2-rolling             #
-############################################
-# export EN_QM_ROS2_ROLLING=1
-EN_QM_ROS2_ROLLING ?= 0
-
-###########################################
-# subpackage QM - Enable Window Manager   #
-###########################################
-# export EN_QM_WINDOW_MGR=1
-EN_QM_WINDOW_MGR ?= 0
-
-###########################################
-# subpackage QM - mount bind /dev/ttyUSB0 #
-###########################################
-# export EN_QM_MNT_BIND_TTY_USB=1
-EN_QM_MNT_BIND_TTY_USB ?= 0
-
-###########################################
-# subpackage QM - mount bind /dev/kvm #
-###########################################
-# export EN_QM_MNT_BIND_KVM=1
-EN_QM_MNT_BIND_KVM ?= 0
-
-###########################################
-# subpackage QM - input devices           #
-###########################################
-# export EN_QM_MNT_BIND_INPUT=1
-EN_QM_MNT_BIND_INPUT ?= 0
-
-###########################################
-# subpackage QM - input video             #
-###########################################
-# export EN_QM_MNT_BIND_VIDEO=1
-EN_QM_MNT_BIND_VIDEO ?= 0
-
 # Default help target
 .PHONY: help
 help:
@@ -135,15 +69,6 @@ rpm: clean dist ##             - Creates a local RPM package, useful for develop
 	tools/version-update -v ${VERSION}
 	cp ./rpm/v${VERSION}.tar.gz ${RPM_TOPDIR}/SOURCES
 	rpmbuild -ba \
-		--define="u_enable_qm_dropin_img_tempdir ${EN_QM_DROP_IMG_TMPDIR}" \
-		--define="u_enable_qm_window_manager ${EN_QM_WINDOW_MGR}" \
-		--define="u_enable_qm_mount_bind_tty7 ${EN_QM_MNT_BIND_TTY7}" \
-		--define="u_enable_qm_mount_bind_ttyUSB0 ${EN_QM_MNT_BIND_TTY_USB}" \
-		--define="u_enable_qm_mount_bind_sound ${EN_QM_MNT_BIND_SOUND}" \
-		--define="u_enable_qm_mount_bind_kvm ${EN_QM_MNT_BIND_KVM}" \
-		--define="u_enable_qm_mount_bind_input ${EN_QM_MNT_BIND_INPUT}" \
-		--define="u_enable_qm_mount_bind_video ${EN_QM_MNT_BIND_VIDEO}" \
-		--define="u_enable_qm_dropin_ros2_rolling ${EN_QM_ROS2_ROLLING}" \
 		--define="_topdir ${RPM_TOPDIR}" \
 		--define="version ${VERSION}" \
 		${SPECFILE}

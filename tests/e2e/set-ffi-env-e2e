@@ -157,9 +157,9 @@ install_qm_rpms() {
   dnf config-manager --set-enabled crb
 
   local release_id
-  release_id=$(grep -oP '(?<=^ID=)\w+' /etc/os-release)
+  release_id=$(grep -oP '(?<=^ID=)\w+' <<< "$(tr -d '"' < /etc/os-release)")
   local version_id
-  version_id=$(grep -oP '(?<=^VERSION_ID=)\w+' /etc/os-release)
+  version_id=$(grep -oP '(?<=^VERSION_ID=)\w+' <<< "$(tr -d '"' < /etc/os-release)")
   if [[ "$release_id" == "centos" ]]; then
     release_id=epel
   fi

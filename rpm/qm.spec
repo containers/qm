@@ -11,7 +11,7 @@
 # subpackage QM - img_tempdir             #
 ###########################################
 # use img temp dir as /var/tmp
-%define enable_qm_dropin_img_tempdir 0%{?u_enable_qm_dropin_img_tempdir}
+%define enable_qm_dropin_img_tempdir 0
 
 ####################################################################
 # subpackage QM - mount bind /dev/tty7                             #
@@ -28,44 +28,44 @@
 # When you start a graphical session (ex. GNOME, KDE, etc.),       #
 # it usually runs on this virtual console.                         #
 ####################################################################
-%define enable_qm_mount_bind_tty7 0%{?u_enable_qm_mount_bind_tty7}
+%define enable_qm_mount_bind_tty7 0
 
 #####################################################################
 # subpackage QM - mount bind audio                                  #
 # device from host to container and nested container enabling sound #
 #####################################################################
-%define enable_qm_mount_bind_sound 0%{?u_enable_qm_mount_bind_sound}
+%define enable_qm_mount_bind_sound 0
 
 
 ###########################################
 # subpackage QM - Enable Window Manager   #
 ###########################################
-%define enable_qm_window_manager 0%{?u_enable_qm_window_manager}
+%define enable_qm_window_manager 0
 
 ###########################################
 # subpackage QM - ROS2 Rolling version    #
 ###########################################
-%define enable_qm_ros2_rolling 0%{?u_enable_qm_ros2_rolling}
+%define enable_qm_ros2_rolling 0
 
 ###########################################
 # subpackage QM - mount bind /dev/ttyUSB0 #
 ###########################################
-%define enable_qm_mount_bind_ttyUSB0 0%{?u_enable_qm_mount_bind_ttyUSB0}
+%define enable_qm_mount_bind_ttyUSB0 0
 
 ###########################################
 # subpackage QM - mount bind /dev/kvm     #
 ###########################################
-%define enable_qm_mount_bind_kvm 0%{?u_enable_qm_mount_bind_kvm}
+%define enable_qm_mount_bind_kvm 0
 
 ###########################################
 # subpackage QM - mount bind /dev/video   #
 ###########################################
-%define enable_qm_mount_bind_video 0%{?u_enable_qm_mount_bind_video}
+%define enable_qm_mount_bind_video 0
 
 ###########################################
 # subpackage QM - input devices           #
 ###########################################
-%define enable_qm_mount_bind_input 0%{?u_enable_qm_mount_bind_input}
+%define enable_qm_mount_bind_input 0
 
 # Some bits borrowed from the openstack-selinux package
 %global selinuxtype targeted
