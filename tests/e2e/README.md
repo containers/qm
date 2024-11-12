@@ -265,7 +265,7 @@ tmt -c scenario=ffi run -a prepare  provision --how connect \
 ##### Running manual tests with PACKIT copr packages
 
 Assume debug of PR rpm needed to run locally,
-Use context `-c run=manual` with environment variable `-e PACKIT_COPR_PROJECT=<packir-qm-copr>`
+Use context `-c run=manual` with environment variable `-e PACKIT_COPR_PROJECT=<packit-qm-copr>`
 
 ``` bash
 tmt -c distro=fedora-41 -c run=manual  run  -e PACKIT_COPR_PROJECT=packit/containers-qm-647 -a prepare -vvv -d  provision --how connect -u root -p <password> -P <port> -g localhost  plans -n /plans/e2e/tier-0 exec -d -vvv report --how junit
