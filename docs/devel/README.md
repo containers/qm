@@ -14,6 +14,9 @@
   - [SSH guest CentOS Automotive Stream Distro](#ssh-guest-centos-automotive-stream-distro)
   - [Check if HOST and Container are using different network namespace](#check-if-host-and-container-are-using-different-network-namespace)
   - [Debugging with podman in QM using --root](#debugging-with-podman-in-qm)
+  - [Creating your own drop-in QM sub-package](#creating-your-own-dropin-qm-subpackage)
+  - [Let automation create/publish PR sub-packages](#let-automation-create-publish-pr-subpackages)
+  - [Install PR copr sub-packages on local machine](#install-pr-copr-sub-packages-on-local-machine)
   - [Debugging with quadlet](#debugging-with-quadlet)
 
 ## Building QM rpm manually with changes
@@ -239,7 +242,7 @@ Error: creating runtime static files directory "/usr/share/containers/storage/li
 mkdir /usr/share/containers/storage: read-only file system
 ```
 
-### Creating your own drop-in QM sub-package
+### Creating your own dropin QM subpackage
 
 We recommend using the existing drop-in files as a guide and adapting them to your specific needs. However, here are the step-by-step instructions:
 
@@ -256,6 +259,46 @@ Example changing the spec and triggering the build via make (feel free to automa
 %define enable_qm_dropin_img_tempdir 1
 
 $ make clean && VERSION=YOURVERSIONHERE make rpm
+```
+
+### Let automation create publish PR subpackages
+
+subpuckges could be created by Packit and uploaded
+by Copr to packit/containers-qm-<PR_ID> repo.
+Default macros for each subpackage deactivated by default.
+
+To enable PR repo apply the follwoing
+
+1. Enable subpackage spec macro definition in .packit.sh
+Add the following line at the end of file,
+
+```bash
+# Update build additional rpms in spec
+sed -i 's/\(<spec_file_macro_name> \).*/\11/' ${SPEC_FILE}
+```
+
+Check rpms created in PT Actions under PR Checks > Packit-as-a-Service
+In case new tests need the sub-package, it will be innstalled immediatly
+on Packit-as-a-Service test phase.
+
+### Install PR copr sub-packages on local machine
+
+1. Enbale repo in your machine
+This part is done automatically by TestingFarm guest provisioning.
+In case of manual installation,
+
+```bash
+dnf copr enable packit/containers-qm-<PR_ID> <distro><arch>
+```
+
+1. Install rpm in qm
+This part is done automatically by TestingFarm guest provisioning.
+In case of manual installation,
+
+```bash
+podman cp /etc/yum.repos.d/_copr:copr.fedorainfracloud.org:packit:containers-qm-<PR_ID>.repo qm:/etc/yum.repos.d/
+
+dnf  install --releasever=<VERSION_ID> --installroot /usr/lib/qm/rootfs/ <package>
 ```
 
 ### Debugging with quadlet
