@@ -1,0 +1,9 @@
+[Unit]
+Description=Audio Container
+After=network.target
+
+[Container]
+Image=quay.io/qm-images/audio:latest
+
+[Install]
+WantedBy=multi-user.target

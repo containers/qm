@@ -211,35 +211,8 @@ git clone https://github.com/containers/qm.git && cd qm
 make qm_dropin_mount_bind_sound
 sudo dnf install -y rpmbuild/RPMS/noarch/qm_mount_bind_sound-0.6.7-1.fc40.noarch.rpm
 
-# To check if your system is using PulseAudio: pactl info
-$ pactl info
-Server String: /run/user/1000/pulse/native
-Library Protocol Version: 35
-Server Protocol Version: 35
-Is Local: yes
-Client Index: 118
-Tile Size: 65472
-User Name: douglas
-Host Name: fedora
-Server Name: PulseAudio (on PipeWire 1.0.8)
-Server Version: 15.0.0
-Default Sample Specification: float32le 2ch 48000Hz
-Default Channel Map: front-left,front-right
-Default Sink: alsa_output.pci-0000_00_1f.3-platform-skl_hda_dsp_generic.HiFi__hw_sofhdadsp__sink
-Default Source: alsa_input.pci-0000_00_1f.3-platform-skl_hda_dsp_generic.HiFi__hw_sofhdadsp_6__source
-Cookie: 9108:667a
-
-# Install PuseAudio (pactl) and alsa-utils (aplay) in the QM partition
-sudo dnf --installroot /usr/lib/qm/rootfs install pulseaudio-utils alsa-utils -y
-
 # Restart QM container (if already running)
 sudo podman restart qm
-
-# Showing /dev/snd data inside QM
-sudo podman exec -it qm bash
-controlC0  hwC0D0  hwC1D2    pcmC0D7p  pcmC0D9p  pcmC1D0p   pcmC1D3p  pcmC1D5p pcmC1D7c  timer
-controlC1  hwC1D0  pcmC0D3p  pcmC0D8p  pcmC1D0c  pcmC1D31p  pcmC1D4p  pcmC1D6c seq
-```
 
 ### Step 2: Identify Sound Cards
 
@@ -301,18 +274,24 @@ Inside QM, run the following command:
 
 ```bash
 podman exec -it qm bash
+bash-# podman ps
+CONTAINER ID  IMAGE                           COMMAND         CREATED      STATUS      PORTS       NAMES
+76dacaa9a89e  quay.io/qm-images/audio:latest  sleep infinity  7 hours ago  Up 7 hours              systemd-audio
+
+
+bash-# podman exec -it systemd-audio bash
+
+Execute the audio test within the nested container, and the sound will be output through the physical speakers of your computer—or, in this case, the car's multimedia soundbox.
 bash-# speaker-test -D hw:1,0 -c 2 -r 48000
 ```
 
-This command runs a test with:
+Params:
 
 ```bash
 hw:1,0: sound card 1, device 0
 -c 2: two channels (stereo)
 -r 48000: sample rate of 48 kHz
 ```
-
-If you want to test different sample rates, change the `-r` parameter to other values (e.g., 44100 for 44.1 kHz or 96000 for 96 kHz) to see which ones are supported by the hardware.
 
 ## Creating your own drop-in QM sub-package
 
