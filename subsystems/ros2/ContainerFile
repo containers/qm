@@ -12,7 +12,7 @@
 # ros2 run demo_nodes_cpp talker &
 #    ros2 run demo_nodes_cpp listener
 
-ARG FEDORA_VERSION=40
+ARG FEDORA_VERSION=latest
 
 FROM registry.fedoraproject.org/fedora-toolbox:${FEDORA_VERSION}
 
@@ -46,6 +46,12 @@ RUN dnf install -y \
   python3-pytest \
   python3-pytest-cov \
   python3-pytest-mock \
+  assimp-devel \
+  python3-matplotlib \
+  ignition-cmake-devel \
+  ignition-math-devel \
+  python3-pygraphviz \
+  urdfdom-headers-devel \
   python3-pytest-runner \
   python3-rosdep \
   python3-setuptools \
@@ -60,6 +66,7 @@ RUN dnf install -y \
 
 RUN python3 -m pip install -U \
   flake8-blind-except==0.1.1 \
+  flake8-docstrings \
   flake8-class-newline \
   flake8-deprecated
 
@@ -72,7 +79,7 @@ RUN rosdep update
 RUN rosdep install \
      --from-paths src \
      --ignore-src -y \
-     --skip-keys "assimp fastcdr ignition-cmake2 ignition-math6 python3-matplotlib python3-pygraphviz rti-connext-dds-6.0.1 urdfdom_headers"
+     --skip-keys "assimp fastcdr ignition-cmake2 ignition-math6 python3-matplotlib python3-pygraphviz rti-connext-dds-6.0.1 urdfdom_headers python3-flake8-docstrings"
 
 WORKDIR /opt/ros2
 
