@@ -160,6 +160,7 @@ sed -i 's/^install: man all/install:/' Makefile
 install -d %{buildroot}%{_sysconfdir}/containers/containers.conf.d
 install -d %{buildroot}%{rootfs_qm}%{_sysconfdir}/containers/systemd
 install -d %{buildroot}%{_sysconfdir}/qm/containers/containers.conf.d
+install -d %{buildroot}%{_sysconfdir}/containers/systemd/qm.container.d
 
 ####################################################################
 ################# QM Window Manager ################################
@@ -223,13 +224,9 @@ install -d %{buildroot}%{_sysconfdir}/qm/containers/containers.conf.d
 # START - qm dropin sub-package - mount kvm            #
 ########################################################
 %if %{enable_qm_mount_bind_kvm}
-    # first step - add drop-in file in /etc/containers/containers.d.conf/qm_dropin_mount_bind_kvm.conf
-    # to QM container mount bind /dev/kvm
-    install -m 644 %{_builddir}/qm-%{version}/etc/qm/containers/containers.conf.d/qm_dropin_mount_bind_kvm.conf %{buildroot}%{_sysconfdir}/containers/containers.conf.d/qm_dropin_mount_bind_kvm.conf
-
-    # second step - add drop-in file in /etc/qm/containers/containers.d.conf/qm_dropin/mount_bind_kvm.conf
+    # Add config for qm only - add drop-in file in /etc/containers/systemd/qm.container.d/qm_dropin_mount_bind_kvm.conf
     # to nested containers in QM env mount bind it in /dev/kvm
-    install -m 644 %{_builddir}/qm-%{version}/etc/qm/containers/containers.conf.d/qm_dropin_mount_bind_kvm.conf %{buildroot}%{_sysconfdir}/qm/containers/containers.conf.d/qm_dropin_mount_bind_kvm.conf
+    install -m 644 %{_builddir}/qm-%{version}/etc/containers/systemd/qm.container.d/qm_dropin_mount_bind_kvm.conf %{buildroot}%{_sysconfdir}/containers/systemd/qm.container.d/qm_dropin_mount_bind_kvm.conf
 %endif
 ########################################################
 # END - qm dropin sub-package - mount kvm              #
@@ -494,12 +491,11 @@ BuildArch: noarch
 
 %description -n qm_mount_bind_kvm
 This sub-package installs a drop-in configurations for the QM.
-It creates the `/etc/qm/containers/containers.conf.d/` directory for adding
-additional drop-in configurations.
+It creates the `/etc/containers/systemd/qm.container.d/` directory for adding
+additional quadlet drop-in configurations.
 
 %files -n qm_mount_bind_kvm
-%{_sysconfdir}/containers/containers.conf.d/qm_dropin_mount_bind_kvm.conf
-%{_sysconfdir}/qm/containers/containers.conf.d/qm_dropin_mount_bind_kvm.conf
+%{_sysconfdir}/containers/systemd/qm.container.d/qm_dropin_mount_bind_kvm.conf
 %endif
 
 #######################################

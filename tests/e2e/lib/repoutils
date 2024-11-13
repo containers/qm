@@ -1,0 +1,78 @@
+#!/bin/bash
+#
+# Copyright 2023 The qm Authors
+#
+# This program is free software; you can redistribute it and/or
+# modify it under the terms of the GNU General Public License
+# as published by the Free Software Foundation; either version 2
+# of the License, or (at your option) any later version.
+#
+# This program is distributed in the hope that it will be useful,
+# but WITHOUT ANY WARRANTY; without even the implied warranty of
+# MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+# GNU General Public License for more details.
+#
+# You should have received a copy of the GNU General Public License
+# along with this program; If not, see <http://www.gnu.org/licenses/>.
+
+install_autosd_repo() {
+  ###########################################################################
+  # Description:                                                            #
+  # Install autosd repository                                               #
+  #                                                                         #
+  # Arguments:                                                              #
+  #          None                                                           #
+  ###########################################################################
+
+    touch /etc/yum.repos.d/autosd.repo
+    cat > "/etc/yum.repos.d/autosd.repo" << EOF
+[autosd]
+name=Automotive-Sig \$releasever
+baseurl=https://autosd.sig.centos.org/AutoSD-9/nightly/repos/AutoSD/compose/AutoSD/\$basearch/os
+enabled=1
+gpgcheck=0
+EOF
+}
+
+
+install_qm_rpms() {
+  ###########################################################################
+  # Description:                                                            #
+  # Enable and install necessary qm rpms and eendencies                     #
+  #                                                                         #
+  # Arguments: Should be exported by calling script                         #
+  #   USE_QM_COPR:  copr repo to install                                    #
+  ###########################################################################
+
+  if [[ -n "${USE_QM_COPR}" ]]; then
+     USE_QM_COPR="${PACKIT_COPR_PROJECT:-rhcontainerbot/qm}"
+  fi
+  info_message "Installing qm setup rpm"
+  info_message "Installing qm using ${USE_QM_COPR} repo"
+  info_message "=============================="
+  dnf install -y 'dnf-command(config-manager)'
+  dnf config-manager --set-enabled crb
+
+  local release_id
+  release_id=$(grep -oP '(?<=^ID=)\w+' <<< "$(tr -d '"' < /etc/os-release)")
+  local version_id
+  version_id=$(grep -oP '(?<=^VERSION_ID=)\w+' <<< "$(tr -d '"' < /etc/os-release)")
+  if [[ "$release_id" == "centos" ]]; then
+    release_id=epel
+  fi
+
+  if [[ -n "${USE_QM_COPR}" ]]; then
+      if [[ "${USE_QM_COPR}" != "release" ]]; then
+          dnf copr enable -y @centos-automotive-sig/bluechi-snapshot "$release_id-$version_id-$(arch)"
+          dnf copr enable -y "${USE_QM_COPR}" "$release_id-$version_id-$(arch)"
+      elif [[ "${USE_QM_COPR}" == "release" && "${release_id}" =~ (centos|epel|fedora) ]]; then
+          if [ ! -f /etc/yum.repos.d/autosd.repo ]; then
+              info_message "Installing autosd repository"
+              info_message "=============================="
+              install_autosd_repo
+          fi
+      fi
+  fi
+
+  dnf install -y bluechi-ctl bluechi-agent bluechi-controller qm hostname
+}

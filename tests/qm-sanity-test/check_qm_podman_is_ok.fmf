@@ -2,5 +2,6 @@ summary: Test podman in qm is ok
 test: /bin/bash ./check_qm_podman_is_ok.sh
 duration: 10m
 tier: 0
+tag: kvm
 framework: shell
 id: ac4aac07-094b-4d22-b5f6-b85bc39da119

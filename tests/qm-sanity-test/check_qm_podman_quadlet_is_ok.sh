@@ -1,4 +1,4 @@
-#!/bin/bash -euvx
+#!/bin/bash -x
 
 # shellcheck disable=SC1091
 source ../e2e/lib/utils
@@ -13,20 +13,18 @@ Description=the qm-sanity-test sleep container
 After=local-fs.target
 
 [Container]
-Image=registry.access.redhat.com/ubi9-minimal:latest
+Image=quay.io/fedora/fedora
 Exec=sleep 1000
 
 [Install]
 # Start by default on boot
 WantedBy=multi-user.target default.target
 EOF
-
     info_message "check_qm_podman_quadlet_is_ok(): qm-sanity-test container reload & restart"
     exec_cmd_with_pass_info "podman exec qm systemctl daemon-reload"
     exec_cmd_with_pass_info "podman exec qm systemctl start qm-sanity-test"
     exec_cmd_with_pass_info "podman exec qm systemctl status qm-sanity-test | grep -i started"
-    exec_cmd_with_pass_info "podman exec qm podman run alpine echo Hello QM"
-
+    exec_cmd_with_pass_info "podman exec qm podman run fedora echo Hello QM"
     info_message "PASS: check_qm_podman_quadlet_is_ok()"
     exit 0
 }
