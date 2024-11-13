@@ -87,16 +87,32 @@ jobs:
     identifier: qm-tier-0
     tmt_plan: /plans/e2e/tier-0
     targets:
-      - fedora-latest
       - epel-9-x86_64
     tf_extra_params:
       environments:
         - artifacts:
           - *bluechi_copr_repo
+          hardware:
+            disk:
+             - size: ">= 20 GB"
+
+  - job: tests
+    trigger: pull_request
+    identifier: kvm-tier-0
+    tmt_plan: /plans/e2e/kvm-tier-0
+    targets:
+      - fedora-latest
+      - epel-9-x86_64
+    tf_extra_params:
+      environments:
+        - artifacts:
           - *bluechi_copr_repo_fedora
           hardware:
             disk:
              - size: ">= 20 GB"
+            virtualization:
+             is-supported: true
+
 
   - job: propose_downstream
     trigger: release

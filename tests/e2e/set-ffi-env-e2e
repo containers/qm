@@ -33,6 +33,8 @@ source "${SCRIPT_DIR}"/lib/systemd
 source "${SCRIPT_DIR}"/lib/tests
 # shellcheck disable=SC1091
 source "${SCRIPT_DIR}"/lib/diskutils
+# shellcheck disable=SC1091
+source "${SCRIPT_DIR}"/lib/repoutils
 
 # GLOBALS
 export CONFIG_NODE_AGENT_PATH="/etc/bluechi/agent.conf.d/agent.conf"
@@ -148,38 +150,6 @@ while [ $# -gt 0 ]; do
     esac
 done
 
-install_qm_rpms() {
-
-  info_message "Installing qm setup rpm"
-  info_message "Installing qm using ${USE_QM_COPR} repo"
-  info_message "=============================="
-  dnf install -y 'dnf-command(config-manager)'
-  dnf config-manager --set-enabled crb
-
-  local release_id
-  release_id=$(grep -oP '(?<=^ID=)\w+' <<< "$(tr -d '"' < /etc/os-release)")
-  local version_id
-  version_id=$(grep -oP '(?<=^VERSION_ID=)\w+' <<< "$(tr -d '"' < /etc/os-release)")
-  if [[ "$release_id" == "centos" ]]; then
-    release_id=epel
-  fi
-
-  if [[ -n "${USE_QM_COPR}" ]]; then
-      if [[ "${USE_QM_COPR}" != "release" ]]; then
-          dnf copr enable -y @centos-automotive-sig/bluechi-snapshot "$release_id-$version_id-$(arch)"
-          dnf copr enable -y "${USE_QM_COPR}" "$release_id-$version_id-$(arch)"
-      elif [[ "${USE_QM_COPR}" == "release" && "${release_id}" =~ (centos|fedora) ]]; then
-          if [ ! -f /etc/yum.repos.d/autosd.repo ]; then
-              info_message "Installing autosd repository"
-              info_message "=============================="
-              install_autosd_repo
-          fi
-      fi
-  fi
-
-  dnf install -y bluechi-ctl bluechi-agent bluechi-controller qm hostname
-}
-
 setup_qm_services() {
 
   info_message "Setup qm services"
@@ -228,18 +198,6 @@ fi
   systemctl start bluechi-agent
   # Restart qm to read lates bluechi-agent.conf
   systemctl restart qm
-}
-
-install_autosd_repo() {
-    # Install autosd repository
-    touch /etc/yum.repos.d/autosd.repo
-    cat > "/etc/yum.repos.d/autosd.repo" << EOF
-[autosd]
-name=Automotive-Sig \$releasever
-baseurl=https://autosd.sig.centos.org/AutoSD-9/nightly/repos/AutoSD/compose/AutoSD/\$basearch/os
-enabled=1
-gpgcheck=0
-EOF
 }
 
 info_message "Starting setup"

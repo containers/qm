@@ -2,5 +2,8 @@ summary: Test qm setup script succeeds
 test: /usr/share/qm/setup
 duration: 10m
 tier: 0
+#Need to run first for Fedora use case
+tag: [kvm,setup]
+order: 40
 framework: shell
 id: 310b2af2-6661-4b00-a563-67cc021e732b

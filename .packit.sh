@@ -35,3 +35,5 @@ sed -i "s/^Source0:.*.tar.gz/Source0: %{name}-${HEAD_VERSION}.tar.gz/" ${SPEC_FI
 
 # Add update create additional subpackages in spec
 # Please refer `Let automation create/publish PR sub-packages` of docs/devel/README.md
+sed -i 's/\(enable_qm_mount_bind_kvm \).*/\11/' ${SPEC_FILE}
+
