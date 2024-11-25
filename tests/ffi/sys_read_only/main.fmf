@@ -1,0 +1,19 @@
+summary: Test that /sys is read-only in QM partition.
+description: |
+    This tests confirms that /sys folder is present and read-only in the QM
+    partition. The test executes `test -r /sys && test ! -w /sys` in QM
+    partition, no other input.
+
+    Test inputs:
+        None
+
+    Expected results:
+        out: [ INFO  ] PASS: check_sys_read_only: As expected, /sys is read-only in QM partition.
+
+    Results location:
+        output.txt
+contact: Albert Esteve <aesteve@redhat.com>
+test: /bin/bash ./test.sh
+duration: 10m
+tag: ffi
+framework: shell

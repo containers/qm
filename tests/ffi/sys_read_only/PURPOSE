@@ -1,0 +1,12 @@
+Title:
+    Verifies that /sys is read-only in QM partition.
+
+Description:
+    This test executes `test -r /sys && test ! -w /sys` in QM partition, no other input.
+        podman exec qm "test -r /sys && test ! -w /sys"
+
+Expected result:
+    out: [ INFO  ] PASS: check_sys_read_only: As expected, /sys is read-only in QM partition.
+
+Jira:
+    VROOM-24445
