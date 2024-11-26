@@ -17,3 +17,4 @@ test: /bin/bash ./test.sh
 duration: 10m
 tag: ffi
 framework: shell
+id: 3fc9b0f9-5098-4bd4-a086-e75dc56ea569
