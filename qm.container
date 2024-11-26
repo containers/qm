@@ -36,6 +36,10 @@ TasksMax=50%
 
 [Container]
 AddCapability=all
+Unmask=ALL
+SecurityLabelNested=true
+SeccompProfile=/usr/share/qm/seccomp.json
+PidsLimit=-1
 
 # Comment DropCapability this will allow FFI Tools to surpass their defaults.
 DropCapability=sys_resource
@@ -45,7 +49,6 @@ AddDevice=-/dev/fuse
 ContainerName=qm
 Exec=/sbin/init
 Network=private
-PodmanArgs=--pids-limit=-1 --security-opt seccomp=/usr/share/qm/seccomp.json --security-opt label=nested --security-opt unmask=all
 ReadOnly=true
 Rootfs=${ROOTFS}
 

@@ -10,6 +10,7 @@
   - [Copying files to QM partition](#copying-files-to-qm-partition)
   - [Listing QM service](#listing-qm-service)
   - [List QM container via podman](#list-qm-container-via-podman)
+  - [Extend QM quadlet managed by podman](#extend-qm-quadlet-managed-by-podman)
   - [Connecting to QM container via podman](#connecting-to-qm-container-via-podman)
   - [SSH guest CentOS Automotive Stream Distro](#ssh-guest-centos-automotive-stream-distro)
   - [Check if HOST and Container are using different network namespace](#check-if-host-and-container-are-using-different-network-namespace)
@@ -177,6 +178,44 @@ e-id a83253ae278d7394cb38e975535590d7 --max-bytes 536870912 --max-fds 4096 --max
 # podman ps
 CONTAINER ID  IMAGE       COMMAND     CREATED         STATUS         PORTS       NAMES
 a83253ae278d              /sbin/init  38 seconds ago  Up 38 seconds              qm
+```
+
+### Extend QM quadlet managed by podman
+
+QM quadlet file is shipped through rpm, refer the following file.
+qm.container which is installed to /usr/share/containers/systemd/qm.container
+Please refer `man quadlet` for the supported value and how to.
+
+In case a change needed in quadlet file, do not update systemd/qm.container file
+As per `man quadlet` do the following:
+
+```console
+if ! test -e /etc/containers/systemd/qm.container.d ; then
+  mkdir -p  /etc/containers/systemd/qm.container.d
+fi
+cat > "/etc/containers/systemd/qm.container.d/expose-dev.conf" <<EOF
+[Container]
+# Expose host device /dev/net/tun
+AddDevice=-/dev/net/tun
+# In case parameter override needed, add empty value before the required key
+Unmask=
+Unmask=ALL
+EOF
+```
+
+To verify the result use the following command:
+
+```console
+/usr/lib/systemd/system-generators/podman-system-generator  --dryrun
+```
+
+Once the result is satisfied, apply the following
+
+```console
+systemctl daemon-reload
+systemctl restart qm
+systemctl is-active qm
+active
 ```
 
 ### Connecting to QM container via podman
