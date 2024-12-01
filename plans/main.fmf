@@ -9,14 +9,7 @@ prepare:
     order: 20
     package:
       - podman
-  - name: Remove unsupported /dev configs
-    how: shell
-    order: 60
-    script: |
-        if ! test -e /dev/kvm; then
-          dnf remove -y qm_mount_bind_kvm
-        fi
-
+      - bc
 
 adjust:
  - when: run == manual

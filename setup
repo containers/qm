@@ -261,6 +261,15 @@ echo  "  * agent hostname: ${AGENT_HOSTNAME}"
 echo
 
 if [ "${REMOVE_QM_ROOTFS}" == "Y" ]; then
+    # Unmount qm binds
+    qm_mounts="$(mount | grep /qm  | cut -d" " -f3)"
+    if [ -z "$qm_mounts" ]; then
+        echo "No mount points found under /qm."
+    else
+        for mount in $qm_mounts; do
+            umount "$mount"
+        done
+    fi
     # Get the one path below, i.e: /usr/lib/qm instead /usr/lib/qm/rootfs
     path_qm_rootfs=$(${QM_ROOTFS_TOOL} | sed 's|/[^/]*$||')
     rm -rf "${path_qm_rootfs}"

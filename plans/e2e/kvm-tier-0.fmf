@@ -5,8 +5,7 @@ discover:
     filter: 'tier:0&tag:kvm'
 
 prepare+:
-    #Enable copr and install rpms
-    - name: Expose /dev kvm to QM
+    - name: Enable copr and install rpms
       script: |
           cd tests/e2e
           bash ./lib/repoutils

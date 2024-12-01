@@ -53,6 +53,7 @@ exec_cmd() {
     local cmd="$1"
     eval "$cmd"
     if_error_exit "Error: Command $cmd failed"
+    info_message "PASS: Command $cmd successful"
 }
 
 cleanup_node_services() {
