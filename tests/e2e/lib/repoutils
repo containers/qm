@@ -76,3 +76,30 @@ install_qm_rpms() {
 
   dnf install -y bluechi-ctl bluechi-agent bluechi-controller qm hostname
 }
+
+set_qm_rlimits() {
+  ###########################################################################
+  # Description:                                                            #
+  # This function sets the QM containers.conf file to set specific resource #
+  # limits (rlimits) for QM containers, such as:                            #
+  #     nofile (maximum open files).                                        #
+  #     nproc (maximum processes)                                           #
+  #                                                                         #
+  #     Reference: https://github.com/containers/podman/issues/24692        #
+  #                                                                         #
+  # Arguments: None                                                         #
+  ###########################################################################
+    local ulimit_nofile
+    local ulimit_nproc
+    info_message "set_qm_rlimits(): prepare qm containers.conf file, update ulimits"
+    # Check if QM containers.conf exists
+    exec_cmd "test -e ${QM_CTR_CFG}"
+    # Calculate ulimits
+    ulimit_nofile=$(( $(ulimit -n) * U_NOFILE_PRCTG / 100 ))
+    ulimit_nproc=$(( $(ulimit -u) * U_NPROC_PRCTG / 100 ))
+    # Update containers.conf
+    exec_cmd "sed -i -E 's/(default_ulimits = \[)/\1\"nproc=$ulimit_nproc:$ulimit_nproc\",\"nofile=$ulimit_nofile:$ulimit_nofile\"/' $QM_CTR_CFG"
+    # Verify limits are set
+    info_message "fix_qm_rlimits(): verify limits are set"
+    exec_cmd "grep -o '\(nproc.*\",\|nofile.*\"\)' ${QM_CTR_CFG} | tr -d '\",' "
+}
