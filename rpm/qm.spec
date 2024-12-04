@@ -158,9 +158,6 @@ sed -i 's/^install: man all/install:/' Makefile
 %install
 # Create the directory for drop-in configurations
 install -d %{buildroot}%{_sysconfdir}/containers/containers.conf.d
-install -d %{buildroot}%{rootfs_qm}%{_sysconfdir}/containers/systemd
-install -d %{buildroot}%{_sysconfdir}/qm/containers/containers.conf.d
-install -d %{buildroot}%{_sysconfdir}/containers/systemd/qm.container.d
 
 ####################################################################
 ################# QM Window Manager ################################
@@ -365,7 +362,6 @@ fi
 %license LICENSE
 %doc CODE-OF-CONDUCT.md NOTICE README.md SECURITY.md
 %dir %{_datadir}/selinux
-%dir %{_sysconfdir}/qm/containers/containers.conf.d
 %{_datadir}/selinux/*
 %dir %{_datadir}/qm
 %{_datadir}/qm/containers.conf
