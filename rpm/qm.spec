@@ -158,9 +158,6 @@ sed -i 's/^install: man all/install:/' Makefile
 %install
 # Create the directory for drop-in configurations
 install -d %{buildroot}%{_sysconfdir}/containers/containers.conf.d
-install -d %{buildroot}%{rootfs_qm}%{_sysconfdir}/containers/systemd
-install -d %{buildroot}%{_sysconfdir}/qm/containers/containers.conf.d
-install -d %{buildroot}%{_sysconfdir}/containers/systemd/qm.container.d
 
 ####################################################################
 ################# QM Window Manager ################################
@@ -224,6 +221,7 @@ install -d %{buildroot}%{_sysconfdir}/containers/systemd/qm.container.d
 # START - qm dropin sub-package - mount kvm            #
 ########################################################
 %if %{enable_qm_mount_bind_kvm}
+    mkdir -p %{buildroot}%{_sysconfdir}/containers/systemd/qm.container.d
     # Add config for qm only - add drop-in file in /etc/containers/systemd/qm.container.d/qm_dropin_mount_bind_kvm.conf
     # to nested containers in QM env mount bind it in /dev/kvm
     install -m 644 %{_builddir}/qm-%{version}/etc/containers/systemd/qm.container.d/qm_dropin_mount_bind_kvm.conf %{buildroot}%{_sysconfdir}/containers/systemd/qm.container.d/qm_dropin_mount_bind_kvm.conf
@@ -365,7 +363,6 @@ fi
 %license LICENSE
 %doc CODE-OF-CONDUCT.md NOTICE README.md SECURITY.md
 %dir %{_datadir}/selinux
-%dir %{_sysconfdir}/qm/containers/containers.conf.d
 %{_datadir}/selinux/*
 %dir %{_datadir}/qm
 %{_datadir}/qm/containers.conf
