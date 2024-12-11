@@ -221,7 +221,6 @@ install -d %{buildroot}%{_sysconfdir}/containers/containers.conf.d
 # START - qm dropin sub-package - mount kvm            #
 ########################################################
 %if %{enable_qm_mount_bind_kvm}
-<<<<<<< HEAD
     mkdir -p %{buildroot}%{_sysconfdir}/containers/systemd/qm.container.d
     # Add config for qm only - add drop-in file in /etc/containers/systemd/qm.container.d/qm_dropin_mount_bind_kvm.conf
     # to QM env mount bind it in /dev/kvm

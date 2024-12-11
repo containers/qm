@@ -3,30 +3,16 @@
 # How to build
 # ==================
 # podman login quay.io
-# podman build -t quay.io/qm-images/kvm:latest -f ContainerFile
+# use build_kvm_container.sh to build container
 # podman push quay.io/qm-images/kvm:latest
-FROM fedora:latest
+FROM fedora-minimal:latest
 
 ENV PASSWORD_FEDORA_USER=fedora
 
-RUN dnf -y install virt-install \
-                   libvirt-daemon \
-                   libvirt-daemon-qemu \
-                   libvirt-daemon-kvm \
-                   libvirt-daemon-config-network \
-                   guestfs-tools \
-                   wget \
-                   vim -y \
-    && dnf clean all && rm -rf /var/cache/dnf
+RUN dnf install qemu-system-$(arch) -y \
+                 && dnf clean all && rm -rf /var/cache/dnf
 
-RUN wget -O /var/lib/libvirt/images/Fedora-Cloud-Base-Generic.qcow2 https://cofractal-ewr.mm.fcix.net/fedora/linux/releases/41/Cloud/x86_64/images/Fedora-Cloud-Base-Generic-41-1.4.x86_64.qcow2
+COPY ./Fedora-Cloud-Base-Generic.qcow2 /var/lib/libvirt/images/
 
-# Set fedora user pass as fedora
-RUN export LIBGUESTFS_BACKEND=direct && \
-	virt-customize -a /var/lib/libvirt/images/Fedora-Cloud-Base-Generic.qcow2 --password fedora:password:$PASSWORD_FEDORA_USER
-
-# Permission to qemu user/group
-RUN chown qemu:qemu /var/lib/libvirt/images/Fedora-Cloud-Base-Generic.qcow2
-
-# Set systemd as the init system for the container
-ENTRYPOINT ["/usr/sbin/init"]
+# Set container stay alive
+ENTRYPOINT ["/usr/bin/qemu-system-x86_64","-smp","12","-enable-kvm","-m","2G","-machine","q35","-cpu","host","-device","virtio-net-pci,netdev=n0,mac=FE:30:26:a6:91:2d","-netdev","user,id=n0,net=10.0.2.0/24,hostfwd=tcp::2226-:22","-drive","file=/var/lib/libvirt/images/Fedora-Cloud-Base-Generic.qcow2,index=0,media=disk,format=qcow2,if=virtio,snapshot=off","-nographic"]
