@@ -35,10 +35,24 @@ LimitNOFILE=65536
 TasksMax=50%
 
 [Container]
+# AddCapability
+# -------------
+# Grants all capabilities to the container, increasing flexibility but significantly
+# reducing security.
 AddCapability=all
+
+# Unmask
+# -------
+# Unmasks all systemd services for the container, overriding masking that prevents
+# access to specific services.
 Unmask=ALL
 SecurityLabelNested=true
 SeccompProfile=/usr/share/qm/seccomp.json
+
+# PidsLimit
+# ---------
+# Disables the PID limit for the container by setting it to -1. 
+# Without a limit, the container can spawn unlimited processes, potentially exhausting system resources.
 PidsLimit=-1
 
 # Comment DropCapability this will allow FFI Tools to surpass their defaults.
@@ -49,7 +63,16 @@ AddDevice=-/dev/fuse
 ContainerName=qm
 Exec=/sbin/init
 Network=private
+
+# ReadOnly
+# --------
+# Makes the container's filesystem read-only, enhancing security by preventing modifications.
 ReadOnly=true
+
+# Rootfs
+# ------
+# Defines the root filesystem location for the container. 
+# The '${ROOTFS}' variable should point to a valid filesystem path.
 Rootfs=${ROOTFS}
 
 SecurityLabelNested=true
