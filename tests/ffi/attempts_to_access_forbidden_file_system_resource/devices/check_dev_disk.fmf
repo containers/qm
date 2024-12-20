@@ -1,4 +1,15 @@
 summary: Test that the device /dev/disk is not available in the QM partition.
+description: |
+    This tests confirms that the device /dev/disk is not available in the QM partition.
+     The test executes `test -d /dev/disk` in QM partition, no other input.
+
+    Test inputs:
+        None
+
+    Expected results:
+        [ INFO  ] PASS: check_dev_disk_not_available: As expected, /dev/disk is not available in the QM partition.
+    Results location:
+        output.txt
 test: /bin/bash ./check_dev_disk.sh
 duration: 10m
 tag: ffi

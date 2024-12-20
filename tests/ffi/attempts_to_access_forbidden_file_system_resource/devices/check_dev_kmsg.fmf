@@ -1,4 +1,16 @@
 summary: Test that the device /dev/kmsg is not available in the QM partition.
+description: |
+    This tests confirms that the device /dev/kmsg is not available in the QM partition.
+    The test executes `test -c /dev/kmsg` in QM partition, no other input.
+
+    Test inputs:
+        None
+
+    Expected results:
+        [ INFO  ] PASS: check_dev_kmsg_not_available: As expected, /dev/kmsg is not available in the QM partition.
+
+    Results location:
+        output.txt
 test: /bin/bash ./check_dev_kmsg.sh
 duration: 10m
 tag: ffi

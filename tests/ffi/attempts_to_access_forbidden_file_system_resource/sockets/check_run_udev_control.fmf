@@ -1,4 +1,15 @@
 summary: Test that the socket /run/udev/control does not exist in the QM partition.
+description: |
+    This tests confirms that the socket /run/udev/control does not exist in the QM partition.
+    The test executes `test -e /run/udev/control` in QM partition, no other input.
+
+    Test inputs:
+        None
+
+    Expected results:
+        out: [ INFO  ] PASS: check_run_udev_control_not_exist: As expected, /run/udev/control dose not exist in the QM partition
+    Results location:
+        output.txt
 test: /bin/bash ./check_run_udev_control.sh
 duration: 10m
 tag: ffi
