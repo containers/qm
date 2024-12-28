@@ -124,6 +124,7 @@ BuildRequires: selinux-policy >= %_selinux_policy_version
 BuildRequires: selinux-policy-devel >= %_selinux_policy_version
 
 Requires: parted
+Requires: crun-krun
 Requires: containers-common
 Requires: selinux-policy >= %_selinux_policy_version
 Requires(post): selinux-policy-base >= %_selinux_policy_version
@@ -374,6 +375,7 @@ fi
 %{_datadir}/qm/qm-storage-settings
 %{_datadir}/qm/comment-tz-local
 %{_datadir}/qm/qm-is-ostree
+%{_datadir}/qm/qm-change-podman-runtime
 %ghost %dir %{_datadir}/containers
 %ghost %dir %{_datadir}/containers/systemd
 %{_datadir}/containers/systemd/qm.container
