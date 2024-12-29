@@ -7,6 +7,7 @@ LIBDIR ?= $(PREFIX)/lib
 SYSCONFDIR?=/etc
 QMDIR=/usr/lib/qm
 SPECFILE=rpm/qm.spec
+SPECFILE_SUBPACKAGE_KVM=rpm/kvm/qm-kvm.spec
 RPM_TOPDIR ?= $(PWD)/rpmbuild
 VERSION ?= $(shell cat VERSION)
 
@@ -62,6 +63,17 @@ dist: ##             - Creates the QM distribution package
 		--transform s/qm/qm-${VERSION}/ \
 		-f /tmp/v${VERSION}.tar.gz ../qm
 	mv /tmp/v${VERSION}.tar.gz ./rpm
+	tar cvz \
+		--exclude-from=build-aux/exclude_from_tar_gz_subpackage_kvm.txt \
+		--dereference \
+		--transform s/qm/qm-kvm-${VERSION}/ \
+		-f /tmp/qm-kvm-${VERSION}.tar.gz \
+		../qm/README.md \
+		../qm/SECURITY.md \
+		../qm/LICENSE \
+		../qm/ \
+		../qm/etc/containers/systemd/qm.container.d/qm_dropin_mount_bind_kvm.conf
+	mv /tmp/qm-kvm-${VERSION}.tar.gz ./rpm
 
 .PHONY: rpm
 rpm: clean dist ##             - Creates a local RPM package, useful for development
@@ -72,6 +84,16 @@ rpm: clean dist ##             - Creates a local RPM package, useful for develop
 		--define="_topdir ${RPM_TOPDIR}" \
 		--define="version ${VERSION}" \
 		${SPECFILE}
+
+.PHONY: kvm_subpackage
+kvm_subpackage: clean dist ##             - Creates a local RPM package, useful for development
+	mkdir -p ${RPM_TOPDIR}/{RPMS,SRPMS,BUILD,SOURCES}
+	tools/version-update -v ${VERSION}
+	cp ./rpm/v${VERSION}.tar.gz ${RPM_TOPDIR}/SOURCES
+	rpmbuild -ba \
+		--define="_topdir ${RPM_TOPDIR}" \
+		--define="version ${VERSION}" \
+		${SPECFILE_SUBPACKAGE_KVM}
 
 # ostree target is a helper for everything required for ostree
 .PHONY: ostree
@@ -103,9 +125,7 @@ qm_dropin_mount_bind_video0: ##      - QM RPM sub-package to mount bind /dev/vid
 	$(MAKE) VERSION=${VERSION} rpm
 
 .PHONY: qm_dropin_mount_bind_kvm
-qm_dropin_mount_bind_kvm: ##         - QM RPM sub-package to mount bind /dev/kvm in the nested containers
-	sed -i 's/%define enable_qm_mount_bind_kvm 0/%define enable_qm_mount_bind_kvm 1/' ${SPECFILE}
-	$(MAKE) VERSION=${VERSION} rpm
+	$(MAKE) VERSION=${VERSION} kvm_subpackage
 
 .PHONY: qm_dropin_mount_bind_sound
 qm_dropin_mount_bind_sound: ##       - QM RPM sub-package to mount bind /dev/snd in the nested containers
