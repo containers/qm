@@ -8,6 +8,7 @@ SYSCONFDIR?=/etc
 QMDIR=/usr/lib/qm
 SPECFILE=rpm/qm.spec
 SPECFILE_SUBPACKAGE_KVM=rpm/kvm/qm-kvm.spec
+SPECFILE_SUBPACKAGE_ROS2_ROLLING=rpm/ros2/rolling/ros2_rolling.spec
 RPM_TOPDIR ?= $(PWD)/rpmbuild
 VERSION ?= $(shell cat VERSION)
 
@@ -95,6 +96,17 @@ kvm_subpackage: clean dist ##             - Creates a local RPM package, useful 
 		--define="version ${VERSION}" \
 		${SPECFILE_SUBPACKAGE_KVM}
 
+.PHONY: ros2_rolling
+ros2_rolling: clean dist ##             - Creates a local RPM package, useful for development
+	mkdir -p ${RPM_TOPDIR}/{RPMS,SRPMS,BUILD,SOURCES}
+	tools/version-update -v ${VERSION}
+	cp ./rpm/v${VERSION}.tar.gz ${RPM_TOPDIR}/SOURCES
+	rpmbuild -ba \
+		--define="_topdir ${RPM_TOPDIR}" \
+		--define="version ${VERSION}" \
+		${SPECFILE_SUBPACKAGE_ROS2_ROLLING}
+
+
 # ostree target is a helper for everything required for ostree
 .PHONY: ostree
 ostree: qm_dropin_img_tempdir ##             - A helper for creating QM packages for ostree based distros
@@ -107,11 +119,6 @@ qm_dropin_window_manager: qm_dropin_mount_bind_kvm qm_dropin_mount_bind_sound qm
 .PHONY: qm_dropin_img_tempdir
 qm_dropin_img_tempdir: ##            - QM RPM sub-package qm_dropin_img_tempdir
 	sed -i 's/%define enable_qm_dropin_img_tempdir 0/%define enable_qm_dropin_img_tempdir 1/' ${SPECFILE}
-	$(MAKE) VERSION=${VERSION} rpm
-
-.PHONY: qm_dropin_ros2_rolling
-qm_dropin_ros2_rolling: ##           - QM RPM sub-package to creating a quadlet container with ROS2 rolling env
-	sed -i 's/%define enable_qm_ros2_rolling 0/%define enable_qm_ros2_rolling 1/' ${SPECFILE}
 	$(MAKE) VERSION=${VERSION} rpm
 
 .PHONY: qm_dropin_mount_bind_ttyUSB0
