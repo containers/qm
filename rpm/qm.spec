@@ -8,12 +8,6 @@
 # By default it's disabled: 0
 
 ###########################################
-# subpackage QM - img_tempdir             #
-###########################################
-# use img temp dir as /var/tmp
-%define enable_qm_dropin_img_tempdir 0
-
-###########################################
 # subpackage QM - Enable Window Manager   #
 ###########################################
 %define enable_qm_window_manager 0
@@ -157,17 +151,6 @@ install -d %{buildroot}%{_sysconfdir}/containers/containers.conf.d
 ################# END QM Window Manager ############################
 ####################################################################
 
-########################################################
-# START - qm dropin sub-package - img tempdir          #
-########################################################
-%if %{enable_qm_dropin_img_tempdir}
-    install -m 644 %{_builddir}/qm-%{version}/etc/qm/containers/containers.conf.d/qm_dropin_img_tempdir.conf \
-        %{buildroot}%{_sysconfdir}/qm/containers/containers.conf.d/qm_dropin_img_tempdir.conf
-%endif
-########################################################
-# END - qm dropin sub-package - img tempdir            #
-########################################################
-
 # install policy modules
 %_format MODULES $x.pp.bz2
 %{__make} DESTDIR=%{buildroot} DATADIR=%{_datadir} install
@@ -223,24 +206,6 @@ fi
 %ghost %dir %{_installscriptdir}
 %ghost %dir %{_installscriptdir}/rootfs
 %ghost %{_installscriptdir}/rootfs/*
-
-#######################################
-# sub-package QM Img TempDir          #
-#######################################
-%if %{enable_qm_dropin_img_tempdir}
-%package -n qm-dropin-img-tempdir
-Summary: Drop-in configuration for QM nested containers to img tempdir
-Requires: %{name} = %{version}-%{release}
-BuildArch: noarch
-
-%description -n qm-dropin-img-tempdir
-This sub-package installs a drop-in configurations for the QM.
-It creates the `/etc/qm/containers/containers.conf.d/` directory for adding
-additional drop-in configurations.
-
-%files -n qm-dropin-img-tempdir
-%{_sysconfdir}/qm/containers/containers.conf.d/qm_dropin_img_tempdir.conf
-%endif
 
 #######################################
 # sub-package qm window manager       #
