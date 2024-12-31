@@ -60,12 +60,14 @@ sed -i "s/Version: ${PREV_VERSION}$/Version: ${VERSION}/g" "${BASEDIR}/rpm/kvm/q
 sed -i "s/Version: ${PREV_VERSION}$/Version: ${VERSION}/g" "${BASEDIR}/rpm/ros2/rolling/ros2_rolling.spec"
 sed -i "s/Version: ${PREV_VERSION}$/Version: ${VERSION}/g" "${BASEDIR}/rpm/sound/sound.spec"
 sed -i "s/Version: ${PREV_VERSION}$/Version: ${VERSION}/g" "${BASEDIR}/rpm/video/video.spec"
+sed -i "s/Version: ${PREV_VERSION}$/Version: ${VERSION}/g" "${BASEDIR}/rpm/tty7/tty7.spec"
 # Otherwise, set the new version.
 sed -i "s/Version: 0$/Version: ${VERSION}/g" "${BASEDIR}/rpm/qm.spec"
 sed -i "s/Version: 0$/Version: ${VERSION}/g" "${BASEDIR}/rpm/kvm/qm-kvm.spec"
 sed -i "s/Version: 0$/Version: ${VERSION}/g" "${BASEDIR}/rpm/ros2/rolling/ros2_rolling.spec"
 sed -i "s/Version: 0$/Version: ${VERSION}/g" "${BASEDIR}/rpm/sound/sound.spec"
 sed -i "s/Version: 0$/Version: ${VERSION}/g" "${BASEDIR}/rpm/video/video.spec"
+sed -i "s/Version: 0$/Version: ${VERSION}/g" "${BASEDIR}/rpm/tty7/tty7.spec"
 # Execute the changes on the rest of the files.
 for file in "${FILES[@]}"; do
     sed -i "s/${PREV_VERSION}/${VERSION}/g" "${BASEDIR}/${file}"
