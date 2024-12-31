@@ -9,6 +9,7 @@ QMDIR=/usr/lib/qm
 SPECFILE=rpm/qm.spec
 SPECFILE_SUBPACKAGE_KVM=rpm/kvm/qm-kvm.spec
 SPECFILE_SUBPACKAGE_SOUND=rpm/sound/sound.spec
+SPECFILE_SUBPACKAGE_VIDEO=rpm/video/video.spec
 SPECFILE_SUBPACKAGE_ROS2_ROLLING=rpm/ros2/rolling/ros2_rolling.spec
 RPM_TOPDIR ?= $(PWD)/rpmbuild
 VERSION ?= $(shell cat VERSION)
@@ -117,6 +118,16 @@ sound_subpackage: clean dist ##             - Creates a local RPM package, usefu
 		--define="version ${VERSION}" \
 		${SPECFILE_SUBPACKAGE_SOUND}
 
+.PHONY: video_subpackage
+video_subpackage: clean dist ##             - Creates a local RPM package, useful for development
+	mkdir -p ${RPM_TOPDIR}/{RPMS,SRPMS,BUILD,SOURCES}
+	tools/version-update -v ${VERSION}
+	cp ./rpm/v${VERSION}.tar.gz ${RPM_TOPDIR}/SOURCES
+	rpmbuild -ba \
+		--define="_topdir ${RPM_TOPDIR}" \
+		--define="version ${VERSION}" \
+		${SPECFILE_SUBPACKAGE_VIDEO}
+
 
 # ostree target is a helper for everything required for ostree
 .PHONY: ostree
@@ -135,11 +146,6 @@ qm_dropin_img_tempdir: ##            - QM RPM sub-package qm_dropin_img_tempdir
 .PHONY: qm_dropin_mount_bind_ttyUSB0
 qm_dropin_mount_bind_ttyUSB0: ##     - QM RPM sub-package to mount bind /dev/ttyUSB0 in the nested containers
 	sed -i 's/%define enable_qm_mount_bind_ttyUSB0 0/%define enable_qm_mount_bind_ttyUSB0 1/' ${SPECFILE}
-	$(MAKE) VERSION=${VERSION} rpm
-
-.PHONY: qm_dropin_mount_bind_video0
-qm_dropin_mount_bind_video0: ##      - QM RPM sub-package to mount bind /dev/video0 in the nested containers
-	sed -i 's/%define enable_qm_mount_bind_video 0/%define enable_qm_mount_bind_video 1/' ${SPECFILE}
 	$(MAKE) VERSION=${VERSION} rpm
 
 .PHONY: qm_dropin_mount_bind_tty7
