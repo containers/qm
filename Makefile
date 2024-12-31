@@ -12,6 +12,7 @@ SPECFILE_SUBPACKAGE_SOUND=rpm/sound/sound.spec
 SPECFILE_SUBPACKAGE_VIDEO=rpm/video/video.spec
 SPECFILE_SUBPACKAGE_TTY7=rpm/tty7/tty7.spec
 SPECFILE_SUBPACKAGE_INPUT=rpm/input/input.spec
+SPECFILE_SUBPACKAGE_IMG_WINDOWMANAGER=rpm/windowmanager/windowmanager.spec
 SPECFILE_SUBPACKAGE_TTYUSB0=rpm/ttyUSB0/ttyUSB0.spec
 SPECFILE_SUBPACKAGE_IMG_TEMPDIR=rpm/img_tempdir/img_tempdir.spec
 SPECFILE_SUBPACKAGE_ROS2_ROLLING=rpm/ros2/rolling/ros2_rolling.spec
@@ -172,19 +173,15 @@ img_tempdir_subpackage: clean dist ##             - Creates a local RPM package,
 		--define="version ${VERSION}" \
 		${SPECFILE_SUBPACKAGE_IMG_TEMPDIR}
 
-# ostree target is a helper for everything required for ostree
-.PHONY: ostree
-ostree: qm_dropin_img_tempdir ##             - A helper for creating QM packages for ostree based distros
-
-.PHONY: qm_dropin_window_manager
-qm_dropin_window_manager: qm_dropin_mount_bind_kvm ##         - QM RPM sub-package qm_dropin_window_manager
-	sed -i 's/%define enable_qm_window_manager 0/%define enable_qm_window_manager 1/' ${SPECFILE}
-	$(MAKE) VERSION=${VERSION} rpm
-
-.PHONY: qm_dropin_img_tempdir
-qm_dropin_img_tempdir: ##            - QM RPM sub-package qm_dropin_img_tempdir
-	sed -i 's/%define enable_qm_dropin_img_tempdir 0/%define enable_qm_dropin_img_tempdir 1/' ${SPECFILE}
-	$(MAKE) VERSION=${VERSION} rpm
+.PHONY: windowmanager_subpackage
+windowmanager_subpackage: clean dist ##             - Creates a local RPM package, useful for development
+	mkdir -p ${RPM_TOPDIR}/{RPMS,SRPMS,BUILD,SOURCES}
+	tools/version-update -v ${VERSION}
+	cp ./rpm/v${VERSION}.tar.gz ${RPM_TOPDIR}/SOURCES
+	rpmbuild -ba \
+		--define="_topdir ${RPM_TOPDIR}" \
+		--define="version ${VERSION}" \
+		${SPECFILE_SUBPACKAGE_IMG_WINDOWMANAGER}
 
 install-policy: all ##             - Install selinux policies only
 	semodule -i ${TARGETS}.pp.bz2
