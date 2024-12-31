@@ -23,11 +23,6 @@
 ###########################################
 %define enable_qm_mount_bind_ttyUSB0 0
 
-###########################################
-# subpackage QM - input devices           #
-###########################################
-%define enable_qm_mount_bind_input 0
-
 # Some bits borrowed from the openstack-selinux package
 %global selinuxtype targeted
 %global moduletype services
@@ -194,22 +189,6 @@ install -d %{buildroot}%{_sysconfdir}/containers/containers.conf.d
 # END - qm dropin sub-package - mount ttyUSB0          #
 ########################################################
 
-########################################################
-# START - qm dropin sub-package - mount input          #
-########################################################
-%if %{enable_qm_mount_bind_input}
-    # first step - add drop-in file in /etc/containers/containers.d.conf/qm_dropin_mount_bind_input.conf
-    # to QM container mount input
-    install -m 644 %{_builddir}/qm-%{version}/etc/qm/containers/containers.conf.d/qm_dropin_mount_bind_input.conf %{buildroot}%{_sysconfdir}/containers/containers.conf.d/qm_dropin_mount_bind_input.conf
-
-    # second step - add drop-in file in /etc/qm/containers/containers.d.conf/qm_dropin/mount_bind_input.conf
-    # to nested containers in QM env mount bind input
-    install -m 644 %{_builddir}/qm-%{version}/etc/qm/containers/containers.conf.d/qm_dropin_mount_bind_input.conf %{buildroot}%{_sysconfdir}/qm/containers/containers.conf.d/qm_dropin_mount_bind_input.conf
-%endif
-########################################################
-# END - qm dropin sub-package - mount input            #
-########################################################
-
 # install policy modules
 %_format MODULES $x.pp.bz2
 %{__make} DESTDIR=%{buildroot} DATADIR=%{_datadir} install
@@ -285,25 +264,6 @@ additional drop-in configurations.
 %endif
 
 #######################################
-# sub-package QM Mount Input          #
-#######################################
-%if %{enable_qm_mount_bind_input}
-%package -n qm_mount_bind_input
-Summary: Drop-in configuration for QM containers to mount bind input
-Requires: %{name} = %{version}-%{release}
-BuildArch: noarch
-
-%description -n qm_mount_bind_input
-This sub-package installs a drop-in configurations for the QM.
-It creates the `/etc/qm/containers/containers.conf.d/` directory for adding
-additional drop-in configurations.
-
-%files -n qm_mount_bind_input
-%{_sysconfdir}/containers/containers.conf.d/qm_dropin_mount_bind_input.conf
-%{_sysconfdir}/qm/containers/containers.conf.d/qm_dropin_mount_bind_input.conf
-%endif
-
-#######################################
 # sub-package QM Mount ttyUSB0        #
 #######################################
 %if %{enable_qm_mount_bind_ttyUSB0}
@@ -328,7 +288,6 @@ additional drop-in configurations.
 %if %{enable_qm_window_manager}
 %package windowmanager
 Summary: Optional Window Manager deployed in QM environment (Experimental)
-Requires: qm_mount_bind_input
 %description windowmanager
 The optional window manager deployed in QM environment as nested container.
 
