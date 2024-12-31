@@ -13,23 +13,6 @@
 # use img temp dir as /var/tmp
 %define enable_qm_dropin_img_tempdir 0
 
-####################################################################
-# subpackage QM - mount bind /dev/tty7                             #
-####################################################################
-# mount bind /dev/tty7 from host to nested containers              #
-# as /dev/tty7:rw                                                  #
-# Please note:                                                     #
-# /dev/tty7 is typically the virtual terminal                      #
-# associated with the graphical user interface (GUI)               #
-# on Linux systems.                                                #
-# It is where the X server or the Wayland display server           #
-# usually runs, handling the graphical display, input              #
-# and windowing environment.                                       #
-# When you start a graphical session (ex. GNOME, KDE, etc.),       #
-# it usually runs on this virtual console.                         #
-####################################################################
-%define enable_qm_mount_bind_tty7 0
-
 ###########################################
 # subpackage QM - Enable Window Manager   #
 ###########################################
@@ -227,23 +210,6 @@ install -d %{buildroot}%{_sysconfdir}/containers/containers.conf.d
 # END - qm dropin sub-package - mount input            #
 ########################################################
 
-########################################################
-# START - qm dropin sub-package - mount bind /dev/tty7 #
-########################################################
-%if %{enable_qm_mount_bind_tty7}
-    # first step - add drop-in file in /etc/containers/containers.d.conf/qm_dropin_mount_bind_tty.conf
-    # to QM container mount bind /dev/tty7
-    install -m 644 %{_builddir}/qm-%{version}/etc/qm/containers/containers.conf.d/qm_dropin_mount_bind_tty7.conf %{buildroot}%{_sysconfdir}/containers/containers.conf.d/qm_dropin_mount_bind_tty7.conf
-
-    # second step - add drop-in file in /etc/qm/containers/containers.d.conf/qm_dropin/mount_bind_tty.conf
-    # to nested containers in QM env mount bind it in /dev/tty7
-    install -m 644 %{_builddir}/qm-%{version}/etc/qm/containers/containers.conf.d/qm_dropin_mount_bind_tty7.conf %{buildroot}%{_sysconfdir}/qm/containers/containers.conf.d/qm_dropin_mount_bind_tty7.conf
-%endif
-
-########################################################
-# END - qm dropin sub-package - mount bind /dev/tty7   #
-########################################################
-
 # install policy modules
 %_format MODULES $x.pp.bz2
 %{__make} DESTDIR=%{buildroot} DATADIR=%{_datadir} install
@@ -316,25 +282,6 @@ additional drop-in configurations.
 
 %files -n qm-dropin-img-tempdir
 %{_sysconfdir}/qm/containers/containers.conf.d/qm_dropin_img_tempdir.conf
-%endif
-
-#######################################
-# sub-package QM Mount Bind /dev/tty7 #
-#######################################
-%if %{enable_qm_mount_bind_tty7}
-%package -n qm_mount_bind_tty7
-Summary: Drop-in configuration for QM containers to mount bind /dev/tty7
-Requires: %{name} = %{version}-%{release}
-BuildArch: noarch
-
-%description -n qm_mount_bind_tty7
-This sub-package installs a drop-in configurations for the QM.
-It creates the `/etc/qm/containers/containers.conf.d/` directory for adding
-additional drop-in configurations.
-
-%files -n qm_mount_bind_tty7
-%{_sysconfdir}/containers/containers.conf.d/qm_dropin_mount_bind_tty7.conf
-%{_sysconfdir}/qm/containers/containers.conf.d/qm_dropin_mount_bind_tty7.conf
 %endif
 
 #######################################

@@ -10,8 +10,8 @@ BuildArch: noarch
 Requires: qm = %{version}-%{release}
 
 %description
-This subpackage installs a drop-in configuration for QM containers to mount bind `/dev/tty7`.  
-`/dev/tty7` is typically associated with the virtual terminal running the GUI session on Linux systems.  
+This subpackage installs a drop-in configuration for QM containers to mount bind `/dev/tty7`.
+`/dev/tty7` is typically associated with the virtual terminal running the GUI session on Linux systems.
 This configuration is useful when graphical applications require access to the host’s GUI display server.
 
 %prep
