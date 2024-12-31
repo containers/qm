@@ -8,6 +8,7 @@ SYSCONFDIR?=/etc
 QMDIR=/usr/lib/qm
 SPECFILE=rpm/qm.spec
 SPECFILE_SUBPACKAGE_KVM=rpm/kvm/qm-kvm.spec
+SPECFILE_SUBPACKAGE_SOUND=rpm/sound/sound.spec
 SPECFILE_SUBPACKAGE_ROS2_ROLLING=rpm/ros2/rolling/ros2_rolling.spec
 RPM_TOPDIR ?= $(PWD)/rpmbuild
 VERSION ?= $(shell cat VERSION)
@@ -96,8 +97,8 @@ kvm_subpackage: clean dist ##             - Creates a local RPM package, useful 
 		--define="version ${VERSION}" \
 		${SPECFILE_SUBPACKAGE_KVM}
 
-.PHONY: ros2_rolling
-ros2_rolling: clean dist ##             - Creates a local RPM package, useful for development
+.PHONY: ros2_rolling_subpackage
+ros2_rolling_subpackage: clean dist ##             - Creates a local RPM package, useful for development
 	mkdir -p ${RPM_TOPDIR}/{RPMS,SRPMS,BUILD,SOURCES}
 	tools/version-update -v ${VERSION}
 	cp ./rpm/v${VERSION}.tar.gz ${RPM_TOPDIR}/SOURCES
@@ -106,13 +107,23 @@ ros2_rolling: clean dist ##             - Creates a local RPM package, useful fo
 		--define="version ${VERSION}" \
 		${SPECFILE_SUBPACKAGE_ROS2_ROLLING}
 
+.PHONY: sound_subpackage
+sound_subpackage: clean dist ##             - Creates a local RPM package, useful for development
+	mkdir -p ${RPM_TOPDIR}/{RPMS,SRPMS,BUILD,SOURCES}
+	tools/version-update -v ${VERSION}
+	cp ./rpm/v${VERSION}.tar.gz ${RPM_TOPDIR}/SOURCES
+	rpmbuild -ba \
+		--define="_topdir ${RPM_TOPDIR}" \
+		--define="version ${VERSION}" \
+		${SPECFILE_SUBPACKAGE_SOUND}
+
 
 # ostree target is a helper for everything required for ostree
 .PHONY: ostree
 ostree: qm_dropin_img_tempdir ##             - A helper for creating QM packages for ostree based distros
 
 .PHONY: qm_dropin_window_manager
-qm_dropin_window_manager: qm_dropin_mount_bind_kvm qm_dropin_mount_bind_sound qm_dropin_mount_bind_tty7 qm_dropin_mount_bind_input ##         - QM RPM sub-package qm_dropin_window_manager
+qm_dropin_window_manager: qm_dropin_mount_bind_kvm qm_dropin_mount_bind_tty7 qm_dropin_mount_bind_input ##         - QM RPM sub-package qm_dropin_window_manager
 	sed -i 's/%define enable_qm_window_manager 0/%define enable_qm_window_manager 1/' ${SPECFILE}
 	$(MAKE) VERSION=${VERSION} rpm
 
@@ -129,14 +140,6 @@ qm_dropin_mount_bind_ttyUSB0: ##     - QM RPM sub-package to mount bind /dev/tty
 .PHONY: qm_dropin_mount_bind_video0
 qm_dropin_mount_bind_video0: ##      - QM RPM sub-package to mount bind /dev/video0 in the nested containers
 	sed -i 's/%define enable_qm_mount_bind_video 0/%define enable_qm_mount_bind_video 1/' ${SPECFILE}
-	$(MAKE) VERSION=${VERSION} rpm
-
-.PHONY: qm_dropin_mount_bind_kvm
-	$(MAKE) VERSION=${VERSION} kvm_subpackage
-
-.PHONY: qm_dropin_mount_bind_sound
-qm_dropin_mount_bind_sound: ##       - QM RPM sub-package to mount bind /dev/snd in the nested containers
-	sed -i 's/%define enable_qm_mount_bind_sound 0/%define enable_qm_mount_bind_sound 1/' ${SPECFILE}
 	$(MAKE) VERSION=${VERSION} rpm
 
 .PHONY: qm_dropin_mount_bind_tty7
