@@ -132,14 +132,21 @@ a RPM package into the system.
 Choose one of the following sub-packages and build using make.
 
 ```bash
-$ git clone git@github.com:containers/qm.git && cd qm
-$ make | grep qm_dropin
-qm_dropin_img_tempdir            - Creates a QM RPM sub-package qm_dropin_img_tempdir
-qm_dropin_mount_bind_tty7        - Creates a QM RPM sub-package to mount bind /dev/tty7 in the nested containers
-qm_dropin_mount_bind_input       - Creates a QM RPM sub-package to mount bind input in the nested containers
+git clone git@github.com:containers/qm.git && cd qm
+make| grep subpackage
+kvm_subpackage                   - Creates a local RPM package, useful for development
+ros2_rolling_subpackage             - Creates a local RPM package, useful for development
+sound_subpackage                 - Creates a local RPM package, useful for development
+video_subpackage                 - Creates a local RPM package, useful for development
+tty7_subpackage                  - Creates a local RPM package, useful for development
+input_subpackage                 - Creates a local RPM package, useful for development
+ttyUSB0_subpackage               - Creates a local RPM package, useful for development
+img_tempdir_subpackage             - Creates a local RPM package, useful for development
+windowmanager_subpackage             - Creates a local RPM package, useful for development
+douglas@fedora:~/qm-multiplespecs/qm$
 
-$ make qm_dropin_mount_bind_input
-$ ls rpmbuild/RPMS/noarch/
+make input_subpackage
+ls rpmbuild/RPMS/noarch/
 qm-0.6.7-1.fc40.noarch.rpm  qm_mount_bind_input-0.6.7-1.fc40.noarch.rpm
 ```
 
@@ -170,9 +177,9 @@ The video sub-package exposes `/dev/video0` (or many video devices required) to 
 ### Building the video sub-package, installing, and restarting QM
 
 ```bash
-host> make qm_dropin_mount_bind_video0
-host> sudo podman restart qm
-host> sudo dnf install ./rpmbuild/RPMS/noarch/qm_mount_bind_video-0.6.7-1.fc40.noarch.rpm
+make video_subpackage
+sudo podman restart qm
+sudo dnf install ./rpmbuild/RPMS/noarch/qm_mount_bind_video-0.6.7-1.fc40.noarch.rpm
 ```
 
 This simulates a rear camera when the user shifts into reverse gear.
@@ -208,7 +215,7 @@ Run the following commands to install the `qm_mount_bind_sound` package and rest
 ```bash
 # Build and install the RPM for QM sound
 git clone https://github.com/containers/qm.git && cd qm
-make qm_dropin_mount_bind_sound
+make sound_subpackage
 sudo dnf install -y rpmbuild/RPMS/noarch/qm_mount_bind_sound-0.6.7-1.fc40.noarch.rpm
 
 # Restart QM container (if already running)
@@ -309,7 +316,7 @@ Example changing the spec and triggering the build via make (feel free to automa
 # By default it's disabled: 0
 %define enable_qm_dropin_img_tempdir 1
 
-$ make clean && VERSION=YOURVERSIONHERE make rpm
+make clean && VERSION=YOURVERSIONHERE make rpm
 ```
 
 ## QM sub-package ROS2
@@ -321,10 +328,10 @@ The types of robots compatible with this environment are extensive, ranging from
 How to test this env?
 
 ```bash
-$host> git clone https://github.com/containers/qm.git && cd qm
-$host> make qm_dropin_ros2_rolling
-$host> sudo dnf install rpmbuild/RPMS/noarch/qm_ros2_rolling-0.6.7-1.fc40.noarch.rpm  -y
-$host> sudo podman restart qm  # if you have qm already running
+git clone https://github.com/containers/qm.git && cd qm
+make ros2_rolling_subpackage
+sudo dnf install rpmbuild/RPMS/noarch/qm_ros2_rolling-0.6.7-1.fc40.noarch.rpm  -y
+sudo podman restart qm  # if you have qm already running
 
 Testing using talked and listener examples
 $host> sudo podman exec -it qm bash
@@ -341,11 +348,11 @@ Below example step by step:
 Step 1:  clone QM repo, install libvirt packages, prepare some files inside QM and start the libvirt daemon.
 
 ```bash
-$host> git clone https://github.com/containers/qm.git && cd qm
-$host> make qm_dropin_mount_bind_kvm
-$host> sudo dnf install rpmbuild/RPMS/noarch/qm_mount_bind_kvm-0.6.7-1.fc40.noarch.rpm
-$host> sudo podman restart qm  # if you have qm already running
-$host> sudo dnf --installroot /usr/lib/qm/rootfs/ install virt-install libvirt-daemon libvirt-daemon-qemu libvirt-daemon-kvm -y
+git clone https://github.com/containers/qm.git && cd qm
+make kvm_subpackage
+sudo dnf install rpmbuild/RPMS/noarch/qm_mount_bind_kvm-0.6.7-1.fc40.noarch.rpm
+sudo podman restart qm  # if you have qm already running
+sudo dnf --installroot /usr/lib/qm/rootfs/ install virt-install libvirt-daemon libvirt-daemon-qemu libvirt-daemon-kvm -y
 
 # Copy default network settings to /root dir inside QM (/usr/lib/qm/rootfs/root)
 $host> sudo cp /usr/share/libvirt/networks/default.xml /usr/lib/qm/rootfs/root

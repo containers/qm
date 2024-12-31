@@ -104,7 +104,7 @@ kvm_subpackage: clean dist ##             - Creates a local RPM package, useful 
 		${SPECFILE_SUBPACKAGE_KVM}
 
 .PHONY: ros2_rolling_subpackage
-ros2_rolling_subpackage: clean dist ##             - Creates a local RPM package, useful for development
+ros2_rolling_subpackage: clean dist ##          - Creates a local RPM package, useful for development
 	mkdir -p ${RPM_TOPDIR}/{RPMS,SRPMS,BUILD,SOURCES}
 	tools/version-update -v ${VERSION}
 	cp ./rpm/v${VERSION}.tar.gz ${RPM_TOPDIR}/SOURCES
@@ -164,7 +164,7 @@ ttyUSB0_subpackage: clean dist ##             - Creates a local RPM package, use
 		${SPECFILE_SUBPACKAGE_TTYUSB0}
 
 .PHONY: img_tempdir_subpackage
-img_tempdir_subpackage: clean dist ##             - Creates a local RPM package, useful for development
+img_tempdir_subpackage: clean dist ##           - Creates a local RPM package, useful for development
 	mkdir -p ${RPM_TOPDIR}/{RPMS,SRPMS,BUILD,SOURCES}
 	tools/version-update -v ${VERSION}
 	cp ./rpm/v${VERSION}.tar.gz ${RPM_TOPDIR}/SOURCES
@@ -174,7 +174,7 @@ img_tempdir_subpackage: clean dist ##             - Creates a local RPM package,
 		${SPECFILE_SUBPACKAGE_IMG_TEMPDIR}
 
 .PHONY: windowmanager_subpackage
-windowmanager_subpackage: clean dist ##             - Creates a local RPM package, useful for development
+windowmanager_subpackage: clean dist ##         - Creates a local RPM package, useful for development
 	mkdir -p ${RPM_TOPDIR}/{RPMS,SRPMS,BUILD,SOURCES}
 	tools/version-update -v ${VERSION}
 	cp ./rpm/v${VERSION}.tar.gz ${RPM_TOPDIR}/SOURCES
