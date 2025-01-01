@@ -11,6 +11,7 @@ SPECFILE_SUBPACKAGE_KVM=rpm/kvm/qm-kvm.spec
 SPECFILE_SUBPACKAGE_SOUND=rpm/sound/sound.spec
 SPECFILE_SUBPACKAGE_VIDEO=rpm/video/video.spec
 SPECFILE_SUBPACKAGE_RADIO=rpm/radio/radio.spec
+SPECFILE_SUBPACKAGE_DVB=rpm/dvb/dvb.spec
 SPECFILE_SUBPACKAGE_TTY7=rpm/tty7/tty7.spec
 SPECFILE_SUBPACKAGE_INPUT=rpm/input/input.spec
 SPECFILE_SUBPACKAGE_IMG_WINDOWMANAGER=rpm/windowmanager/windowmanager.spec
@@ -143,6 +144,16 @@ radio_subpackage: clean dist ##             - Creates a local RPM package, usefu
 		--define="_topdir ${RPM_TOPDIR}" \
 		--define="version ${VERSION}" \
 		${SPECFILE_SUBPACKAGE_RADIO}
+
+.PHONY: dvb_subpackage
+dvb_subpackage: clean dist ##             - Creates a local RPM package, useful for development
+	mkdir -p ${RPM_TOPDIR}/{RPMS,SRPMS,BUILD,SOURCES}
+	tools/version-update -v ${VERSION}
+	cp ./rpm/v${VERSION}.tar.gz ${RPM_TOPDIR}/SOURCES
+	rpmbuild -ba \
+		--define="_topdir ${RPM_TOPDIR}" \
+		--define="version ${VERSION}" \
+		${SPECFILE_SUBPACKAGE_DVB}
 
 .PHONY: tty7_subpackage
 tty7_subpackage: clean dist ##             - Creates a local RPM package, useful for development
