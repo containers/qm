@@ -1,5 +1,5 @@
 Name: qm-windowmanager
-Version: 0.6.8
+Version: 0
 Release: 1%{?dist}
 Summary: Optional Window Manager for QM environment
 License: GPL-2.0-only

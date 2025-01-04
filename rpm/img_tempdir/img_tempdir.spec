@@ -1,5 +1,5 @@
 Name: qm-dropin-img-tempdir
-Version: 0.6.8
+Version: 0
 Release: 1%{?dist}
 Summary: Drop-in configuration for QM nested containers using img tempdir
 License: GPL-2.0-only

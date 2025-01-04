@@ -5,7 +5,7 @@
 %global ros2_container %{rootfs_qm}/%{_sysconfdir}/containers/systemd/
 
 Name: qm-ros2-rolling
-Version: 0.6.8
+Version: 0
 Release: 1%{?dist}
 Summary: Subpackage container for quadlet container to ROS2 Rolling environment
 License: GPL-2.0-only

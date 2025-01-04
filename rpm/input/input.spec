@@ -1,5 +1,5 @@
 Name: qm_mount_bind_input
-Version: 0.6.8
+Version: 0
 Release: 1%{?dist}
 Summary: Drop-in configuration for QM containers to mount bind input devices
 License: GPL-2.0-only
