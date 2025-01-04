@@ -13,6 +13,7 @@ SPECFILE_SUBPACKAGE_VIDEO=rpm/video/video.spec
 SPECFILE_SUBPACKAGE_RADIO=rpm/radio/radio.spec
 SPECFILE_SUBPACKAGE_DVB=rpm/dvb/dvb.spec
 SPECFILE_SUBPACKAGE_TTY7=rpm/tty7/tty7.spec
+SPECFILE_SUBPACKAGE_TEXT2SPEECH=rpm/text2speech/text2speech.spec
 SPECFILE_SUBPACKAGE_INPUT=rpm/input/input.spec
 SPECFILE_SUBPACKAGE_IMG_WINDOWMANAGER=rpm/windowmanager/windowmanager.spec
 SPECFILE_SUBPACKAGE_TTYUSB0=rpm/ttyUSB0/ttyUSB0.spec
@@ -104,6 +105,16 @@ kvm_subpackage: clean dist ##             - Creates a local RPM package, useful 
 		--define="_topdir ${RPM_TOPDIR}" \
 		--define="version ${VERSION}" \
 		${SPECFILE_SUBPACKAGE_KVM}
+
+.PHONY: text2speech_subpackage
+text2speech_subpackage: clean dist ##            - Creates a local RPM package, useful for development
+	mkdir -p ${RPM_TOPDIR}/{RPMS,SRPMS,BUILD,SOURCES}
+	tools/version-update -v ${VERSION}
+	cp ./rpm/v${VERSION}.tar.gz ${RPM_TOPDIR}/SOURCES
+	rpmbuild -ba \
+		--define="_topdir ${RPM_TOPDIR}" \
+		--define="version ${VERSION}" \
+		${SPECFILE_SUBPACKAGE_TEXT2SPEECH}
 
 .PHONY: ros2_rolling_subpackage
 ros2_rolling_subpackage: clean dist ##          - Creates a local RPM package, useful for development
