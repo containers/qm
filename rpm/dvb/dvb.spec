@@ -1,5 +1,5 @@
 Name: qm-mount-bind-dvb
-Version: 0.6.8
+Version: 0
 Release: 1%{?dist}
 Summary: Drop-in configuration for QM containers to mount bind /dev/dvb
 License: GPL-2.0-only
