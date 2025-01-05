@@ -1,0 +1,17 @@
+name: custom-qm
+
+content:
+  repos:
+    - id: qm-build
+      baseurl: https://download.copr.fedorainfracloud.org/results/${QM_COPR}/epel-9-$arch/
+qm:
+  content:
+    rpms:
+      - httpd
+    systemd:
+      enabled_services:
+        - httpd.service
+
+auth:
+  # "password"
+  root_password: $6$xoLqEUz0cGGJRx01$H3H/bFm0myJPULNMtbSsOFd/2BnHqHkMD92Sfxd.EKM9hXTWSmELG8cf205l6dktomuTcgKGGtGDgtvHVXSWU.
