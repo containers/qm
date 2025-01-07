@@ -16,12 +16,14 @@ This subpackage installs a drop-in configuration for QM containers to mount bind
 %autosetup -Sgit -n qm-%{version}
 
 %install
-install -d %{buildroot}%{_sysconfdir}/qm/containers/containers.conf.d
-install -m 644 etc/qm/containers/containers.conf.d/qm_dropin_mount_bind_radio.conf \
-    %{buildroot}%{_sysconfdir}/qm/containers/containers.conf.d/
+# Create the directory for drop-in configurations
+install -d %{buildroot}%{_sysconfdir}/containers/systemd/qm.container.d
+# Install the KVM drop-in configuration file
+install -m 644 %{_builddir}/qm-%{version}/etc/containers/systemd/qm.container.d/qm_dropin_mount_bind_radio.conf \
+    %{buildroot}%{_sysconfdir}/containers/systemd/qm.container.d/qm_dropin_mount_bind_radio.conf
 
 %files
-%{_sysconfdir}/qm/containers/containers.conf.d/qm_dropin_mount_bind_radio.conf
+%{_sysconfdir}/containers/systemd/qm.container.d/qm_dropin_mount_bind_radio.conf
 
 %changelog
 * Fri Jul 21 2023 RH Container Bot <rhcontainerbot@fedoraproject.org>
