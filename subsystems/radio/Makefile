@@ -11,7 +11,7 @@ dist: ##             - Creates the QM radio package
 		../qm/SECURITY.md \
 		../qm/LICENSE \
 		../qm/ \
-		../qm/etc/qm/containers/containers.conf.d/qm_dropin_mount_bind_radio.conf
+                ../qm/etc/containers/systemd/qm.container.d/qm_dropin_mount_bind_radio.conf
 	cd $(ROOTDIR) && mv /tmp/qm-radio-${VERSION}.tar.gz ./rpm
 
 

@@ -11,7 +11,7 @@ dist: ##             - Creates the QM kvm package
 		../qm/SECURITY.md \
 		../qm/LICENSE \
 		../qm/ \
-		../qm/etc/qm/containers/containers.conf.d/qm_dropin_mount_bind_snd.conf \
+		../qm/etc/containers/systemd/qm.container.d/qm_dropin_mount_bind_snd.conf \
 		../qm/subsystems/sound/etc/containers/systemd/audio.container
 	cd $(ROOTDIR) && mv /tmp/qm-sound-${VERSION}.tar.gz ./rpm
 

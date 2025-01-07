@@ -11,7 +11,7 @@ dist: ##             - Creates the QM tty7 package
 		../qm/SECURITY.md \
 		../qm/LICENSE \
 		../qm/ \
-		../qm/etc/qm/containers/containers.conf.d/qm_dropin_mount_bind_tty7.conf
+		../qm/etc/containers/systemd/qm.container.d/qm_dropin_mount_bind_tty7.conf
 	cd $(ROOTDIR) && mv /tmp/qm-tty7-${VERSION}.tar.gz ./rpm
 
 .PHONY: rpm

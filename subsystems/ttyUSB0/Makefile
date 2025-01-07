@@ -11,7 +11,7 @@ dist: ##             - Creates the QM ttyUSB0 package
 		../qm/SECURITY.md \
 		../qm/LICENSE \
 		../qm/ \
-		../qm/etc/qm/containers/containers.conf.d/qm_dropin_mount_bind_ttyUSB0.conf
+		../qm/etc/containers/systemd/qm.container.d/qm_dropin_mount_bind_ttyUSB0.conf
 	cd $(ROOTDIR) && mv /tmp/qm-ttyUSB0-${VERSION}.tar.gz ./rpm
 
 .PHONY: rpm

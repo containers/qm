@@ -11,7 +11,7 @@ dist: ##             - Creates the QM video package
 		../qm/SECURITY.md \
 		../qm/LICENSE \
 		../qm/ \
-		../qm/etc/qm/containers/containers.conf.d/qm_dropin_mount_bind_video.conf \
+		../qm/etc/containers/systemd/qm.container.d/qm_dropin_mount_bind_video.conf \
 		../qm/subsystems/video/etc/containers/systemd/rear-camera.container
 	cd $(ROOTDIR) && mv /tmp/qm-video-${VERSION}.tar.gz ./rpm
 

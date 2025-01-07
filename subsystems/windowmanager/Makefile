@@ -11,8 +11,7 @@ dist: ##             - Creates the QM windowmanager package
 		../qm/SECURITY.md \
 		../qm/LICENSE \
 		../qm/ \
-		../subsystems/windowmanager/etc/qm/containers/containers.conf.d/qm_dropin_mount_bind_window_manager.conf
-
+                ../qm/etc/containers/systemd/qm.container.d/qm_dropin_mount_bind_window_manager.conf
 	cd $(ROOTDIR) && mv /tmp/qm-windowmanager-${VERSION}.tar.gz ./rpm
 
 .PHONY: rpm

@@ -11,7 +11,7 @@ dist: ##             - Creates the QM input package
 		../qm/SECURITY.md \
 		../qm/LICENSE \
 		../qm/ \
-		../qm/etc/qm/containers/containers.conf.d/qm_dropin_mount_bind_input.conf
+		../qm/etc/containers/systemd/qm.container.d/qm_dropin_mount_bind_input.conf
 	cd $(ROOTDIR) && mv /tmp/qm-input-${VERSION}.tar.gz ./rpm
 
 .PHONY: rpm

@@ -11,7 +11,7 @@ dist: ##             - Creates the QM dvb package
 		../qm/SECURITY.md \
 		../qm/LICENSE \
 		../qm/ \
-		../qm/etc/qm/containers/containers.conf.d/qm_dropin_mount_bind_dvb.conf
+		../qm/etc/containers/systemd/qm.container.d/qm_dropin_mount_bind_dvb.conf
 	cd $(ROOTDIR) && mv /tmp/qm-dvb-${VERSION}.tar.gz ./rpm
 
 .PHONY: rpm
