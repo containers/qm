@@ -14,11 +14,10 @@ SPECFILE_SUBPACKAGE_DVB=rpm/dvb/dvb.spec
 SPECFILE_SUBPACKAGE_TTY7=rpm/tty7/tty7.spec
 SPECFILE_SUBPACKAGE_TEXT2SPEECH=rpm/text2speech/text2speech.spec
 SPECFILE_SUBPACKAGE_INPUT=rpm/input/input.spec
-SPECFILE_SUBPACKAGE_IMG_WINDOWMANAGER=rpm/windowmanager/windowmanager.spec
 SPECFILE_SUBPACKAGE_TTYUSB0=rpm/ttyUSB0/ttyUSB0.spec
 SPECFILE_SUBPACKAGE_IMG_TEMPDIR=rpm/img_tempdir/img_tempdir.spec
 SPECFILE_SUBPACKAGE_ROS2_ROLLING=rpm/ros2/rolling/ros2_rolling.spec
-SUBSYS := subsystems/kvm
+SUBSYS := subsystems/kvm subsystems/windowmanager
 export RPM_TOPDIR ?= $(PWD)/rpmbuild
 export VERSION?= $(shell cat VERSION)
 export ROOTDIR ?= $(PWD)
@@ -190,16 +189,6 @@ img_tempdir_subpackage: clean dist ##           - Creates a local RPM package, u
 		--define="_topdir ${RPM_TOPDIR}" \
 		--define="version ${VERSION}" \
 		${SPECFILE_SUBPACKAGE_IMG_TEMPDIR}
-
-.PHONY: windowmanager_subpackage
-windowmanager_subpackage: clean dist ##         - Creates a local RPM package, useful for development
-	mkdir -p ${RPM_TOPDIR}/{RPMS,SRPMS,BUILD,SOURCES}
-	tools/version-update -v ${VERSION}
-	cp ./rpm/v${VERSION}.tar.gz ${RPM_TOPDIR}/SOURCES
-	rpmbuild -ba \
-		--define="_topdir ${RPM_TOPDIR}" \
-		--define="version ${VERSION}" \
-		${SPECFILE_SUBPACKAGE_IMG_WINDOWMANAGER}
 
 install-policy: all ##             - Install selinux policies only
 	semodule -i ${TARGETS}.pp.bz2
