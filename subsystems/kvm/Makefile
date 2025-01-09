@@ -15,12 +15,12 @@ dist: ##             - Creates the QM kvm package
 	cd $(ROOTDIR) && mv /tmp/qm-kvm-${VERSION}.tar.gz ./rpm
 
 .PHONY: rpm
-rpm: dist ##             - Creates a local RPM package, useful for development
+rpm: dist ##             - Creates a local RPM windowmanager package, useful for development
 	cd $(ROOTDIR) && mkdir -p ${RPM_TOPDIR}/{RPMS,SRPMS,BUILD,SOURCES}
 	cd $(ROOTDIR) && tools/version-update -v ${VERSION}
 	cd $(ROOTDIR) && cp ./rpm/v${VERSION}.tar.gz ${RPM_TOPDIR}/SOURCES
 	cd $(ROOTDIR) && rpmbuild -ba \
-		--define="_topdir ${RPM_TOPDIR}" \
+	       	--define="_topdir ${RPM_TOPDIR}" \
 		--define="version ${VERSION}" \
-		${SPECFILE_SUBPACKAGE_KVM}
+		${SPECFILE_SUBPACKAGE_IMG_WINDOWMANAGER}
 
