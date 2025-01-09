@@ -7,7 +7,6 @@ LIBDIR ?= $(PREFIX)/lib
 SYSCONFDIR?=/etc
 QMDIR=/usr/lib/qm
 SPECFILE=rpm/qm.spec
-SPECFILE_SUBPACKAGE_KVM=rpm/kvm/qm-kvm.spec
 SPECFILE_SUBPACKAGE_SOUND=rpm/sound/sound.spec
 SPECFILE_SUBPACKAGE_VIDEO=rpm/video/video.spec
 SPECFILE_SUBPACKAGE_RADIO=rpm/radio/radio.spec
@@ -19,8 +18,10 @@ SPECFILE_SUBPACKAGE_IMG_WINDOWMANAGER=rpm/windowmanager/windowmanager.spec
 SPECFILE_SUBPACKAGE_TTYUSB0=rpm/ttyUSB0/ttyUSB0.spec
 SPECFILE_SUBPACKAGE_IMG_TEMPDIR=rpm/img_tempdir/img_tempdir.spec
 SPECFILE_SUBPACKAGE_ROS2_ROLLING=rpm/ros2/rolling/ros2_rolling.spec
-RPM_TOPDIR ?= $(PWD)/rpmbuild
-VERSION ?= $(shell cat VERSION)
+SUBSYS := subsystems/kvm
+export RPM_TOPDIR ?= $(PWD)/rpmbuild
+export VERSION?= $(shell cat VERSION)
+export ROOTDIR ?= $(PWD)
 
 # Default help target
 .PHONY: help
@@ -74,17 +75,6 @@ dist: ##             - Creates the QM distribution package
 		--transform s/qm/qm-${VERSION}/ \
 		-f /tmp/v${VERSION}.tar.gz ../qm
 	mv /tmp/v${VERSION}.tar.gz ./rpm
-	tar cvz \
-		--exclude-from=build-aux/exclude_from_tar_gz_subpackage_kvm.txt \
-		--dereference \
-		--transform s/qm/qm-kvm-${VERSION}/ \
-		-f /tmp/qm-kvm-${VERSION}.tar.gz \
-		../qm/README.md \
-		../qm/SECURITY.md \
-		../qm/LICENSE \
-		../qm/ \
-		../qm/etc/containers/systemd/qm.container.d/qm_dropin_mount_bind_kvm.conf
-	mv /tmp/qm-kvm-${VERSION}.tar.gz ./rpm
 
 .PHONY: rpm
 rpm: clean dist ##             - Creates a local RPM package, useful for development
@@ -95,16 +85,11 @@ rpm: clean dist ##             - Creates a local RPM package, useful for develop
 		--define="_topdir ${RPM_TOPDIR}" \
 		--define="version ${VERSION}" \
 		${SPECFILE}
-
-.PHONY: kvm_subpackage
-kvm_subpackage: clean dist ##             - Creates a local RPM package, useful for development
-	mkdir -p ${RPM_TOPDIR}/{RPMS,SRPMS,BUILD,SOURCES}
-	tools/version-update -v ${VERSION}
-	cp ./rpm/v${VERSION}.tar.gz ${RPM_TOPDIR}/SOURCES
-	rpmbuild -ba \
-		--define="_topdir ${RPM_TOPDIR}" \
-		--define="version ${VERSION}" \
-		${SPECFILE_SUBPACKAGE_KVM}
+	for dir in $(SUBSYS); do \
+		if [ -f $$dir/Makefile ]; then \
+			$(MAKE) -C $$dir -f Makefile rpm; \
+		fi; \
+	done
 
 .PHONY: text2speech_subpackage
 text2speech_subpackage: clean dist ##            - Creates a local RPM package, useful for development
