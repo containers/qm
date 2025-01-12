@@ -31,9 +31,9 @@ install -d %{buildroot}%{_sysconfdir}/containers/containers.conf.d
 install -d %{buildroot}%{_sysconfdir}/qm/containers/containers.conf.d
 install -d %{buildroot}%{rootfs_qm}%{_sysconfdir}/containers/systemd
 
-install -m 644 subsystems/audio/audio.container %{buildroot}%{rootfs_qm}%{_sysconfdir}/containers/systemd/audio.container
 install -m 644 etc/qm/containers/containers.conf.d/qm_dropin_mount_bind_snd.conf %{buildroot}%{_sysconfdir}/containers/containers.conf.d/qm_dropin_mount_bind_snd.conf
 install -m 644 etc/qm/containers/containers.conf.d/qm_dropin_mount_bind_snd.conf %{buildroot}%{_sysconfdir}/qm/containers/containers.conf.d/qm_dropin_mount_bind_snd.conf
+install -m 644 subsystems/sound/etc/containers/systemd/audio.container %{buildroot}%{rootfs_qm}%{_sysconfdir}/containers/systemd/audio.container
 
 %files
 %license LICENSE
