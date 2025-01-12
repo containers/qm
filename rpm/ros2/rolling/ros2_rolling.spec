@@ -36,7 +36,9 @@ containers managed by Podman and systemd within the QM environment.
 mkdir -p %{buildroot}%{ros2_container}
 
 # Install the ROS2 Rolling container file
-install -m 644 subsystems/ros2/ros2-rolling.container %{buildroot}%{ros2_container}
+
+install -m 644 subsystems/ros2/etc/containers/systemd/ros2-rolling.container
+ %{buildroot}%{ros2_container}
 
 %files
 %license LICENSE

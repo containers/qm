@@ -23,7 +23,7 @@ install -d %{buildroot}%{_sysconfdir}/qm/containers/containers.conf.d
 install -d %{buildroot}%{_sysconfdir}/containers/systemd/
 install -m 644 etc/qm/containers/containers.conf.d/qm_dropin_mount_bind_video.conf \
     %{buildroot}%{_sysconfdir}/qm/containers/containers.conf.d/qm_dropin_mount_bind_video.conf
-install -m 644 etc/containers/systemd/rear-camera.container \
+install -m 644 subsystems/video/etc/containers/systemd/rear-camera.container \
     %{buildroot}%{_sysconfdir}/containers/systemd/rear-camera.container
 
 %files
