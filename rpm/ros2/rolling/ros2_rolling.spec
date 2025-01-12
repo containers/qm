@@ -5,7 +5,7 @@
 %global ros2_container %{rootfs_qm}/%{_sysconfdir}/containers/systemd/
 
 Name: qm-ros2-rolling
-Version: 0
+Version: 0.6.9
 Release: 1%{?dist}
 Summary: Subpackage container for quadlet container to ROS2 Rolling environment
 License: GPL-2.0-only
@@ -36,7 +36,8 @@ containers managed by Podman and systemd within the QM environment.
 mkdir -p %{buildroot}%{ros2_container}
 
 # Install the ROS2 Rolling container file
-install -m 644 subsystems/ros2/ros2-rolling.container %{buildroot}%{ros2_container}
+
+install -m 644 subsystems/ros2/etc/containers/systemd/ros2-rolling.container %{buildroot}%{ros2_container}
 
 %files
 %license LICENSE
