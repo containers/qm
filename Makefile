@@ -7,17 +7,10 @@ LIBDIR ?= $(PREFIX)/lib
 SYSCONFDIR?=/etc
 QMDIR=/usr/lib/qm
 SPECFILE=rpm/qm.spec
-SPECFILE_SUBPACKAGE_RADIO=rpm/radio/radio.spec
-SPECFILE_SUBPACKAGE_DVB=rpm/dvb/dvb.spec
-SPECFILE_SUBPACKAGE_TTY7=rpm/tty7/tty7.spec
-SPECFILE_SUBPACKAGE_TEXT2SPEECH=rpm/text2speech/text2speech.spec
-SPECFILE_SUBPACKAGE_INPUT=rpm/input/input.spec
-SPECFILE_SUBPACKAGE_TTYUSB0=rpm/ttyUSB0/ttyUSB0.spec
-SPECFILE_SUBPACKAGE_IMG_TEMPDIR=rpm/img_tempdir/img_tempdir.spec
 SPECFILE_SUBPACKAGE_ROS2_ROLLING=rpm/ros2/rolling/ros2_rolling.spec
-SUBSYS := subsystems/kvm subsystems/windowmanager subsystems/sound subsystems/video
+SUBSYS := subsystems/kvm subsystems/windowmanager subsystems/sound subsystems/video subsystems/radio subsystems/dvb subsystems/tty7 subsystems/input subsystems/ttyUSB0 subsystems/text2speech
 export RPM_TOPDIR ?= $(PWD)/rpmbuild
-export VERSION?= $(shell cat VERSION)
+export VERSION ?= $(shell cat VERSION)
 export ROOTDIR ?= $(PWD)
 
 # Default help target
@@ -88,16 +81,6 @@ rpm: clean dist ##             - Creates a local RPM package, useful for develop
 		fi; \
 	done
 
-.PHONY: text2speech_subpackage
-text2speech_subpackage: clean dist ##            - Creates a local RPM package, useful for development
-	mkdir -p ${RPM_TOPDIR}/{RPMS,SRPMS,BUILD,SOURCES}
-	tools/version-update -v ${VERSION}
-	cp ./rpm/v${VERSION}.tar.gz ${RPM_TOPDIR}/SOURCES
-	rpmbuild -ba \
-		--define="_topdir ${RPM_TOPDIR}" \
-		--define="version ${VERSION}" \
-		${SPECFILE_SUBPACKAGE_TEXT2SPEECH}
-
 .PHONY: ros2_rolling_subpackage
 ros2_rolling_subpackage: clean dist ##          - Creates a local RPM package, useful for development
 	mkdir -p ${RPM_TOPDIR}/{RPMS,SRPMS,BUILD,SOURCES}
@@ -107,66 +90,6 @@ ros2_rolling_subpackage: clean dist ##          - Creates a local RPM package, u
 		--define="_topdir ${RPM_TOPDIR}" \
 		--define="version ${VERSION}" \
 		${SPECFILE_SUBPACKAGE_ROS2_ROLLING}
-
-.PHONY: radio_subpackage
-radio_subpackage: clean dist ##             - Creates a local RPM package, useful for development
-	mkdir -p ${RPM_TOPDIR}/{RPMS,SRPMS,BUILD,SOURCES}
-	tools/version-update -v ${VERSION}
-	cp ./rpm/v${VERSION}.tar.gz ${RPM_TOPDIR}/SOURCES
-	rpmbuild -ba \
-		--define="_topdir ${RPM_TOPDIR}" \
-		--define="version ${VERSION}" \
-		${SPECFILE_SUBPACKAGE_RADIO}
-
-.PHONY: dvb_subpackage
-dvb_subpackage: clean dist ##             - Creates a local RPM package, useful for development
-	mkdir -p ${RPM_TOPDIR}/{RPMS,SRPMS,BUILD,SOURCES}
-	tools/version-update -v ${VERSION}
-	cp ./rpm/v${VERSION}.tar.gz ${RPM_TOPDIR}/SOURCES
-	rpmbuild -ba \
-		--define="_topdir ${RPM_TOPDIR}" \
-		--define="version ${VERSION}" \
-		${SPECFILE_SUBPACKAGE_DVB}
-
-.PHONY: tty7_subpackage
-tty7_subpackage: clean dist ##             - Creates a local RPM package, useful for development
-	mkdir -p ${RPM_TOPDIR}/{RPMS,SRPMS,BUILD,SOURCES}
-	tools/version-update -v ${VERSION}
-	cp ./rpm/v${VERSION}.tar.gz ${RPM_TOPDIR}/SOURCES
-	rpmbuild -ba \
-		--define="_topdir ${RPM_TOPDIR}" \
-		--define="version ${VERSION}" \
-		${SPECFILE_SUBPACKAGE_TTY7}
-
-.PHONY: input_subpackage
-input_subpackage: clean dist ##             - Creates a local RPM package, useful for development
-	mkdir -p ${RPM_TOPDIR}/{RPMS,SRPMS,BUILD,SOURCES}
-	tools/version-update -v ${VERSION}
-	cp ./rpm/v${VERSION}.tar.gz ${RPM_TOPDIR}/SOURCES
-	rpmbuild -ba \
-		--define="_topdir ${RPM_TOPDIR}" \
-		--define="version ${VERSION}" \
-		${SPECFILE_SUBPACKAGE_INPUT}
-
-.PHONY: ttyUSB0_subpackage
-ttyUSB0_subpackage: clean dist ##             - Creates a local RPM package, useful for development
-	mkdir -p ${RPM_TOPDIR}/{RPMS,SRPMS,BUILD,SOURCES}
-	tools/version-update -v ${VERSION}
-	cp ./rpm/v${VERSION}.tar.gz ${RPM_TOPDIR}/SOURCES
-	rpmbuild -ba \
-		--define="_topdir ${RPM_TOPDIR}" \
-		--define="version ${VERSION}" \
-		${SPECFILE_SUBPACKAGE_TTYUSB0}
-
-.PHONY: img_tempdir_subpackage
-img_tempdir_subpackage: clean dist ##           - Creates a local RPM package, useful for development
-	mkdir -p ${RPM_TOPDIR}/{RPMS,SRPMS,BUILD,SOURCES}
-	tools/version-update -v ${VERSION}
-	cp ./rpm/v${VERSION}.tar.gz ${RPM_TOPDIR}/SOURCES
-	rpmbuild -ba \
-		--define="_topdir ${RPM_TOPDIR}" \
-		--define="version ${VERSION}" \
-		${SPECFILE_SUBPACKAGE_IMG_TEMPDIR}
 
 install-policy: all ##             - Install selinux policies only
 	semodule -i ${TARGETS}.pp.bz2

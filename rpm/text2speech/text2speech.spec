@@ -4,7 +4,7 @@
 %global rootfs_qm %{_prefix}/lib/qm/rootfs/
 
 Name: qm-text2speech
-Version: 0.6.8
+Version: 0
 Release: 1%{?dist}
 Summary: Drop-in configuration for QM containers to mount bind
 License: GPL-2.0-only
