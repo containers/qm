@@ -7,7 +7,6 @@ LIBDIR ?= $(PREFIX)/lib
 SYSCONFDIR?=/etc
 QMDIR=/usr/lib/qm
 SPECFILE=rpm/qm.spec
-SPECFILE_SUBPACKAGE_VIDEO=rpm/video/video.spec
 SPECFILE_SUBPACKAGE_RADIO=rpm/radio/radio.spec
 SPECFILE_SUBPACKAGE_DVB=rpm/dvb/dvb.spec
 SPECFILE_SUBPACKAGE_TTY7=rpm/tty7/tty7.spec
@@ -16,7 +15,7 @@ SPECFILE_SUBPACKAGE_INPUT=rpm/input/input.spec
 SPECFILE_SUBPACKAGE_TTYUSB0=rpm/ttyUSB0/ttyUSB0.spec
 SPECFILE_SUBPACKAGE_IMG_TEMPDIR=rpm/img_tempdir/img_tempdir.spec
 SPECFILE_SUBPACKAGE_ROS2_ROLLING=rpm/ros2/rolling/ros2_rolling.spec
-SUBSYS := subsystems/kvm subsystems/windowmanager subsystems/sound
+SUBSYS := subsystems/kvm subsystems/windowmanager subsystems/sound subsystems/video
 export RPM_TOPDIR ?= $(PWD)/rpmbuild
 export VERSION?= $(shell cat VERSION)
 export ROOTDIR ?= $(PWD)
@@ -108,16 +107,6 @@ ros2_rolling_subpackage: clean dist ##          - Creates a local RPM package, u
 		--define="_topdir ${RPM_TOPDIR}" \
 		--define="version ${VERSION}" \
 		${SPECFILE_SUBPACKAGE_ROS2_ROLLING}
-
-.PHONY: video_subpackage
-video_subpackage: clean dist ##             - Creates a local RPM package, useful for development
-	mkdir -p ${RPM_TOPDIR}/{RPMS,SRPMS,BUILD,SOURCES}
-	tools/version-update -v ${VERSION}
-	cp ./rpm/v${VERSION}.tar.gz ${RPM_TOPDIR}/SOURCES
-	rpmbuild -ba \
-		--define="_topdir ${RPM_TOPDIR}" \
-		--define="version ${VERSION}" \
-		${SPECFILE_SUBPACKAGE_VIDEO}
 
 .PHONY: radio_subpackage
 radio_subpackage: clean dist ##             - Creates a local RPM package, useful for development
