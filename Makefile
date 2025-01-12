@@ -7,8 +7,7 @@ LIBDIR ?= $(PREFIX)/lib
 SYSCONFDIR?=/etc
 QMDIR=/usr/lib/qm
 SPECFILE=rpm/qm.spec
-SPECFILE_SUBPACKAGE_ROS2_ROLLING=rpm/ros2/rolling/ros2_rolling.spec
-SUBSYS := subsystems/kvm subsystems/windowmanager subsystems/sound subsystems/video subsystems/radio subsystems/dvb subsystems/tty7 subsystems/input subsystems/ttyUSB0 subsystems/text2speech
+SUBSYS := subsystems/kvm subsystems/windowmanager subsystems/sound subsystems/video subsystems/radio subsystems/dvb subsystems/tty7 subsystems/input subsystems/ttyUSB0 subsystems/text2speech subsystems/img_tempdir subsystems/ros2
 export RPM_TOPDIR ?= $(PWD)/rpmbuild
 export VERSION ?= $(shell cat VERSION)
 export ROOTDIR ?= $(PWD)
@@ -80,16 +79,6 @@ rpm: clean dist ##             - Creates a local RPM package, useful for develop
 			$(MAKE) -C $$dir -f Makefile rpm; \
 		fi; \
 	done
-
-.PHONY: ros2_rolling_subpackage
-ros2_rolling_subpackage: clean dist ##          - Creates a local RPM package, useful for development
-	mkdir -p ${RPM_TOPDIR}/{RPMS,SRPMS,BUILD,SOURCES}
-	tools/version-update -v ${VERSION}
-	cp ./rpm/v${VERSION}.tar.gz ${RPM_TOPDIR}/SOURCES
-	rpmbuild -ba \
-		--define="_topdir ${RPM_TOPDIR}" \
-		--define="version ${VERSION}" \
-		${SPECFILE_SUBPACKAGE_ROS2_ROLLING}
 
 install-policy: all ##             - Install selinux policies only
 	semodule -i ${TARGETS}.pp.bz2
