@@ -21,20 +21,15 @@ This configuration is useful when graphical applications require access to the h
 # No build required for configuration files
 
 %install
-# Create the required directory structure
-install -d %{buildroot}%{_sysconfdir}/containers/containers.conf.d
-install -d %{buildroot}%{_sysconfdir}/qm/containers/containers.conf.d
+# Create the directory for drop-in configurations
+install -d %{buildroot}%{_sysconfdir}/containers/systemd/qm.container.d
 
-# Install the configuration files
-install -m 644 etc/qm/containers/containers.conf.d/qm_dropin_mount_bind_tty7.conf \
-    %{buildroot}%{_sysconfdir}/qm/containers/containers.conf.d/qm_dropin_mount_bind_tty7.conf
-install -m 644 etc/qm/containers/containers.conf.d/qm_dropin_mount_bind_tty7.conf \
-    %{buildroot}%{_sysconfdir}/containers/containers.conf.d/qm_dropin_mount_bind_tty7.conf
+# Install the KVM drop-in configuration file
+install -m 644 %{_builddir}/qm-%{version}/etc/containers/systemd/qm.container.d/qm_dropin_mount_bind_tty7.conf \
+    %{buildroot}%{_sysconfdir}/containers/systemd/qm.container.d/qm_dropin_mount_bind_tty7.conf
 
 %files
-%{_sysconfdir}/containers/containers.conf.d/qm_dropin_mount_bind_tty7.conf
-%{_sysconfdir}/qm/containers/containers.conf.d/qm_dropin_mount_bind_tty7.conf
-
+%{_sysconfdir}/containers/systemd/qm.container.d/qm_dropin_mount_bind_tty7.conf
 %changelog
 * Fri Jul 21 2023 RH Container Bot <rhcontainerbot@fedoraproject.org>
 - Added drop-in configuration to mount bind /dev/tty7.
