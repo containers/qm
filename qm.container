@@ -37,14 +37,15 @@ TasksMax=50%
 [Container]
 # AddCapability
 # -------------
-# Grants all capabilities to the container, increasing flexibility but significantly
+# Add these capabilities, in addition to the default Podman capability set, to the container.
+# If set to all, grants all capabilities to the container, increasing flexibility but significantly
 # reducing security.
 AddCapability=all
 
 # Unmask
 # -------
-# Unmasks all systemd services for the container, overriding masking that prevents
-# access to specific services.
+# Specify the paths to unmask separated by a colon. unmask=ALL or /path/1:/path/2, or shell expanded paths (/proc/*):
+# If set to ALL, Podman will unmask all the paths that are masked or made read-only by default.
 Unmask=ALL
 SecurityLabelNested=true
 SeccompProfile=/usr/share/qm/seccomp.json
@@ -71,8 +72,8 @@ ReadOnly=true
 
 # Rootfs
 # ------
-# Defines the root filesystem location for the container. 
-# The '${ROOTFS}' variable should point to a valid filesystem path.
+# Defines the root filesystem location for the QM container. 
+# By default the '${ROOTFS}' variable points to /usr/lib/qm/rootfs.
 Rootfs=${ROOTFS}
 
 SecurityLabelNested=true
