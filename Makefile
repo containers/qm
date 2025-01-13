@@ -7,6 +7,18 @@ LIBDIR ?= $(PREFIX)/lib
 SYSCONFDIR?=/etc
 QMDIR=/usr/lib/qm
 SPECFILE=rpm/qm.spec
+SPECFILE_SUBPACKAGE_KVM=rpm/kvm/qm-kvm.spec
+SPECFILE_SUBPACKAGE_SOUND=rpm/sound/sound.spec
+SPECFILE_SUBPACKAGE_VIDEO=rpm/video/video.spec
+SPECFILE_SUBPACKAGE_RADIO=rpm/radio/radio.spec
+SPECFILE_SUBPACKAGE_DVB=rpm/dvb/dvb.spec
+SPECFILE_SUBPACKAGE_TTY7=rpm/tty7/tty7.spec
+SPECFILE_SUBPACKAGE_TEXT2SPEECH=rpm/text2speech/text2speech.spec
+SPECFILE_SUBPACKAGE_INPUT=rpm/input/input.spec
+SPECFILE_SUBPACKAGE_IMG_WINDOWMANAGER=rpm/windowmanager/windowmanager.spec
+SPECFILE_SUBPACKAGE_TTYUSB0=rpm/ttyUSB0/ttyUSB0.spec
+SPECFILE_SUBPACKAGE_IMG_TEMPDIR=rpm/img_tempdir/img_tempdir.spec
+SPECFILE_SUBPACKAGE_ROS2_ROLLING=rpm/ros2/rolling/ros2_rolling.spec
 RPM_TOPDIR ?= $(PWD)/rpmbuild
 VERSION ?= $(shell cat VERSION)
 
@@ -62,6 +74,17 @@ dist: ##             - Creates the QM distribution package
 		--transform s/qm/qm-${VERSION}/ \
 		-f /tmp/v${VERSION}.tar.gz ../qm
 	mv /tmp/v${VERSION}.tar.gz ./rpm
+	tar cvz \
+		--exclude-from=build-aux/exclude_from_tar_gz_subpackage_kvm.txt \
+		--dereference \
+		--transform s/qm/qm-kvm-${VERSION}/ \
+		-f /tmp/qm-kvm-${VERSION}.tar.gz \
+		../qm/README.md \
+		../qm/SECURITY.md \
+		../qm/LICENSE \
+		../qm/ \
+		../qm/etc/containers/systemd/qm.container.d/qm_dropin_mount_bind_kvm.conf
+	mv /tmp/qm-kvm-${VERSION}.tar.gz ./rpm
 
 .PHONY: rpm
 rpm: clean dist ##             - Creates a local RPM package, useful for development
@@ -73,54 +96,125 @@ rpm: clean dist ##             - Creates a local RPM package, useful for develop
 		--define="version ${VERSION}" \
 		${SPECFILE}
 
-# ostree target is a helper for everything required for ostree
-.PHONY: ostree
-ostree: qm_dropin_img_tempdir ##             - A helper for creating QM packages for ostree based distros
+.PHONY: kvm_subpackage
+kvm_subpackage: clean dist ##             - Creates a local RPM package, useful for development
+	mkdir -p ${RPM_TOPDIR}/{RPMS,SRPMS,BUILD,SOURCES}
+	tools/version-update -v ${VERSION}
+	cp ./rpm/v${VERSION}.tar.gz ${RPM_TOPDIR}/SOURCES
+	rpmbuild -ba \
+		--define="_topdir ${RPM_TOPDIR}" \
+		--define="version ${VERSION}" \
+		${SPECFILE_SUBPACKAGE_KVM}
 
-.PHONY: qm_dropin_window_manager
-qm_dropin_window_manager: qm_dropin_mount_bind_kvm qm_dropin_mount_bind_sound qm_dropin_mount_bind_tty7 qm_dropin_mount_bind_input ##         - QM RPM sub-package qm_dropin_window_manager
-	sed -i 's/%define enable_qm_window_manager 0/%define enable_qm_window_manager 1/' ${SPECFILE}
-	$(MAKE) VERSION=${VERSION} rpm
+.PHONY: text2speech_subpackage
+text2speech_subpackage: clean dist ##            - Creates a local RPM package, useful for development
+	mkdir -p ${RPM_TOPDIR}/{RPMS,SRPMS,BUILD,SOURCES}
+	tools/version-update -v ${VERSION}
+	cp ./rpm/v${VERSION}.tar.gz ${RPM_TOPDIR}/SOURCES
+	rpmbuild -ba \
+		--define="_topdir ${RPM_TOPDIR}" \
+		--define="version ${VERSION}" \
+		${SPECFILE_SUBPACKAGE_TEXT2SPEECH}
 
-.PHONY: qm_dropin_img_tempdir
-qm_dropin_img_tempdir: ##            - QM RPM sub-package qm_dropin_img_tempdir
-	sed -i 's/%define enable_qm_dropin_img_tempdir 0/%define enable_qm_dropin_img_tempdir 1/' ${SPECFILE}
-	$(MAKE) VERSION=${VERSION} rpm
+.PHONY: ros2_rolling_subpackage
+ros2_rolling_subpackage: clean dist ##          - Creates a local RPM package, useful for development
+	mkdir -p ${RPM_TOPDIR}/{RPMS,SRPMS,BUILD,SOURCES}
+	tools/version-update -v ${VERSION}
+	cp ./rpm/v${VERSION}.tar.gz ${RPM_TOPDIR}/SOURCES
+	rpmbuild -ba \
+		--define="_topdir ${RPM_TOPDIR}" \
+		--define="version ${VERSION}" \
+		${SPECFILE_SUBPACKAGE_ROS2_ROLLING}
 
-.PHONY: qm_dropin_ros2_rolling
-qm_dropin_ros2_rolling: ##           - QM RPM sub-package to creating a quadlet container with ROS2 rolling env
-	sed -i 's/%define enable_qm_ros2_rolling 0/%define enable_qm_ros2_rolling 1/' ${SPECFILE}
-	$(MAKE) VERSION=${VERSION} rpm
+.PHONY: sound_subpackage
+sound_subpackage: clean dist ##             - Creates a local RPM package, useful for development
+	mkdir -p ${RPM_TOPDIR}/{RPMS,SRPMS,BUILD,SOURCES}
+	tools/version-update -v ${VERSION}
+	cp ./rpm/v${VERSION}.tar.gz ${RPM_TOPDIR}/SOURCES
+	rpmbuild -ba \
+		--define="_topdir ${RPM_TOPDIR}" \
+		--define="version ${VERSION}" \
+		${SPECFILE_SUBPACKAGE_SOUND}
 
-.PHONY: qm_dropin_mount_bind_ttyUSB0
-qm_dropin_mount_bind_ttyUSB0: ##     - QM RPM sub-package to mount bind /dev/ttyUSB0 in the nested containers
-	sed -i 's/%define enable_qm_mount_bind_ttyUSB0 0/%define enable_qm_mount_bind_ttyUSB0 1/' ${SPECFILE}
-	$(MAKE) VERSION=${VERSION} rpm
+.PHONY: video_subpackage
+video_subpackage: clean dist ##             - Creates a local RPM package, useful for development
+	mkdir -p ${RPM_TOPDIR}/{RPMS,SRPMS,BUILD,SOURCES}
+	tools/version-update -v ${VERSION}
+	cp ./rpm/v${VERSION}.tar.gz ${RPM_TOPDIR}/SOURCES
+	rpmbuild -ba \
+		--define="_topdir ${RPM_TOPDIR}" \
+		--define="version ${VERSION}" \
+		${SPECFILE_SUBPACKAGE_VIDEO}
 
-.PHONY: qm_dropin_mount_bind_video0
-qm_dropin_mount_bind_video0: ##      - QM RPM sub-package to mount bind /dev/video0 in the nested containers
-	sed -i 's/%define enable_qm_mount_bind_video 0/%define enable_qm_mount_bind_video 1/' ${SPECFILE}
-	$(MAKE) VERSION=${VERSION} rpm
+.PHONY: radio_subpackage
+radio_subpackage: clean dist ##             - Creates a local RPM package, useful for development
+	mkdir -p ${RPM_TOPDIR}/{RPMS,SRPMS,BUILD,SOURCES}
+	tools/version-update -v ${VERSION}
+	cp ./rpm/v${VERSION}.tar.gz ${RPM_TOPDIR}/SOURCES
+	rpmbuild -ba \
+		--define="_topdir ${RPM_TOPDIR}" \
+		--define="version ${VERSION}" \
+		${SPECFILE_SUBPACKAGE_RADIO}
 
-.PHONY: qm_dropin_mount_bind_kvm
-qm_dropin_mount_bind_kvm: ##         - QM RPM sub-package to mount bind /dev/kvm in the nested containers
-	sed -i 's/%define enable_qm_mount_bind_kvm 0/%define enable_qm_mount_bind_kvm 1/' ${SPECFILE}
-	$(MAKE) VERSION=${VERSION} rpm
+.PHONY: dvb_subpackage
+dvb_subpackage: clean dist ##             - Creates a local RPM package, useful for development
+	mkdir -p ${RPM_TOPDIR}/{RPMS,SRPMS,BUILD,SOURCES}
+	tools/version-update -v ${VERSION}
+	cp ./rpm/v${VERSION}.tar.gz ${RPM_TOPDIR}/SOURCES
+	rpmbuild -ba \
+		--define="_topdir ${RPM_TOPDIR}" \
+		--define="version ${VERSION}" \
+		${SPECFILE_SUBPACKAGE_DVB}
 
-.PHONY: qm_dropin_mount_bind_sound
-qm_dropin_mount_bind_sound: ##       - QM RPM sub-package to mount bind /dev/snd in the nested containers
-	sed -i 's/%define enable_qm_mount_bind_sound 0/%define enable_qm_mount_bind_sound 1/' ${SPECFILE}
-	$(MAKE) VERSION=${VERSION} rpm
+.PHONY: tty7_subpackage
+tty7_subpackage: clean dist ##             - Creates a local RPM package, useful for development
+	mkdir -p ${RPM_TOPDIR}/{RPMS,SRPMS,BUILD,SOURCES}
+	tools/version-update -v ${VERSION}
+	cp ./rpm/v${VERSION}.tar.gz ${RPM_TOPDIR}/SOURCES
+	rpmbuild -ba \
+		--define="_topdir ${RPM_TOPDIR}" \
+		--define="version ${VERSION}" \
+		${SPECFILE_SUBPACKAGE_TTY7}
 
-.PHONY: qm_dropin_mount_bind_tty7
-qm_dropin_mount_bind_tty7: ##        - QM RPM sub-package to mount bind /dev/tty7 in the nested containers
-	sed -i 's/%define enable_qm_mount_bind_tty7 0/%define enable_qm_mount_bind_tty7 1/' ${SPECFILE}
-	$(MAKE) VERSION=${VERSION} rpm
+.PHONY: input_subpackage
+input_subpackage: clean dist ##             - Creates a local RPM package, useful for development
+	mkdir -p ${RPM_TOPDIR}/{RPMS,SRPMS,BUILD,SOURCES}
+	tools/version-update -v ${VERSION}
+	cp ./rpm/v${VERSION}.tar.gz ${RPM_TOPDIR}/SOURCES
+	rpmbuild -ba \
+		--define="_topdir ${RPM_TOPDIR}" \
+		--define="version ${VERSION}" \
+		${SPECFILE_SUBPACKAGE_INPUT}
 
-.PHONY: qm_dropin_mount_bind_input
-qm_dropin_mount_bind_input: ##       - QM RPM sub-package to mount bind /dev/input in the nested containers
-	sed -i 's/%define enable_qm_mount_bind_input 0/%define enable_qm_mount_bind_input 1/' ${SPECFILE}
-	$(MAKE) VERSION=${VERSION} rpm
+.PHONY: ttyUSB0_subpackage
+ttyUSB0_subpackage: clean dist ##             - Creates a local RPM package, useful for development
+	mkdir -p ${RPM_TOPDIR}/{RPMS,SRPMS,BUILD,SOURCES}
+	tools/version-update -v ${VERSION}
+	cp ./rpm/v${VERSION}.tar.gz ${RPM_TOPDIR}/SOURCES
+	rpmbuild -ba \
+		--define="_topdir ${RPM_TOPDIR}" \
+		--define="version ${VERSION}" \
+		${SPECFILE_SUBPACKAGE_TTYUSB0}
+
+.PHONY: img_tempdir_subpackage
+img_tempdir_subpackage: clean dist ##           - Creates a local RPM package, useful for development
+	mkdir -p ${RPM_TOPDIR}/{RPMS,SRPMS,BUILD,SOURCES}
+	tools/version-update -v ${VERSION}
+	cp ./rpm/v${VERSION}.tar.gz ${RPM_TOPDIR}/SOURCES
+	rpmbuild -ba \
+		--define="_topdir ${RPM_TOPDIR}" \
+		--define="version ${VERSION}" \
+		${SPECFILE_SUBPACKAGE_IMG_TEMPDIR}
+
+.PHONY: windowmanager_subpackage
+windowmanager_subpackage: clean dist ##         - Creates a local RPM package, useful for development
+	mkdir -p ${RPM_TOPDIR}/{RPMS,SRPMS,BUILD,SOURCES}
+	tools/version-update -v ${VERSION}
+	cp ./rpm/v${VERSION}.tar.gz ${RPM_TOPDIR}/SOURCES
+	rpmbuild -ba \
+		--define="_topdir ${RPM_TOPDIR}" \
+		--define="version ${VERSION}" \
+		${SPECFILE_SUBPACKAGE_IMG_WINDOWMANAGER}
 
 install-policy: all ##             - Install selinux policies only
 	semodule -i ${TARGETS}.pp.bz2

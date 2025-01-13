@@ -1,5 +1,19 @@
 summary: Test that /run/systemd/journal/socket have different inode number inside
     and outside of the QM partition.
+description: |
+    This tests confirms that /run/systemd/journal/socket have different inode number inside
+    and outside of the QM partition.
+    The test gets inode number of /run/systemd/journal/socket inside and outside of the QM partition
+    using `stat --printf='%i' /run/systemd/journal/socket` and `podman exec qm stat --printf='%i' /run/systemd/journal/socket`
+    respectively and checks to ensure these are different values.
+    Test inputs:
+        None
+
+    Expected results:
+        out: [ INFO  ] PASS: check_run_systemd_journal_socket_inode_number: As expected, /run/systemd/journal/socket have different inode number inside and outside of the QM partition
+
+    Results location:
+        output.txt
 test: /bin/bash ./check_run_systemd_journal_socket.sh
 duration: 10m
 tag: ffi

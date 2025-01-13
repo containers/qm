@@ -1,4 +1,16 @@
 summary: Test that the directory /etc/qm cannot be accessed in the QM partition.
+description: |
+    This tests confirms that the directory /etc/qm cannot be accessed in the QM partition.
+    The test executes `test -d /etc/qm` in QM partition, no other input.
+
+    Test inputs:
+        None
+
+    Expected results:
+        out: [ INFO  ] PASS: check_etc_qm_not_accessible: As expected, /etc/qm is not accessible in the QM partition
+
+    Results location:
+        output.txt
 test: /bin/bash ./check_etc_qm.sh
 duration: 10m
 tag: ffi

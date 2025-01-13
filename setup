@@ -151,6 +151,11 @@ install() {
         EXTRA_FLAG="--use-host-config"
     fi
 
+    # SecurityLabelNested not supported so far in CentOS Stream 9 or lower
+    if grep -qi "^ID=centos" /etc/os-release && [[ $(grep -oP '^VERSION_ID="\K[0-9]+' /etc/os-release) -le 9 ]]; then
+        sed -i '/SecurityLabelNested/d' /usr/share/containers/systemd/qm.container
+    fi
+
     cmd_dnf_install="dnf -y install --releasever=${VERSION_ID} --installroot ${ROOTFS} ${PACKAGES_TO_INSTALL} ${EXTRA_FLAG}"
     echo "$cmd_dnf_install"
     ${cmd_dnf_install}

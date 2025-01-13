@@ -1,4 +1,16 @@
 summary: Test that the device /dev/console is not available in the QM partition.
+description: |
+    This tests confirms that the device /dev/console is not available in the QM partition.
+    The test executes `test -c /dev/console` in QM partition, no other input.
+
+    Test inputs:
+        None
+
+    Expected results:
+        [ INFO  ] PASS: check_dev_console_not_available: As expected, /dev/console is not available in the QM partition.
+
+    Results location:
+        output.txt
 test: /bin/bash ./check_dev_console.sh
 duration: 10m
 tag: ffi

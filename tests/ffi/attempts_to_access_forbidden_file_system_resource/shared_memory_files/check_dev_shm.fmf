@@ -1,5 +1,21 @@
 summary: Test that the file created in /dev/shm/ outside the QM partition that are
     not visible in /dev/shm inside the QM partition.
+description: |
+    This tests confirms that the file created in /dev/shm/ outside the QM partition that are
+    not visible in /dev/shm inside the QM partition.
+    The test creates a file outside QM partition using `touch /dev/shm/on-host` and tests if it
+    was succesfully creted using `test -e /dev/shm/on-host`.
+    Then the test checks to confirm  that the file /dev/shm/on-host is not visible inside
+    the QM partition using `test -e /dev/shm/on-host`
+    Test inputs:
+        None
+
+    Expected results:
+        out: [ INFO  ] Successfully created the file /dev/shm/on-host outside the QM partition.
+             [ INFO  ] PASS: check_dev_shm_file_not_visible_in_qm: As expected, /dev/shm/on-host is not visible in the QM partition.
+
+    Results location:
+        output.txt
 test: /bin/bash ./check_dev_shm.sh
 duration: 10m
 tag: ffi

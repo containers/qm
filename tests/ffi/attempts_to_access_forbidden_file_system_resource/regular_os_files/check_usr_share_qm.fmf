@@ -1,4 +1,16 @@
 summary: Test that the directory /usr/share/qm cannot be accessed in the QM partition.
+description: |
+    This tests confirms that the directory /usr/share/qm cannot be accessed in the QM partition.
+    The test executes `test -d /usr/share/qm` in QM partition, no other input.
+
+    Test inputs:
+        None
+
+    Expected results:
+        out: [ INFO  ] PASS: check_usr_share_qm_not_accessible: As expected, /usr/share/qm is not accessible in the QM partition.
+
+    Results location:
+        output.txt
 test: /bin/bash ./check_usr_share_qm.sh
 duration: 10m
 tag: ffi
