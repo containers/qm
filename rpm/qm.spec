@@ -61,6 +61,7 @@ BuildRequires: git-core
 BuildRequires: pkgconfig(systemd)
 BuildRequires: selinux-policy >= %_selinux_policy_version
 BuildRequires: selinux-policy-devel >= %_selinux_policy_version
+BuildRequires: bluechi-selinux
 
 Requires: iptables
 Requires: parted
