@@ -61,6 +61,7 @@ BuildRequires: git-core
 BuildRequires: pkgconfig(systemd)
 BuildRequires: selinux-policy >= %_selinux_policy_version
 BuildRequires: selinux-policy-devel >= %_selinux_policy_version
+BuildRequires: bluechi-selinux
 
 Requires: iptables
 Requires: parted
@@ -71,7 +72,6 @@ Requires(post): selinux-policy-targeted >= %_selinux_policy_version
 Requires(post): policycoreutils
 Requires(post): libselinux-utils
 Requires: podman >= %{podman_epoch}:4.5
-Requires: bluechi-agent
 Requires: jq
 
 %description

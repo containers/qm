@@ -29,3 +29,12 @@ files_pid_filetrans(init_t, ipc_var_run_t, dir, "ipc")
 unconfined_domain(ipc_t)
 
 qm_domain_template(qm)
+
+optional_policy(`
+	require{
+		type bluechi_var_run_t;
+		type bluechi_t;
+	}
+	stream_connect_pattern(qm_t, bluechi_var_run_t, bluechi_var_run_t, bluechi_t)
+	unconfined_server_stream_connectto(qm_t)
+')
