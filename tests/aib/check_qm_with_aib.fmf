@@ -1,0 +1,6 @@
+summary: Test basic QM image build with automotive-image-builder
+test: /bin/bash ./check_qm_with_aib.sh
+duration: 20m
+tag: aib
+framework: shell
+id: 146b987f-698f-4f84-8029-eaa253d049ce

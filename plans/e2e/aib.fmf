@@ -1,0 +1,11 @@
+summary: automotive-image-builder QM build test
+
+discover:
+    how: fmf
+    filter: 'tag:aib'
+
+execute:
+    how: tmt
+
+report:
+    how: junit

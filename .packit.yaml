@@ -113,6 +113,18 @@ jobs:
             virtualization:
              is-supported: true
 
+  - job: tests
+    trigger: pull_request
+    identifier: automotive-image-builder
+    tmt_plan: /plans/e2e/aib
+    targets:
+      - epel-9-x86_64
+    tf_extra_params:
+      environments:
+          hardware:
+            disk:
+             - size: ">= 20 GB"
+
 
   - job: propose_downstream
     trigger: release
