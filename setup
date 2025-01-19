@@ -1,4 +1,4 @@
-#!/bin/bash -ex
+#!/bin/bash
 #
 # This setup script is an unofficial solution designed to deploy QM in
 # non-automotive environments like baremetal, desktop, or CICD.
@@ -11,6 +11,8 @@
 # Globals
 SYSTEMCTL_SKIP="N"
 REMOVE_QM_ROOTFS="N"
+REALTIME="N"
+QM_CONTAINER_CONF="/usr/share/containers/systemd/qm.container"
 INSTALLDIR="/usr/share/qm"
 QM_ROOTFS_TOOL="${INSTALLDIR}/qm-rootfs"
 ROOTFS="/usr/lib/qm/rootfs"
@@ -33,6 +35,7 @@ CMDLINE_ARGUMENT_LIST=(
   "rwetcfs"
   "rwvarfs"
   "skip-systemctl"
+  "realtime"
 )
 
 root_check() {
@@ -41,6 +44,16 @@ root_check() {
 	exit 1
     fi
 }
+
+realtime_check() {
+    if [ "$1" == "N" ]; then
+	# Creates seccomp rules, do not use with realtime OS
+        /usr/share/qm/create-seccomp-rules
+    else
+	sed -i '/^SeccompProfile=\/usr\/share\/qm\/seccomp\.json/s/^/#/' "${QM_CONTAINER_CONF}"
+    fi
+}
+
 
 usage()
 {
@@ -62,6 +75,8 @@ usage()
    echo "--rwvarfs             set rwvarfs (default: /var/qm)"
    echo "--skip-systemctl      skip systemctl daemon commands (default: false)"
    echo "--hostname            custom agent hostname to use (default: \$\(hostname\))"
+   echo -e "--realtime	      set requirements for realtime OS.\n\t\t"\
+                              "     i.e: NOT enabling seccomp rules to sched_setscheduler()\n\t\t      and sched_setattr()"
    echo "--remove-qm-rootfs    WARNING: remove qm rootfs created during setup"
    echo
    echo "Example:"
@@ -203,7 +218,7 @@ EOF
 
 # read command line arguments
 opts=$(getopt \
-  --longoptions "$(printf "help,skip-systemctl,remove-qm-rootfs,%s:," "${CMDLINE_ARGUMENT_LIST[@]}")" \
+  --longoptions "$(printf "help,realtime,skip-systemctl,remove-qm-rootfs,%s:," "${CMDLINE_ARGUMENT_LIST[@]}")" \
   --name "$(basename "$0")" \
   --options "" \
   -- "$@"
@@ -236,6 +251,10 @@ while [[ $# -gt 0 ]]; do
       SYSTEMCTL_SKIP="Y"
       shift
       ;;
+    --realtime)
+      REALTIME="Y"
+      shift
+      ;;
     --hostname)
       AGENT_HOSTNAME="${2}"
       shift 2
@@ -261,6 +280,7 @@ echo  "  * rwetcfs: ${RWETCFS}"
 echo  "  * rwvarfs: ${RWVARFS}"
 echo  "  * install dir: ${INSTALLDIR}"
 echo  "  * skip-systemctl: ${SYSTEMCTL_SKIP}"
+echo  "  * realtime: ${REALTIME}"
 echo  "  * remove-qm-rootfs: ${REMOVE_QM_ROOTFS}"
 echo  "  * agent hostname: ${AGENT_HOSTNAME}"
 echo
@@ -300,6 +320,8 @@ case "$1" in
 	replaceIDs /etc/subgid qmcontainers ${QM_CONTAINER_IDS}
 	replaceIDs /etc/subuid containers   ${CONTAINER_IDS}
 	replaceIDs /etc/subgid containers   ${CONTAINER_IDS}
+
+    realtime_check $REALTIME
 
     if [ "$SYSTEMCTL_SKIP" == "N" ]; then
 	    systemctl daemon-reload

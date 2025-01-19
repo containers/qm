@@ -108,7 +108,6 @@ install -d %{buildroot}%{_sysconfdir}/containers/containers.conf.d
 %_format MODULES %{_datadir}/selinux/packages/$x.pp.bz2
 %selinux_modules_install -s %{selinuxtype} $MODULES
 # Execute the script to create seccomp rules after the package is installed
-/usr/share/qm/create-seccomp-rules
 /usr/share/qm/comment-tz-local # FIX-ME GH-issue: 367
 modprobe ip_tables # podmand netavark requires at host to load
 
