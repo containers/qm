@@ -7,11 +7,9 @@ LIBDIR ?= $(PREFIX)/lib
 SYSCONFDIR?=/etc
 QMDIR=/usr/lib/qm
 SPECFILE=rpm/qm.spec
-# SUBSYS := subsystems/kvm subsystems/windowmanager subsystems/sound subsystems/video subsystems/radio subsystems/dvb subsystems/tty7 subsystems/input subsystems/ttyUSB0 subsystems/text2speech subsystems/img_tempdir subsystems/ros2
-SUBSYS :=
-export RPM_TOPDIR ?= $(PWD)/rpmbuild
-export VERSION ?= $(shell cat VERSION)
-export ROOTDIR ?= $(PWD)
+RPM_TOPDIR ?= $(PWD)/rpmbuild
+VERSION ?= $(shell cat VERSION)
+ROOTDIR ?= $(PWD)
 
 # Default help target
 .PHONY: help
@@ -75,6 +73,13 @@ rpm: clean dist ##             - Creates a local RPM package, useful for develop
 		--define="_topdir ${RPM_TOPDIR}" \
 		--define="version ${VERSION}" \
 		${SPECFILE}
+
+.PHONY: subpackages
+subpackages: $(TARGETS)
+$(TARGETS):
+	@echo "Entering directory: subsystem/$@"
+	$(MAKE) -C subsystems/$@
+	make -f subsystems/$@/Makefile $@
 
 install-policy: all ##             - Install selinux policies only
 	semodule -i ${TARGETS}.pp.bz2

@@ -1,26 +1,33 @@
-SPECFILE_SUBPACKAGE_KVM=rpm/kvm/qm-kvm.spec
+RPM_TOPDIR ?= $(PWD)/rpmbuild
+VERSION ?= $(shell cat VERSION)
+ROOTDIR ?= $(PWD)
+SPECFILE_SUBPACKAGE_IMG_KVM ?= ${ROOTDIR}/rpm/kvm/qm-kvm.spec
 
 .PHONY: dist
 dist: ##             - Creates the QM kvm package
-	cd $(ROOTDIR) && tar cvz \
-		--exclude-from=build-aux/exclude_from_tar_gz_subpackage_kvm.txt \
+	cd ${ROOTDIR} && tar cvz \
 		--dereference \
-		--transform s/qm/qm-kvm-${VERSION}/ \
+		--transform 's|subsystems/kvm/Makefile|Makefile|' \
+		--transform 's|rpm/kvm/qm-kvm.spec|qm-kvm.spec|' \
+		--transform 's|qm|qm-kvm-${VERSION}|' \
 		-f /tmp/qm-kvm-${VERSION}.tar.gz \
+		../qm/rpm/kvm/qm-kvm.spec \
+		../qm/subsystems/kvm/Makefile \
+		../qm/tools/version-update \
+		../qm/VERSION \
 		../qm/README.md \
 		../qm/SECURITY.md \
 		../qm/LICENSE \
-		../qm/ \
 		../qm/etc/containers/systemd/qm.container.d/qm_dropin_mount_bind_kvm.conf
-	cd $(ROOTDIR) && mv /tmp/qm-kvm-${VERSION}.tar.gz ./rpm
+	cd ${ROOTDIR} && mv /tmp/qm-kvm-${VERSION}.tar.gz ./rpm
 
-.PHONY: rpm
-rpm: dist ##             - Creates a local RPM windowmanager package, useful for development
-	cd $(ROOTDIR) && mkdir -p ${RPM_TOPDIR}/{RPMS,SRPMS,BUILD,SOURCES}
-	cd $(ROOTDIR) && tools/version-update -v ${VERSION}
-	cd $(ROOTDIR) && cp ./rpm/v${VERSION}.tar.gz ${RPM_TOPDIR}/SOURCES
-	cd $(ROOTDIR) && rpmbuild -ba \
-	       	--define="_topdir ${RPM_TOPDIR}" \
+.PHONY: kvm
+kvm: dist ##             - Creates a local RPM kvm package, useful for development
+	@echo ${VERSION}
+	cd ${ROOTDIR} && mkdir -p ${RPM_TOPDIR}/{RPMS,SRPMS,BUILD,SOURCES}
+	cd ${ROOTDIR} && cp ./rpm/qm-kvm-${VERSION}.tar.gz ${RPM_TOPDIR}/SOURCES
+	rpmbuild -ba \
+		--define="_topdir ${RPM_TOPDIR}" \
 		--define="version ${VERSION}" \
-		${SPECFILE_SUBPACKAGE_IMG_WINDOWMANAGER}
+		${SPECFILE_SUBPACKAGE_IMG_KVM}
 
