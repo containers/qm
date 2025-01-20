@@ -4,6 +4,13 @@ discover:
     how: fmf
     filter: 'tag:aib'
 
+prepare:
+  - name: Install packages
+    how: install
+    order: 20
+    package:
+      - jq
+
 execute:
     how: tmt
 
