@@ -74,11 +74,6 @@ rpm: clean dist ##             - Creates a local RPM package, useful for develop
 		--define="_topdir ${RPM_TOPDIR}" \
 		--define="version ${VERSION}" \
 		${SPECFILE}
-	for dir in $(SUBSYS); do \
-		if [ -f $$dir/Makefile ]; then \
-			$(MAKE) -C $$dir -f Makefile rpm; \
-		fi; \
-	done
 
 install-policy: all ##             - Install selinux policies only
 	semodule -i ${TARGETS}.pp.bz2
