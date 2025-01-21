@@ -23,6 +23,9 @@ jobs:
       epel-9:
         additional_repos:
           - copr://@centos-automotive-sig/bluechi-snapshot
+      epel-10:
+        additional_repos:
+          - copr://@centos-automotive-sig/bluechi-snapshot
 
   # Run on commit to main branch
   - &copr
