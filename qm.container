@@ -35,10 +35,28 @@ LimitNOFILE=65536
 TasksMax=50%
 
 [Container]
+# AddCapability
+# -------------
+# Add these capabilities, in addition to the default Podman capability set, to the container.
+# If set to all, grants all capabilities to the container, increasing flexibility but significantly
+# reducing security.
+# For details see: https://docs.podman.io/en/latest/markdown/podman-systemd.unit.5.html#addcapability
 AddCapability=all
+
+# Unmask
+# -------
+# Specify the paths to unmask separated by a colon. unmask=ALL or /path/1:/path/2, or shell expanded paths (/proc/*):
+# If set to ALL, Podman will unmask all the paths that are masked or made read-only by default.
+# For details see: https://docs.podman.io/en/latest/markdown/podman-systemd.unit.5.html#unmask
 Unmask=ALL
 SecurityLabelNested=true
 SeccompProfile=/usr/share/qm/seccomp.json
+
+# PidsLimit
+# ---------
+# Disables the PID limit for the container by setting it to -1.
+# Without a limit, the container can spawn unlimited processes, potentially exhausting system resources.
+# For details see: https://docs.podman.io/en/latest/markdown/podman-systemd.unit.5.html#pidslimit
 PidsLimit=-1
 
 # Comment DropCapability this will allow FFI Tools to surpass their defaults.
@@ -49,7 +67,17 @@ AddDevice=-/dev/fuse
 ContainerName=qm
 Exec=/sbin/init
 Network=private
+
+# ReadOnly
+# --------
+# Makes the container's filesystem read-only, enhancing security by preventing modifications.
 ReadOnly=true
+
+# Rootfs
+# ------
+# Defines the root filesystem location for QM partition.
+# By default the '${ROOTFS}' variable points to /usr/lib/qm/rootfs.
+# For details see: https://docs.podman.io/en/latest/markdown/podman-systemd.unit.5.html#rootfs
 Rootfs=${ROOTFS}
 
 SecurityLabelNested=true
