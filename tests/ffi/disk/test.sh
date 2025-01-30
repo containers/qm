@@ -33,7 +33,7 @@ OOMScoreAdjust=1000
 
 [Container]
 PodmanArgs=
-PodmanArgs=--pids-limit=-1 --security-opt seccomp=/usr/share/qm/seccomp.json --security-opt label=nested --security-opt unmask=all --memory 5G
+PodmanArgs=--pids-limit=-1 --security-opt seccomp=/usr/share/qm/seccomp-no-rt.json --security-opt label=nested --security-opt unmask=all --memory 5G
 
 EOF
 
