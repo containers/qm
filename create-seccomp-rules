@@ -17,7 +17,7 @@
 SECCOMP_CONTAINERS_FILE="/usr/share/containers/seccomp.json"
 SYSCALLS_TO_DENY=("sched_setscheduler" "sched_setattr")
 
-QM_PATH_SECCOMP="/usr/share/qm/seccomp.json"
+QM_PATH_SECCOMP="/usr/share/qm/seccomp-no-rt.json"
 QM_DIR="${QM_PATH_SECCOMP%/*}"
 
 function remove_seccomp_entry_from_allow() {

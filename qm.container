@@ -50,7 +50,7 @@ AddCapability=all
 # For details see: https://docs.podman.io/en/latest/markdown/podman-systemd.unit.5.html#unmask
 Unmask=ALL
 SecurityLabelNested=true
-SeccompProfile=/usr/share/qm/seccomp.json
+SeccompProfile=/usr/share/qm/seccomp-no-rt.json
 
 # PidsLimit
 # ---------

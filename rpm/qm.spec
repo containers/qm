@@ -10,7 +10,7 @@
 %global selinuxtype targeted
 %global moduletype services
 %global modulenames qm
-%global seccomp_json /usr/share/%{modulenames}/seccomp.json
+%global seccomp_json /usr/share/%{modulenames}/seccomp-no-rt.json
 %global setup_tool %{_prefix}/share/%{modulenames}/setup
 
 %global _installscriptdir %{_prefix}/lib/%{modulenames}

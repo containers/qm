@@ -8,7 +8,7 @@ QM environment deny `set_scheduler()` syscall for safety and must be validated v
 
 ## How to deny is made?
 
-During the QM service startup it passes arguments to Podman. One of these arguments is `seccomp=/usr/share/qm/seccomp.json` which contains rules that deny the `set_scheduler()`.
+During the QM service startup it passes arguments to Podman. One of these arguments is `seccomp=/usr/share/qm/seccomp-no-rt.json` which contains rules that deny the `set_scheduler()`.
 
 ## How to test?
 
