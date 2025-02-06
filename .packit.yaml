@@ -104,7 +104,8 @@ jobs:
     identifier: kvm-tier-0
     tmt_plan: /plans/e2e/kvm-tier-0
     targets:
-      - fedora-latest
+      # TBF: fedora-latest -eq 42 no published to public-tf
+      - fedora-41
       - epel-9-x86_64
     tf_extra_params:
       environments:
