@@ -4,6 +4,13 @@ WantedBy=default.target
 [Service]
 # It's recommended to use systemd drop-in to override the
 # systemd settings. See QM manpage for an example.
+# CPUWeight: This setting controls the CPU controller for qm.
+# Delegate: Turns on delegation of further resource control
+#           partitioning to processes of the unit.
+# IOWeight: Set the overall block I/O weight for qm.
+# ManagedOOMSwap=auto|kill: Specifies how systemd-oomd.service will act on qm.
+# QM cgroup, pass directly to systemd and handled by it,
+# please refer to `man systemd.resource-control` for details.
 CPUWeight=50
 Delegate=true
 IOWeight=50
