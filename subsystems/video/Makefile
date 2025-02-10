@@ -7,8 +7,14 @@ SPECFILE_SUBPACKAGE_VIDEO ?= ${ROOTDIR}/rpm/video/video.spec
 dist: ##             - Creates the QM video package
 	cd $(ROOTDIR) && tar cvz \
 		--dereference \
+                --transform 's|subsystems/video/Makefile|Makefile|' \
+                --transform 's|rpm/video/video.spec|video.spec|' \
 		--transform s/qm/qm-video-${VERSION}/ \
 		-f /tmp/qm-video-${VERSION}.tar.gz \
+		../qm/rpm/video/video.spec \
+                ../qm/subsystems/video/Makefile \
+                ../qm/tools/version-update \
+                ../qm/VERSION \
 		../qm/README.md \
 		../qm/SECURITY.md \
 		../qm/LICENSE \

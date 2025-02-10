@@ -7,8 +7,14 @@ SPECFILE_SUBPACKAGE_IMG_TEMPDIR ?= ${ROOTDIR}/rpm/img_tempdir/img_tempdir.spec
 dist: ##             - Creates the QM img_tempdir package
 	cd $(ROOTDIR) && tar cvz \
 		--dereference \
+                --transform 's|subsystems/img_tempdir/Makefile|Makefile|' \
+                --transform 's|rpm/img_tempdir/img_tempdir.spec|img_tempdir.spec|' \
 		--transform s/qm/qm-img_tempdir-${VERSION}/ \
 		-f /tmp/qm-img_tempdir-${VERSION}.tar.gz \
+                ../qm/rpm/img_tempdir/img_tempdir.spec \
+                ../qm/subsystems/img_tempdir/Makefile \
+                ../qm/tools/version-update \
+                ../qm/VERSION \
 		../qm/README.md \
 		../qm/SECURITY.md \
 		../qm/LICENSE \

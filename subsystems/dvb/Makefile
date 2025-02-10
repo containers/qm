@@ -16,7 +16,7 @@ dist: ##             - Creates the QM dvb package
 	cd $(ROOTDIR) && mv /tmp/qm-dvb-${VERSION}.tar.gz ./rpm
 
 .PHONY: dvb
-dvp: dist ##             - Creates a local RPM package, useful for development
+dvb: dist ##             - Creates a local RPM package, useful for development
 	cd $(ROOTDIR) && mkdir -p ${RPM_TOPDIR}/{RPMS,SRPMS,BUILD,SOURCES}
 	cd $(ROOTDIR) && tools/version-update -v ${VERSION}
 	cd $(ROOTDIR) && cp ./rpm/qm-dvb-${VERSION}.tar.gz ${RPM_TOPDIR}/SOURCES

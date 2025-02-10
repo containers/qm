@@ -78,7 +78,6 @@ rpm: clean dist ##             - Creates a local RPM package, useful for develop
 subpackages: $(TARGETS)
 $(TARGETS):
 	@echo "Entering directory: subsystem/$@"
-	$(MAKE) -C subsystems/$@
 	make -f subsystems/$@/Makefile $@
 
 install-policy: all ##             - Install selinux policies only

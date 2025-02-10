@@ -6,7 +6,7 @@ Release: 1%{?dist}
 Summary: Drop-in configuration for QM containers to mount bind /dev/tty7
 License: GPL-2.0-only
 URL: https://github.com/containers/qm
-Source0: %{url}/archive/qm-tty7%{version}.tar.gz
+Source0: %{url}/archive/qm-tty7-%{version}.tar.gz
 
 BuildArch: noarch
 Requires: qm = %{version}-%{release}

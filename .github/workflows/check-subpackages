@@ -1,0 +1,29 @@
+name: Build Subpackages
+
+on:
+  pull_request
+
+jobs:
+  build-subpackages:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v4
+
+      - name: Install dependencies
+        run: sudo apt-get update && sudo apt-get install -y make
+
+      - name: Run make for each subsystem
+        run: |
+          for dir in subsystems/*; do
+            if [ -d "$dir" ]; then
+              subsystem=$(basename "$dir")
+              echo "Running make for $subsystem..."
+              make TARGETS=$subsystem subpackages
+              if [ $? -ne 0 ]; then
+                echo "❌ Make failed for $subsystem" >&2
+                exit 1
+              fi
+            fi
+          done
+

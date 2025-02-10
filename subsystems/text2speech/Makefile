@@ -7,15 +7,22 @@ SPECFILE_SUBPACKAGE_TEXT2SPEECH ?= ${ROOTDIR}/rpm/text2speech/text2speech.spec
 dist: ##             - Creates the QM input package
 	cd $(ROOTDIR) && tar cvz \
 		--dereference \
+                --transform 's|subsystems/text2speech/Makefile|Makefile|' \
+                --transform 's|rpm/text2speech/text2speech.spec|text2speech.spec|' \
 		--transform s/qm/qm-text2speech-${VERSION}/ \
 		-f /tmp/qm-text2speech-${VERSION}.tar.gz \
+                ../qm/rpm/text2speech/text2speech.spec \
+                ../qm/subsystems/text2speech/Makefile \
+                ../qm/tools/version-update \
+                ../qm/VERSION \
 		../qm/README.md \
+		../qm/CODE-OF-CONDUCT.md \
 		../qm/SECURITY.md \
-		../qm/LICENSE \
+		../qm/LICENSE
 	cd $(ROOTDIR) && mv /tmp/qm-text2speech-${VERSION}.tar.gz ./rpm
 
-.PHONY: qm-text2speech
-qm-text2speech: dist ##            - Creates a local RPM package, useful for development
+.PHONY: text2speech
+text2speech: dist ##            - Creates a local RPM package, useful for development
 	cd $(ROOTDIR) && mkdir -p ${RPM_TOPDIR}/{RPMS,SRPMS,BUILD,SOURCES}
 	cd $(ROOTDIR) && tools/version-update -v ${VERSION}
 	cd $(ROOTDIR) && cp ./rpm/qm-text2speech-${VERSION}.tar.gz ${RPM_TOPDIR}/SOURCES
