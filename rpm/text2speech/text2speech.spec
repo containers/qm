@@ -9,7 +9,7 @@ Release: 1%{?dist}
 Summary: Drop-in configuration for QM containers to mount bind
 License: GPL-2.0-only
 URL: https://github.com/containers/qm
-Source0: %{url}/archive/v%{version}.tar.gz
+Source0: %{url}/archive/qm-text2speech-%{version}.tar.gz
 BuildArch: noarch
 
 # Build requirements
@@ -30,14 +30,14 @@ Requires: espeak
 This subpackage provides a drop-in configuration for the QM environment to enable espeak
 
 %prep
-%autosetup -n qm-%{version}
+%autosetup -n qm-text2speech-%{version}
 
 %build
 
 %install
 
 %post
-dnf --installroot /usr/lib/qm/rootfs/ install espeak -y
+dnf  --setopt=reposdir=/etc/qm/yum.repos.d  --installroot /usr/lib/qm/rootfs/ install espeak -y
 
 %files
 %license LICENSE
