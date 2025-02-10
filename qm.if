@@ -580,6 +580,24 @@ template(`qm_domain_template',`
 	')
 ')
 
+# Allow qm_t domain to read auditd.service
+interface(`qm_allow_auditd_read',`
+    gen_require(`
+        type qm_t, auditd_unit_file_t;
+    ')
+
+    allow qm_t auditd_unit_file_t:file read;
+')
+
+# Allow qm_t domain to ptrace other qm_t processes
+interface(`qm_allow_ptrace_qm',`
+    gen_require(`
+        type qm_t;
+    ')
+
+    allow qm_t qm_t:process ptrace;
+')
+
 ########################################
 ## <summary>
 ##	Creates types and rules for a basic
