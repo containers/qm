@@ -24,13 +24,14 @@
     - [QM Sub-Package Video](#qm-sub-package-video)
 7. [Examples](#examples)
 8. [Development](#development)
-9. [Realtime](#realtime)
-10. [Talks and Videos](#talks-and-videos)
+9. [Network Settings](https://github.com/containers/qm/blob/main/docs/tutorials/NETWORK.md)
+10. [Realtime](#realtime)
+11. [Talks and Videos](#talks-and-videos)
     - [Paving the Way for Uninterrupted Car Operations - DevConf Boston 2024](https://www.youtube.com/watch?v=jTrLqpw7E6Q)
     - [Security - Sample Risk Analysis according to ISO26262](https://www.youtube.com/watch?v=jTrLqpw7E6Q&t=1268s)
     - [ASIL and QM - Simulation and Service Monitoring using bluechi and podman](https://www.youtube.com/watch?v=jTrLqpw7E6Q&t=1680s)
     - [Containers in a Car - DevConf.CZ 2023](https://www.youtube.com/watch?v=FPxka5uDA_4)
-11. [RPM Mirrors](#rpm-mirrors)
+12. [RPM Mirrors](#rpm-mirrors)
 
 ## QM is a containerized environment for running Functional Safety QM (Quality Management) software
 
