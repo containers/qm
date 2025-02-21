@@ -80,11 +80,18 @@ Network=private
 # Makes the container's filesystem read-only, enhancing security by preventing modifications.
 ReadOnly=true
 
+# TmpFS flags
+ReadOnlyTmpfs=false
+Mount=type=tmpfs,tmpfs-size=512M,destination=/tmp
+Mount=type=tmpfs,tmpfs-size=512M,destination=/run
+Mount=type=tmpfs,destination=/dev/shm
+
 # Rootfs
 # ------
 # Defines the root filesystem location for QM partition.
 # By default the '${ROOTFS}' variable points to /usr/lib/qm/rootfs.
 # For details see: https://docs.podman.io/en/latest/markdown/podman-systemd.unit.5.html#rootfs
+#
 Rootfs=${ROOTFS}
 
 SecurityLabelNested=true
@@ -94,3 +101,4 @@ SecurityLabelType=qm_t
 Timezone=local
 Volume=${RWETCFS}:/etc
 Volume=${RWVARFS}:/var
+
