@@ -1,4 +1,4 @@
-policy_module(qm, 0.7.0)
+policy_module(qm, 0.7.1)
 
 gen_require(`
 	attribute container_file_type;
