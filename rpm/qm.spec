@@ -6,8 +6,7 @@
 # Define the feature flag: 1 to enable, 0 to disable
 # By default it's disabled: 0
 
-# Some bits borrowed from the openstack-selinux package
-%global selinuxtype targeted
+# Some bits borrowed from the openstack-selinux and container-selinux packages
 %global moduletype services
 %global modulenames qm
 %global seccomp_json /usr/share/%{modulenames}/seccomp-no-rt.json
@@ -68,7 +67,8 @@ Requires: parted
 Requires: containers-common
 Requires: selinux-policy >= %_selinux_policy_version
 Requires(post): selinux-policy-base >= %_selinux_policy_version
-Requires(post): selinux-policy-targeted >= %_selinux_policy_version
+Requires(post): selinux-policy-any >= %_selinux_policy_version
+Recommends: selinux-policy-targeted >= %_selinux_policy_version
 Requires(post): policycoreutils
 Requires(post): libselinux-utils
 Requires: podman >= %{podman_epoch}:4.5
@@ -104,9 +104,9 @@ install -d %{buildroot}%{_sysconfdir}/containers/containers.conf.d
 %{__make} DESTDIR=%{buildroot} DATADIR=%{_datadir} install
 
 %post
-# Install all modules in a single transaction
 %_format MODULES %{_datadir}/selinux/packages/$x.pp.bz2
-%selinux_modules_install -s %{selinuxtype} $MODULES
+. %{_sysconfdir}/selinux/config
+%selinux_modules_install -s ${SELINUXTYPE} $MODULES
 # Execute the script to create seccomp rules after the package is installed
 /usr/share/qm/create-seccomp-rules
 /usr/share/qm/comment-tz-local # FIX-ME GH-issue: 367
@@ -123,7 +123,8 @@ fi
 %postun
 if [ $1 -eq 0 ]; then
    # This section executes only on package removal, not on upgrade
-   %selinux_modules_uninstall -s %{selinuxtype} %{modulenames}
+   . %{_sysconfdir}/selinux/config
+   %selinux_modules_uninstall -s ${SELINUXTYPE} %{modulenames}
    if [ -f %{seccomp_json} ]; then
      /bin/rm -f %{seccomp_json}
    fi
