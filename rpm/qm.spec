@@ -110,7 +110,8 @@ install -d %{buildroot}%{_sysconfdir}/containers/containers.conf.d
 # Execute the script to create seccomp rules after the package is installed
 /usr/share/qm/create-seccomp-rules
 /usr/share/qm/comment-tz-local # FIX-ME GH-issue: 367
-modprobe ip_tables # podmand netavark requires at host to load
+# podmand netavark requires at host to load or let's ignore in case host don't have it and proceed with the installation
+modprobe ip_tables || true
 
 %preun
 if [ $1 = 0 ]; then
