@@ -5,20 +5,39 @@
 . ../common/prepare.sh
 
 check_var_partition(){
+   name_of_qm_var_partition="part /var/qm"
+
+   # In the ostree image
    if stat /run/ostree-booted > /dev/null 2>&1; then
-      qm_var_partition="part /var"
+      name_of_qm_var_partition="part /var"
    else
-      qm_var_partition="part /usr/lib/qm/rootfs/var"
+      # In the centos cloud image
+      local release_id
+      release_id=$(grep -oP '(?<=^ID=)\w+' <<< "$(tr -d '"' < /etc/os-release)")
+      if [[ "$release_id" == "centos" ]]; then
+         name_of_qm_var_partition="part /usr/lib/qm/rootfs/var"
+      fi
    fi
 
-   if [[ "$(lsblk -o 'MAJ:MIN,TYPE,MOUNTPOINTS')" =~ ${qm_var_partition} ]]; then
+   # Prints all available block devices to make it easier to debug
+   exec_cmd "lsblk"
+   exec_cmd "df -kh"
+   # If there is no separate /var partition this test will terminate early
+   if [[ "$(lsblk -o 'MAJ:MIN,TYPE,MOUNTPOINTS')" =~ ${name_of_qm_var_partition} ]]; then
       info_message "A separate /var partition was detected on the image."
    else
-      lsblk
-      df -kh
       info_message "FAIL: No separate /var partition was detected on the image."
       info_message "Test terminated, it requires a separate /var disk partition for QM to run this test."
       exit 1
+   fi
+}
+
+set_PodmanArgs(){
+   podmanArgs_of_qm=$(grep "PodmanArgs" /usr/share/containers/systemd/qm.container)
+   if [ -n "$podmanArgs_of_qm" ]; then
+      podmanArgs_of_qm=$podmanArgs_of_qm" --memory 5G"
+   else
+      podmanArgs_of_qm="--memory 5G"
    fi
 }
 
@@ -26,6 +45,7 @@ check_var_partition
 disk_cleanup
 prepare_test
 
+set_PodmanArgs
 cat << EOF > "${DROP_IN_DIR}"/oom.conf
 [Service]
 OOMScoreAdjust=
@@ -33,18 +53,14 @@ OOMScoreAdjust=1000
 
 [Container]
 PodmanArgs=
-PodmanArgs=--pids-limit=-1 --security-opt seccomp=/usr/share/qm/seccomp-no-rt.json --security-opt label=nested --security-opt unmask=all --memory 5G
+PodmanArgs=${podmanArgs_of_qm}
 
 EOF
 
 reload_config
 prepare_images
 
-exec_cmd "podman exec -it qm /bin/bash -c \
-         'podman run -d --replace --name ffi-qm \
-          quay.io/centos-sig-automotive/ffi-tools:latest \
-          tail -f /dev/null'"
-
+run_container_in_qm "ffi-qm"
 exec_cmd "podman exec -it qm /bin/bash -c \
          'podman exec -it ffi-qm ./QM/file-allocate'"
 
