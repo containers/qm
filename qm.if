@@ -93,7 +93,7 @@ template(`qm_domain_template',`
 	manage_lnk_files_pattern($1_t, $1_file_type, $1_file_type)
 	manage_sock_files_pattern($1_t, $1_file_type, $1_file_type)
 	fs_tmpfs_filetrans($1_t, $1_file_t, { dir file lnk_file })
-	allow $1_t $1_file_type:chr_file { watch watch_reads };
+	allow $1_t $1_file_type:chr_file { watch watch_reads map };
 	allow $1_t $1_file_type:dir { mounton relabelfrom relabelto };
 	allow $1_t $1_file_type:filesystem all_filesystem_perms;
 
