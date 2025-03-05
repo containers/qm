@@ -138,12 +138,14 @@ jobs:
     dist_git_branches:
       - fedora-all
       - epel-9
+      - epel-10
 
   - job: koji_build
     trigger: commit
     dist_git_branches:
       - fedora-all
       - epel-9
+      - epel-10
 
   - job: bodhi_update
     trigger: commit
@@ -151,3 +153,4 @@ jobs:
       # rawhide updates are created automatically
       - fedora-branched
       - epel-9
+      - epel-10
