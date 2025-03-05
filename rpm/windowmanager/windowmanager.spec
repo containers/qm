@@ -11,7 +11,7 @@ URL: https://github.com/containers/qm
 Source0: %{url}/archive/qm-windowmanager-%{version}.tar.gz
 BuildArch: noarch
 
-Requires: qm = %{version}-%{release}
+Requires: qm >= %{version}
 
 %description
 This sub-package installs an experimental window manager for the QM environment.

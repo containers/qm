@@ -12,7 +12,7 @@ URL: https://github.com/containers/qm
 Source0: %{url}/archive/qm-ros2-%{version}.tar.gz
 
 BuildArch: noarch
-Requires: qm = %{version}-%{release}
+Requires: qm >= %{version}
 
 %description
 This subpackage provides a containerized ROS2 Rolling environment within the

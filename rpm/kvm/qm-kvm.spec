@@ -12,17 +12,7 @@ URL: https://github.com/containers/qm
 Source0: %{url}/archive/qm-kvm-%{version}.tar.gz
 BuildArch: noarch
 
-# Build requirements
-BuildRequires: make
-BuildRequires: podman
-BuildRequires: selinux-policy
-BuildRequires: selinux-policy-devel
-
-# Runtime dependencies
-Requires: qm = %{version}-%{release}
-Requires: selinux-policy >= %{_selinux_policy_version}
-Requires: selinux-policy-base >= %{_selinux_policy_version}
-Requires: podman
+Requires: qm >= %{version}
 
 %description -n qm-kvm
 This subpackage provides a drop-in configuration for the QM environment to enable mount binding of `/dev/kvm` from the host system to containers. This configuration is essential for supporting KVM-based virtualization within QM containers.

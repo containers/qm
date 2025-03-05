@@ -12,7 +12,7 @@ URL: https://github.com/containers/qm
 Source0: %{url}/archive/qm-video-%{version}.tar.gz
 
 BuildArch: noarch
-Requires: qm = %{version}-%{release}
+Requires: qm >= %{version}
 
 %description
 This subpackage installs a drop-in configuration for QM containers to mount bind `/dev/video`.
