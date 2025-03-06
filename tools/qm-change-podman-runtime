@@ -1,0 +1,79 @@
+#!/bin/bash
+
+# Script to dynamically change Podman runtime
+# Usage: /usr/share/qm/qm-change-podman-runtime <runtime-name> <runtime-binary-paths>
+
+set -e
+
+# Usage function
+usage() {
+  echo "Usage: /usr/share/qm/qm-change-podman-runtime <runtime-name> <runtime-binary-paths>"
+  echo
+  echo "Examples:"
+  echo "  /usr/share/qm/qm-change-podman-runtime krun /usr/bin/krun"
+  echo "  /usr/share/qm/qm-change-podman-runtime my-runtime /usr/bin/my-runtime,/usr/local/bin/my-runtime"
+  exit 1
+}
+
+# Ensure the script is run as root
+if [ "$EUID" -ne 0 ]; then
+  echo "Error: This script must be run as root. Please use sudo or switch to the root user."
+  exit 1
+fi
+
+# Validate input arguments
+if [ $# -ne 2 ]; then
+  usage
+fi
+
+RUNTIME_NAME=$1
+RUNTIME_BINARY_PATHS=$2
+CONFIG_FILE="/etc/containers/containers.conf"
+QM_CONTAINER_FILE="/usr/share/containers/systemd/qm.container"
+
+# Parse binary paths into TOML array format
+BINARY_PATHS_TOML=$(echo "$RUNTIME_BINARY_PATHS" | sed 's/,/","/g' | sed 's/^/["/' | sed 's/$/"]/')
+
+# Create or modify the configuration file
+if [ ! -f "$CONFIG_FILE" ]; then
+  echo "$CONFIG_FILE does not exist. Creating a new configuration file."
+  mkdir -p /etc/containers
+  cat << EOF > "$CONFIG_FILE"
+runtime = "$RUNTIME_NAME"
+
+[runtimes]
+$RUNTIME_NAME = $BINARY_PATHS_TOML
+EOF
+else
+  echo "Updating Podman configuration to set runtime $RUNTIME_NAME with paths $RUNTIME_BINARY_PATHS"
+  sed -i '/^runtime = /d' "$CONFIG_FILE"         # Remove existing runtime setting
+  sed -i '/^\[runtimes\]/,$d' "$CONFIG_FILE"    # Remove existing [runtimes] section
+  cat << EOF >> "$CONFIG_FILE"
+runtime = "$RUNTIME_NAME"
+
+[runtimes]
+$RUNTIME_NAME = $BINARY_PATHS_TOML
+EOF
+fi
+
+# Update qm.container file
+if [ -f "$QM_CONTAINER_FILE" ]; then
+  echo "Updating $QM_CONTAINER_FILE to include Runtime=$RUNTIME_NAME in the Container section."
+  sed -i '/^Runtime=/d' "$QM_CONTAINER_FILE"             # Remove any existing Runtime setting
+  sed -i '/^\[Container\]/a Runtime='"$RUNTIME_NAME" "$QM_CONTAINER_FILE" # Add the new Runtime entry
+else
+  echo "Error: $QM_CONTAINER_FILE does not exist. Skipping update to qm.container."
+fi
+
+# Reload Podman configuration
+echo "Reloading Podman configuration..."
+podman system migrate --new-runtime=krun
+
+# Verify the runtime change
+echo "Verifying the runtime change..."
+if podman info | grep -q "runtime: $RUNTIME_NAME" -A5; then
+  echo "Runtime successfully set to $RUNTIME_NAME with paths $RUNTIME_BINARY_PATHS."
+else
+  echo "Failed to set runtime to $RUNTIME_NAME."
+  exit 1
+fi
