@@ -16,8 +16,7 @@
   - [Check if HOST and Container are using different network namespace](#check-if-host-and-container-are-using-different-network-namespace)
   - [Debugging with podman in QM using --root](#debugging-with-podman-in-qm)
   - [Creating your own drop-in QM sub-package](#creating-your-own-dropin-qm-subpackage)
-  - [Let automation create/publish PR sub-packages](#let-automation-create-publish-pr-subpackages)
-  - [Install PR copr sub-packages on local machine](#install-pr-copr-sub-packages-on-local-machine)
+  - [Install PR copr subpackages on local machine](#install-pr-copr-subpackages-on-local-machine)
   - [Debugging with quadlet](#debugging-with-quadlet)
 
 ## Building QM rpm manually with changes
@@ -285,42 +284,24 @@ mkdir /usr/share/containers/storage: read-only file system
 
 We recommend using the existing drop-in files as a guide and adapting them to your specific needs. However, here are the step-by-step instructions:
 
-1) Create a drop-in file in the directory: `etc/qm/containers/containers.conf.d`
-2) Add it as a sub-package to `rpm/qm.spec`
-3) Test it by running: `make clean && VERSION=YOURVERSIONHERE make rpm`
+1) Create a drop-in file in the directory: `etc/qm/containers/containers.conf.d/`
+2) Add it as a sub-package to `rpm/<subpackage>.spec`
+3) Test it by running: `make clean && make TARGETS=<subpackage> subpackages`
 4) Additionally, test it with and without enabling the sub-package using (by default it should be disabled but there are cases where it will be enabled by default if QM community decide):
 
 Example changing the spec and triggering the build via make (feel free to automate via sed, awk etc):
 
 ```bash
-# Define the feature flag: 1 to enable, 0 to disable
-# By default it's disabled: 0
-%define enable_qm_dropin_img_tempdir 1
+# Use make file to run specific subpackage
+make TARGETS=windowmanager subpackages
 
-$ make clean && VERSION=YOURVERSIONHERE make rpm
-```
-
-### Let automation create publish PR subpackages
-
-subpuckges could be created by Packit and uploaded
-by Copr to packit/containers-qm-<PR_ID> repo.
-Default macros for each subpackage deactivated by default.
-
-To enable PR repo apply the follwoing
-
-1. Enable subpackage spec macro definition in .packit.sh
-Add the following line at the end of file,
-
-```bash
-# Update build additional rpms in spec
-sed -i 's/\(<spec_file_macro_name> \).*/\11/' ${SPEC_FILE}
 ```
 
 Check rpms created in PT Actions under PR Checks > Packit-as-a-Service
 In case new tests need the sub-package, it will be innstalled immediatly
 on Packit-as-a-Service test phase.
 
-### Install PR copr sub-packages on local machine
+### Install PR copr subpackages on local machine
 
 1. Enbale repo in your machine
 This part is done automatically by TestingFarm guest provisioning.
