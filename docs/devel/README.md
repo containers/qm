@@ -303,7 +303,7 @@ on Packit-as-a-Service test phase.
 
 ### Install PR copr subpackages on local machine
 
-1. Enbale repo in your machine
+1. Enable repo in your machine
 This part is done automatically by TestingFarm guest provisioning.
 In case of manual installation,
 
