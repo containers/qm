@@ -16,10 +16,9 @@
 
 . ../common/prepare.sh
 
-disk_cleanup
+trap disk_cleanup EXIT
 prepare_test
 reload_config
-prepare_images
 
 # Function to retrieve the PID with retries for a container
 get_pid_with_retries() {
@@ -54,8 +53,7 @@ get_oom_score_adj() {
 }
 
 # Start the FFI container inside qm
-podman exec -it qm /bin/bash -c \
-    "podman run -d --replace --name ffi-qm dir:${QM_REGISTRY_DIR}/tools-ffi:latest /usr/bin/sleep infinity > /dev/null"
+running_container_in_qm
 
 # Check if ffi-qm container started successfully
 QM_FFI_STATUS=$(podman exec -it qm /bin/bash -c "podman inspect ffi-qm --format '{{.State.Status}}'" | tr -d '\r')

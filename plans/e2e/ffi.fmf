@@ -24,6 +24,10 @@ adjust:
         script: |
            cd tests/e2e
            ./set-ffi-env-e2e "${FFI_SETUP_OPTIONS}"
+      - name: Place quadlet for ffi-qm container
+        how: shell
+        script: |
+            cp tests/ffi/common/ffi-qm.container /etc/qm/containers/systemd/
 
 execute:
     how: tmt

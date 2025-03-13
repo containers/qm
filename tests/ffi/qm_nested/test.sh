@@ -3,8 +3,9 @@
 # shellcheck disable=SC1091
 . ../common/prepare.sh
 
-# init_ffi uses 3in1 function from common.sh to initialize the environment before tests.
-init_ffi
+trap disk_cleanup EXIT
+prepare_test
+reload_config
 
 # Declare global variables and initialize to "".
 NESTED_NAME=""
@@ -17,9 +18,8 @@ NESTED_STATUS=""
 #  NESTED_NAME: The nested container name in the QM container.
 #  NESTED_STATUS: The nested container status in the QM container.
 create_nested() {
-	prepare_images
 	local nested_container_name="ffi-qm"
-	run_container_in_qm "${nested_container_name}"
+	running_container_in_qm
 	NESTED_NAME=$(podman exec -it qm bash -c "podman inspect ${nested_container_name} --format '{{.Name}}'")
 	if_error_exit "An error occured: failed to extract Name parameter of container from inside of QM."
 	echo "Container name is: ${NESTED_NAME}"

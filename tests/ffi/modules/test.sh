@@ -1,22 +1,18 @@
-#!/bin/bash -euvx
+#!/bin/bash -uvx
 
 # shellcheck disable=SC1091
 
 . ../common/prepare.sh
 
-disk_cleanup
+trap disk_cleanup EXIT
 prepare_test
 reload_config
 
-# Download ffi-tools container and push ffi-tools image into QM registry
-prepare_images
-
 # Run the ffi-tools container in qm vm
-run_container_in_qm ffi-qm
+running_container_in_qm
 
 # Get result message of './modprobe_module'
-msg=$(podman exec -it qm /bin/bash -c \
-               "podman exec ffi-qm ./modprobe_module 2>&1")
+msg=$(podman exec -it qm /usr/bin/podman exec -it ffi-qm ./modprobe_module 2>&1)
 
 # Check result message displays right.
 if grep -eq "modprobe: FATAL: Module ext4 not found in directory /lib/modules/*" "$msg"; then

@@ -79,8 +79,9 @@ get_qm_network_mode(){
     echo "${qm_network_mode}"
 }
 
-init_ffi
-prepare_images
+trap disk_cleanup EXIT
+prepare_test
+reload_config
 
 # Assign value to ${controller_host_ip} according to qm network mode
 if [ "$(get_qm_network_mode)" == "private" ]; then
