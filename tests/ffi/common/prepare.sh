@@ -4,8 +4,8 @@
 
 DROP_IN_DIR="/etc/containers/systemd/qm.container.d/"
 OSTREE_PATH="/run/ostree"
-export QM_HOST_REGISTRY_DIR="/var/qm/lib/containers/registry"
-export QM_REGISTRY_DIR="/var/lib/containers/registry"
+REGISTRY="quay.io/centos-sig-automotive"
+TOOLS_IMAGE="ffi-tools:latest"
 export QM_TMP_DIR="/var/tmp.dir"
 export CONTAINERS_CONF_DIR="/etc/qm/containers/containers.conf.d"
 export QM_IMAGE_TMP_DIR_CONF="qm_image_tmp_dir.conf"
@@ -38,7 +38,6 @@ prepare_test() {
 }
 
 disk_cleanup() {
-   exec_cmd "podman exec -it qm /bin/bash -c \"podman  rmi -f --all\""
    # Clean large size files created by tests inside qm part
    remove_file=$(find /var/qm -size  +2G)
    exec_cmd "rm -rf $remove_file"
@@ -77,41 +76,22 @@ prepare_images() {
       exec_cmd "mkdir -p ${CONTAINERS_CONF_DIR}"
       exec_cmd "echo -e '[engine]\nimage_copy_tmp_dir=\"${QM_TMP_DIR}\"' > ${CONTAINERS_CONF_DIR}/${QM_IMAGE_TMP_DIR_CONF}"
    fi
-
-   exec_cmd "podman pull quay.io/centos-sig-automotive/ffi-tools:latest"
-   # Copy container image registry to /var/qm/lib/containers
-   image_id=$(podman images | grep quay.io/centos-sig-automotive/ffi-tools | awk -F " " '{print $3}')
-
-   if [ -d "${QM_HOST_REGISTRY_DIR}" ]; then
-      rm -rf ${QM_HOST_REGISTRY_DIR}
-   fi
-
-   exec_cmd "mkdir -p ${QM_HOST_REGISTRY_DIR}"
-   exec_cmd "podman push ${image_id} dir:${QM_HOST_REGISTRY_DIR}/tools-ffi:latest"
-   # Remove image to save /var space
-   exec_cmd "podman rmi -f ${image_id}"
 }
 
 run_container_in_qm() {
    local container_name
-   local tmp_image_dir
    local run_ctr_in_qm
    # Clean tmp image directory
-   tmp_image_dir=$(podman info | grep  CopyTmp | awk -F":" '{print $2}')
    container_name="${1}"
 
-   exec_cmd "podman exec -it qm /bin/bash -c \
-      \"rm -rf ${tmp_image_dir}/*\""
    run_ctr_in_qm="podman exec -it qm /bin/bash -c \
-      \"podman run -d --net host  --replace --name ${container_name} \
-      dir:${QM_REGISTRY_DIR}/tools-ffi:latest \
-      tail -f /dev/null\""
+      \"podman run -d --net host  --replace --name ${container_name} ${REGISTRY}/${TOOLS_IMAGE} tail -f /dev/null\""
    exec_cmd "${run_ctr_in_qm}"
 }
 
 # Agregates 3 functions from this tool to a single init_ffi function, used to initialize environments before tests with a single function, instead of using three separate functions.
 init_ffi() {
-        disk_cleanup
+        trap disk_cleanup EXIT
         prepare_test
         reload_config
 }

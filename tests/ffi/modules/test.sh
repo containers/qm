@@ -4,7 +4,7 @@
 
 . ../common/prepare.sh
 
-disk_cleanup
+trap disk_cleanup EXIT
 prepare_test
 reload_config
 
