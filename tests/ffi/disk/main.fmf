@@ -1,4 +1,4 @@
-summary: Test is calling systemd as stand alone test
+summary: Test for separate var partition for qm
 test: /bin/bash ./test.sh
 duration: 10m
 tag: [ffi, NoRenesas]

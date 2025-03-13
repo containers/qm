@@ -1,4 +1,4 @@
-summary: Test is calling systemd as stand alone test
+summary: Test to show inside containers is killed fisrt in case of OOM
 test: /bin/bash ./test.sh
 duration: 25m
 tag: ffi

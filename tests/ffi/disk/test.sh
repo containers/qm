@@ -1,4 +1,4 @@
-#!/bin/bash -evx
+#!/bin/bash -vx
 
 # shellcheck disable=SC1091
 
@@ -6,24 +6,24 @@
 
 check_var_partition(){
    if stat /run/ostree-booted > /dev/null 2>&1; then
-      qm_var_partition="part /var"
+      qm_var_partition="part /var/qm"
    else
-      qm_var_partition="part /usr/lib/qm/rootfs/var"
+      qm_var_partition="part /usr/lib/qm/rootfs/var/qm"
    fi
 
    if [[ "$(lsblk -o 'MAJ:MIN,TYPE,MOUNTPOINTS')" =~ ${qm_var_partition} ]]; then
-      info_message "A separate /var partition was detected on the image."
+      info_message "A separate /var/qm partition was detected on the image."
    else
       lsblk
       df -kh
-      info_message "FAIL: No separate /var partition was detected on the image."
+      info_message "FAIL: No separate /var/qm partition was detected on the image."
       info_message "Test terminated, it requires a separate /var disk partition for QM to run this test."
       exit 1
    fi
 }
 
 check_var_partition
-disk_cleanup
+trap disk_cleanup EXIT
 prepare_test
 
 cat << EOF > "${DROP_IN_DIR}"/oom.conf
@@ -38,12 +38,8 @@ PodmanArgs=--pids-limit=-1 --security-opt seccomp=/usr/share/qm/seccomp-no-rt.js
 EOF
 
 reload_config
-prepare_images
 
-exec_cmd "podman exec -it qm /bin/bash -c \
-         'podman run -d --replace --name ffi-qm \
-          quay.io/centos-sig-automotive/ffi-tools:latest \
-          tail -f /dev/null'"
+run_container_in_qm "ffi-qm"
 
 exec_cmd "podman exec -it qm /bin/bash -c \
          'podman exec -it ffi-qm ./QM/file-allocate'"
