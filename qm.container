@@ -11,7 +11,7 @@ WantedBy=default.target
 # ManagedOOMSwap=auto|kill: Specifies how systemd-oomd.service will act on qm.
 # QM cgroup, pass directly to systemd and handled by it,
 # please refer to `man systemd.resource-control` for details.
-CPUWeight=idle
+CPUWeight=other
 Delegate=true
 IOWeight=50
 ManagedOOMSwap=kill
