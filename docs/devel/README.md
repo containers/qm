@@ -156,7 +156,7 @@ ago
       Tasks: 7 (limit: 7772)
      Memory: 82.1M (swap max: 0B)
         CPU: 945ms
-     CGroup: /QM.slice/qm.service
+     CGroup: /qm.service
              ├─libpod-payload-a83253ae278d7394cb38e975535590d71de90a41157b547040
 4abd6311fd8cca
              │ ├─init.scope
