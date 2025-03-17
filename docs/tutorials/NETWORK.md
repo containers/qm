@@ -36,7 +36,7 @@ To illustrate the difference, consider the following example:
 podman run -it --network=host fedora /bin/bash
 
 # Run a container with network=private (default)
-podman run -it fedora /bin/bash
+podman run -it --network=private fedora /bin/bash
 ```
 
 In the first example, the container will share the host's network namespace, while in the second example, the container will have its own isolated network namespace.
