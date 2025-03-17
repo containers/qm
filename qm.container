@@ -34,7 +34,10 @@ MemorySwapMax=0
 # Containers within the qm contain default set OOMScoreAdj to 750
 OOMScoreAdjust=500
 Restart=always
-Slice=QM.slice
+# qm.service is a toplevel cgroup, so CPUWeight is relative to all other cgroups in that
+# parent (such as user.slice and system.slice), otherwise the CPUWeight of qm.service
+# is only compared to the other children of its parent.
+Slice=-.slice
 Environment=ROOTFS=/usr/lib/qm/rootfs
 Environment=RWETCFS=/etc/qm
 Environment=RWVARFS=/var/qm
