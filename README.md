@@ -103,10 +103,9 @@ further customize the QM bluechi agent by adding content to the
 ## QM Sub-packages
 
 The qm project is designed to provide a flexible and modular environment for managing
-Quality Management (QM) software in containerized environments. One of the key features
-of the qm package is its support for sub-package(s), such as the qm-dropin sub-packages.
-These sub-packages are not enabled by default and are optional. However,  allow users
-to easily extend or customize their QM environment by adding specific configurations,
+Quality Management (QM) software in containerized environments.
+Sub-packages are not enabled by default and are optional. However, allow users
+to extend or customize their QM environment by adding specific configurations,
 tools, or scripts to the containerized QM ecosystem by simple installing or uninstalling
 a RPM package into the system.
 
