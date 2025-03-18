@@ -3,25 +3,35 @@
 # shellcheck disable=SC1091
 source ../e2e/lib/utils
 
+print_journal_for_bluechi() {
+    info_message "Journal for bluechi-controller:\n"
+    journalctl -r -u bluechi-controller -n 100
+
+    info_message "Journal for bluechi-agent:\n"
+    journalctl -r -u bluechi-agent -n 100
+}
 
 # Verify bluechi nodes are connected
 check_bluechi_is_ok(){
-    bluechi_controller_status=$(systemctl status bluechi-controller  | tail -2)
-    regex_ASIL_bluechi_agent="Registered managed node from fd [0-9]{1,2} as 'localrootfs'"
-    regex_QM_bluechi_agent="Registered managed node from fd [0-9]{1,2} as 'qm.localrootfs'"
+    LOCAL=localrootfs
+    LOCAL_QM=qm.localrootfs
 
-    if [[ ! "${bluechi_controller_status}" =~ ${regex_ASIL_bluechi_agent} ]]; then
-        info_message "FAIL: check_bluechi_is_ok: host bluechi-agent is not connected to controller.\n ${bluechi_controller_status}"
+    if ! bluechi-is-online node "${LOCAL}"; then
+        info_message "FAIL: check_bluechi_is_ok: host bluechi-agent ${LOCAL} is not connected to controller."
+        print_journal_for_bluechi
         exit 1
-    elif [[ ! "${bluechi_controller_status}" =~ ${regex_QM_bluechi_agent} ]]; then
-        info_message "FAIL: check_bluechi_is_ok: QM bluechi-agent is not connected to controller.\n ${bluechi_controller_status}"
-        exit 1
-    else
-        info_message "check_bluechi_is_ok: host bluechi-agent is connected to controller."
-        info_message "check_bluechi_is_ok: QM bluechi-agent is connected to controller."
-        info_message "PASS: check_bluechi_is_ok()"
-        exit 0
     fi
+
+    if ! bluechi-is-online node "${LOCAL_QM}"; then
+        info_message "FAIL: check_bluechi_is_ok: host bluechi-agent ${LOCAL_QM} is not connected to controller."
+        print_journal_for_bluechi
+        exit 1
+    fi
+
+    info_message "check_bluechi_is_ok: host bluechi-agent is connected to controller."
+    info_message "check_bluechi_is_ok: QM bluechi-agent is connected to controller."
+    info_message "PASS: check_bluechi_is_ok()"
+    exit 0
 }
 
 check_bluechi_is_ok
