@@ -298,12 +298,12 @@ make TARGETS=windowmanager subpackages
 ```
 
 Check rpms created in PT Actions under PR Checks > Packit-as-a-Service
-In case new tests need the sub-package, it will be innstalled immediatly
+In case new tests need the sub-package, it will be installed immediatly
 on Packit-as-a-Service test phase.
 
 ### Install PR copr subpackages on local machine
 
-1. Enbale repo in your machine
+1. Enable repo in your machine
 This part is done automatically by TestingFarm guest provisioning.
 In case of manual installation,
 
