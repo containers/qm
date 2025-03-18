@@ -9,7 +9,7 @@ URL: https://github.com/containers/qm
 Source0: %{url}/archive/qm-input-%{version}.tar.gz
 BuildArch: noarch
 
-Requires: qm = %{version}-%{release}
+Requires: qm >= %{version}
 
 %description
 This sub-package installs drop-in configurations for QM containers to mount bind input devices.

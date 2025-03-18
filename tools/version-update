@@ -65,7 +65,6 @@ sed -i "s/Version: ${PREV_VERSION}$/Version: ${VERSION}/g" "${BASEDIR}/rpm/dvb/d
 sed -i "s/Version: ${PREV_VERSION}$/Version: ${VERSION}/g" "${BASEDIR}/rpm/tty7/tty7.spec"
 sed -i "s/Version: ${PREV_VERSION}$/Version: ${VERSION}/g" "${BASEDIR}/rpm/input/input.spec"
 sed -i "s/Version: ${PREV_VERSION}$/Version: ${VERSION}/g" "${BASEDIR}/rpm/ttyUSB0/ttyUSB0.spec"
-sed -i "s/Version: ${PREV_VERSION}$/Version: ${VERSION}/g" "${BASEDIR}/rpm/img_tempdir/img_tempdir.spec"
 sed -i "s/Version: ${PREV_VERSION}$/Version: ${VERSION}/g" "${BASEDIR}/rpm/windowmanager/windowmanager.spec"
 sed -i "s/Version: ${PREV_VERSION}$/Version: ${VERSION}/g" "${BASEDIR}/rpm/text2speech/text2speech.spec"
 # Otherwise, set the new version.
@@ -79,7 +78,6 @@ sed -i "s/Version: 0$/Version: ${VERSION}/g" "${BASEDIR}/rpm/dvb/dvb.spec"
 sed -i "s/Version: 0$/Version: ${VERSION}/g" "${BASEDIR}/rpm/tty7/tty7.spec"
 sed -i "s/Version: 0$/Version: ${VERSION}/g" "${BASEDIR}/rpm/input/input.spec"
 sed -i "s/Version: 0$/Version: ${VERSION}/g" "${BASEDIR}/rpm/ttyUSB0/ttyUSB0.spec"
-sed -i "s/Version: 0$/Version: ${VERSION}/g" "${BASEDIR}/rpm/img_tempdir/img_tempdir.spec"
 sed -i "s/Version: 0$/Version: ${VERSION}/g" "${BASEDIR}/rpm/windowmanager/windowmanager.spec"
 sed -i "s/Version: 0$/Version: ${VERSION}/g" "${BASEDIR}/rpm/text2speech/text2speech.spec"
 # Execute the changes on the rest of the files.
