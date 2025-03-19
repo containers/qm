@@ -7,8 +7,11 @@ print_journal_for_bluechi() {
     info_message "Journal for bluechi-controller:\n"
     journalctl -r -u bluechi-controller -n 100
 
-    info_message "Journal for bluechi-agent:\n"
+    info_message "Journal for local bluechi-agent:\n"
     journalctl -r -u bluechi-agent -n 100
+
+    info_message "Journal for qm bluechi-agent:\n"
+    journalctl -r -u qm -n 100
 }
 
 # Verify bluechi nodes are connected
@@ -16,14 +19,14 @@ check_bluechi_is_ok(){
     LOCAL=localrootfs
     LOCAL_QM=qm.localrootfs
 
-    if ! bluechi-is-online node "${LOCAL} --wait=5000"; then
+    if ! bluechi-is-online node "${LOCAL}" --wait=5000; then
         info_message "FAIL: check_bluechi_is_ok: host bluechi-agent ${LOCAL} is not connected to controller."
         print_journal_for_bluechi
         exit 1
     fi
 
-    if ! bluechi-is-online node "${LOCAL_QM} --wait=5000"; then
-        info_message "FAIL: check_bluechi_is_ok: host bluechi-agent ${LOCAL_QM} is not connected to controller."
+    if ! bluechi-is-online node "${LOCAL_QM}" --wait=5000; then
+        info_message "FAIL: check_bluechi_is_ok: qm bluechi-agent ${LOCAL_QM} is not connected to controller."
         print_journal_for_bluechi
         exit 1
     fi
