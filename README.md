@@ -135,16 +135,8 @@ Choose one of the following sub-packages and build using make.
 
 ```bash
 git clone git@github.com:containers/qm.git && cd qm
-make| grep subpackage
-kvm_subpackage                   - Creates a local RPM package, useful for development
-ros2_rolling_subpackage             - Creates a local RPM package, useful for development
-sound_subpackage                 - Creates a local RPM package, useful for development
-video_subpackage                 - Creates a local RPM package, useful for development
-tty7_subpackage                  - Creates a local RPM package, useful for development
-input_subpackage                 - Creates a local RPM package, useful for development
-ttyUSB0_subpackage               - Creates a local RPM package, useful for development
-windowmanager_subpackage             - Creates a local RPM package, useful for development
-douglas@fedora:~/qm-multiplespecs/qm$
+
+Example of subpackages: input, kvm, sound, tty7, ttyUSB0, video, windowmanager
 
 make TARGETS=input subpackages
 ls rpmbuild/RPMS/noarch/
@@ -222,6 +214,7 @@ sudo dnf install -y rpmbuild/RPMS/noarch/qm_mount_bind_sound-0.6.7-1.fc40.noarch
 
 # Restart QM container (if already running)
 sudo podman restart qm
+```
 
 ### Step 2: Identify Sound Cards
 
