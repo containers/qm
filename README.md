@@ -214,6 +214,7 @@ sudo dnf install -y rpmbuild/RPMS/noarch/qm_mount_bind_sound-0.6.7-1.fc40.noarch
 
 # Restart QM container (if already running)
 sudo podman restart qm
+```
 
 ### Step 2: Identify Sound Cards
 
