@@ -22,6 +22,7 @@
     - [ASIL and QM - Simulation and Service Monitoring using bluechi and podman](https://www.youtube.com/watch?v=jTrLqpw7E6Q&t=1680s)
     - [Containers in a Car - DevConf.CZ 2023](https://www.youtube.com/watch?v=FPxka5uDA_4)
 11. [RPM Mirrors](#rpm-mirrors)
+12. [Changing QM Configuration](#changing-qm-configuration)
 
 ## QM is a containerized environment for running Functional Safety QM (Quality Management) software
 
@@ -232,3 +233,99 @@ Looking for a specific version of QM?
 Search in the mirrors list below.
 
 [CentOS Automotive SIG - qm package - noarch](https://mirror.stream.centos.org/SIGs/9-stream/automotive/aarch64/packages-main/Packages/q/)
+
+## Changing QM Configuration
+
+### Overview
+
+To run QM on an immutable OSTree-based OS, we utilize systemd units with Podman Quadlet. Since modifying the original service file is not an option, we must use drop-in files to adjust the default configuration.
+
+For more information on how podman-systemd.unit works, refer to the manual by running:
+
+`man podman-systemd.unit`
+
+### Default Configuration File
+
+The default QM configuration drop-in file is located at:
+
+ /usr/share/containers/systemd/qm.container
+
+To override settings, create new drop-in files (ending in .conf) under the following directory `/etc/containers/systemd/qm.container.d/`. If the directory does not exist, create it first:
+
+ `mkdir -p /etc/containers/systemd/qm.container.d/`
+
+### Modifying the MemoryHigh Variable Example
+
+#### Checking the Current Memory Limit
+
+Please run:
+
+`systemctl show -P MemoryHigh qm`
+
+Expected output:
+
+`infinity`
+
+This indicates that MemoryHigh is currently unlimited and can be viewed in `/usr/share/containers/systemd/qm.container`.
+
+#### Setting a Memory Limit of 2G
+
+To impose a memory usage limit of 2G for QM:
+
+Create a Drop-in Configuration File and the directory
+
+```bash
+
+mkdir -p /etc/containers/systemd/qm.container.d/
+
+vim /etc/containers/systemd/qm.container.d/100-MemoryMax.conf
+
+```
+
+The name that was choosen for the new drop-in file is  `100-MemoryMax.conf` this name can be changed but please keep in mind that the configuration will be build by alphabetic order of the drop-in files.
+
+Edit the File and Add the Following Content:
+
+```bash
+
+[Service]
+
+MemoryHigh=2G
+
+```
+
+(MemoryHigh is specified in gigabytes; e.g., 2G means 2 gigabytes.)
+
+#### Verifying the New Configuration
+
+To preview the updated systemd configuration, run:
+
+`/usr/lib/systemd/system-generators/podman-system-generator {--user} --dryrun`
+
+#### Applying service configuration changes
+
+Reload systemd and restart QM with the following commands:
+
+```bash
+
+systemctl daemon-reload
+
+systemctl restart qm.service
+
+```
+
+This confirms that MemoryHigh is now set to 2G.
+
+#### Final Confirmation
+
+To ensure the 2G limit is enforced, check the value of `MemoryHigh` with the same command that mentioned above:
+
+`systemctl show -P MemoryHigh qm`
+
+Expected output:
+
+`2147483648`
+
+(Memory values are displayed in bytes; 2147483648 bytes = 2G.)
+
+This method ensures that QM's memory usage is controlled without modifying the base system configuration.
