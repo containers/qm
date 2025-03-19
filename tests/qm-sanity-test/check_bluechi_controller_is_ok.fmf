@@ -1,6 +1,0 @@
-summary: Test bluechi-controller is active and bluechi-agent is online
-test: /bin/bash ./check_bluechi_controller_is_ok.sh
-duration: 10m
-tier: 0
-framework: shell
-id: 44d1f92b-2885-49d3-900a-23cde296c9d8
