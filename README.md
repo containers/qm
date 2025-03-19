@@ -335,6 +335,7 @@ make TARGETS=kvm subpackages
 sudo dnf install rpmbuild/RPMS/noarch/qm_mount_bind_kvm-0.6.7-1.fc40.noarch.rpm
 sudo podman restart qm  # if you have qm already running
 sudo dnf --installroot /usr/lib/qm/rootfs/ install virt-install libvirt-daemon libvirt-daemon-qemu libvirt-daemon-kvm -y
+sudo restorecon -R -v /usr/lib/qm
 
 # Copy default network settings to /root dir inside QM (/usr/lib/qm/rootfs/root)
 $host> sudo cp /usr/share/libvirt/networks/default.xml /usr/lib/qm/rootfs/root
