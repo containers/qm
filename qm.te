@@ -4,6 +4,7 @@ gen_require(`
 	attribute container_file_type;
 	attribute container_runtime_domain;
 	type init_t;
+	type virtd_unit_file_t;
 ')
 
 type ipc_t;
@@ -29,6 +30,9 @@ files_pid_filetrans(init_t, ipc_var_run_t, dir, "ipc")
 unconfined_domain(ipc_t)
 
 qm_domain_template(qm)
+
+# Add policy to allow qm_t to access virtd_unit_file_t
+allow qm_t virtd_unit_file_t:file { read open ioctl };
 
 optional_policy(`
 	require{
