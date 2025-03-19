@@ -16,13 +16,13 @@ check_bluechi_is_ok(){
     LOCAL=localrootfs
     LOCAL_QM=qm.localrootfs
 
-    if ! bluechi-is-online node "${LOCAL}"; then
+    if ! bluechi-is-online node "${LOCAL} --wait=5000"; then
         info_message "FAIL: check_bluechi_is_ok: host bluechi-agent ${LOCAL} is not connected to controller."
         print_journal_for_bluechi
         exit 1
     fi
 
-    if ! bluechi-is-online node "${LOCAL_QM}"; then
+    if ! bluechi-is-online node "${LOCAL_QM} --wait=5000"; then
         info_message "FAIL: check_bluechi_is_ok: host bluechi-agent ${LOCAL_QM} is not connected to controller."
         print_journal_for_bluechi
         exit 1
