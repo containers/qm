@@ -5,7 +5,7 @@
 
 expected_result="sched_setattr failed: Operation not permitted"
 
-disk_cleanup
+trap disk_cleanup EXIT
 prepare_test
 reload_config
 

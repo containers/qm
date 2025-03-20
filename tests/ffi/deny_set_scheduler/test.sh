@@ -5,7 +5,7 @@
 
 expected_result="Failed to set scheduler: Operation not permitted"
 
-disk_cleanup
+trap disk_cleanup EXIT
 prepare_test
 reload_config
 
