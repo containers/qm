@@ -21,6 +21,9 @@ check_var_partition_exist(){
         info_message "FAIL: check_var_partition_exist: /var does not exists in QM"
         exit 1
     fi
+
+    info_message "Journal for qm bluechi-agent:\n"
+    journalctl -r -u qm -n 100
 }
 
 check_var_partition_exist

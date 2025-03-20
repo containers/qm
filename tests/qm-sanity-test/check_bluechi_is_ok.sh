@@ -37,6 +37,8 @@ check_bluechi_is_ok(){
     print_journal_for_bluechi
     info_message "Checking avcs:"
     ausearch -m avc
+    info_message "systemctl cat qm.service:"
+    systemctl cat qm.service
 
     exit 0
 }
