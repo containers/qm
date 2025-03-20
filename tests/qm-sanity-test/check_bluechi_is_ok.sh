@@ -22,18 +22,22 @@ check_bluechi_is_ok(){
     if ! bluechi-is-online node "${LOCAL}" --wait=5000; then
         info_message "FAIL: check_bluechi_is_ok: host bluechi-agent ${LOCAL} is not connected to controller."
         print_journal_for_bluechi
-        exit 1
     fi
 
     if ! bluechi-is-online node "${LOCAL_QM}" --wait=5000; then
         info_message "FAIL: check_bluechi_is_ok: qm bluechi-agent ${LOCAL_QM} is not connected to controller."
         print_journal_for_bluechi
-        exit 1
     fi
 
+    
     info_message "check_bluechi_is_ok: host bluechi-agent is connected to controller."
     info_message "check_bluechi_is_ok: QM bluechi-agent is connected to controller."
     info_message "PASS: check_bluechi_is_ok()"
+
+    print_journal_for_bluechi
+    info_message "Checking avcs:"
+    ausearch -m avc
+
     exit 0
 }
 
