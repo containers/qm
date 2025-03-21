@@ -34,7 +34,7 @@ dnf install -y rpm-build golang-github-cpuguy83-md2man selinux-policy-devel
 **2.** Clone the repo
 
 ```bash
-git clone https://github.com/containers/qm.git
+git clone https://github.com/containers/qm.git && cd qm
 ```
 
 **3.** Build the RPM
@@ -74,11 +74,17 @@ ls /root/rpmbuild/RPMS/noarch/qm-1.0-1.noarch.rpm
 /root/rpmbuild/RPMS/noarch/qm-1.0-1.noarch.rpm
 ```
 
-**2.** Create a local repository with the new package
+**2.** Download additional packages required by the image
+
+```bash
+sudo dnf download --destdir /root/rpmbuild/RPMS/noarch/ selinux-policy selinux-policy-any
+```
+
+**3.** Create a local repository with the new package
 
 ```bash
 dnf install createrepo_c -y
-cd /root/rpmbuild/RPMS/
+cd /root/rpmbuild/RPMS/noarch/
 createrepo .
 ```
 
@@ -103,16 +109,16 @@ git clone https://gitlab.com/CentOS/automotive/sample-images.git
 git submodule update --init
 cd sample-images/
 rm -rf _build
-rm -f cs9-qemu-qmcontainer-regular.x86_64.qcow2
-rm -f cs9-qemu-qmcontainer-ostree.x86_64.qcow2
-./build --distro cs9 --target qemu --define 'extra_repos=[{\"id\":\"local\",\"baseurl\":\"file:///root/rpmbuild/RPMS/noarch\"}]' --define 'extra_rpms=[\"qm-1.0\",\"vim-enhanced\",\"strace\",\"dnf\",\"gdb\",\"polkit\",\"rsync\",\"python3\",\"openssh-server\",\"openssh-clients\"]' --define 'ssh_permit_root_login=true' --define 'ssh_permit_password_auth=true' cs9-qemu-qmcontainer-regular.x86_64.qcow2
+rm -f cs9-qemu-qm-container-regular.x86_64.qcow2
+rm -f cs9-qemu-qm-container-ostree.x86_64.qcow2
+./build --define 'extra_repos=[{"id":"local","baseurl":"file:///root/rpmbuild/RPMS/noarch"}]' --define 'extra_rpms=["qm-1.0", "vim-enhanced", "strace", "dnf", "gdb", "polkit", "rsync", "python3", "openssh-server", "openssh-clients"]' --define 'ssh_permit_root_login=true' --define 'ssh_permit_password_auth=true' cs9-qemu-qm-container-regular.x86_64.qcow2
 ```
 
 Run the virtual machine, default user: root, pass: password.
 To change default values, use the [defaults.ipp.yml](https://gitlab.com/CentOS/automotive/src/automotive-image-builder/-/blob/main/include/defaults.ipp.yml) file.
 
 ```bash
-./runvm --nographics ./cs9-qemu-qm-minimal-regular.x86_64.qcow2
+./runvm --nographics ./cs9-qemu-qm-container-regular.x86_64.qcow2
 ```
 
 ## Creating Releases
