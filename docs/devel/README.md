@@ -34,7 +34,7 @@ dnf install -y rpm-build golang-github-cpuguy83-md2man selinux-policy-devel
 **2.** Clone the repo
 
 ```bash
-git clone https://github.com/containers/qm.git
+git clone https://github.com/containers/qm.git && cd qm
 ```
 
 **3.** Build the RPM
@@ -74,11 +74,17 @@ ls /root/rpmbuild/RPMS/noarch/qm-1.0-1.noarch.rpm
 /root/rpmbuild/RPMS/noarch/qm-1.0-1.noarch.rpm
 ```
 
-**2.** Create a local repository with the new package
+**2.** Download additional packages required by the image
+
+```bash
+sudo dnf download --destdir /root/rpmbuild/RPMS/noarch/ selinux-policy selinux-policy-any
+```
+
+**3.** Create a local repository with the new package
 
 ```bash
 dnf install createrepo_c -y
-cd /root/rpmbuild/RPMS/
+cd /root/rpmbuild/RPMS/noarch/
 createrepo .
 ```
 
@@ -89,30 +95,37 @@ referring to [this link](https://sigs.centos.org/automotive/building/).
 
 The following commands will execute:
 
+- Install the podman package
+- Clone the sample-images repository and required submodules (automotive-image-builder)
 - Cleanups before a fresh build
-- Remove old qcow2 images used (regular and ostree)
-- Finally creates a new image (BASED ON target name, ostree or regular)
+- Finally creates a new qcow2 image (BASED ON distro name, mode (ostree or regular) and uses the qemu-qm-container sample image)
   NOTE:
   - The path for the new QM rpm file (/root/rpmbuild/RPMS/noarch)
-  - extra_rpms - useful for debug (do not use spaces between packages or will break)
+  - extra_rpms - useful for debug.
   - ssh enabled
+
+The command below utilises automotive-image-builder to produce a `qm-minimal` qcow2 image for cs9,
+other example images such as `simple-qm-container` and the `simple-qm`
+image can be found in the images directory of the sample-images repository.
 
 ```bash
 dnf install podman -y && dnf clean all
 git clone https://gitlab.com/CentOS/automotive/sample-images.git
 git submodule update --init
 cd sample-images/
-rm -rf _build
-rm -f cs9-qemu-qmcontainer-regular.x86_64.qcow2
-rm -f cs9-qemu-qmcontainer-ostree.x86_64.qcow2
-./build --distro cs9 --target qemu --define 'extra_repos=[{\"id\":\"local\",\"baseurl\":\"file:///root/rpmbuild/RPMS/noarch\"}]' --define 'extra_rpms=[\"qm-1.0\",\"vim-enhanced\",\"strace\",\"dnf\",\"gdb\",\"polkit\",\"rsync\",\"python3\",\"openssh-server\",\"openssh-clients\"]' --define 'ssh_permit_root_login=true' --define 'ssh_permit_password_auth=true' cs9-qemu-qmcontainer-regular.x86_64.qcow2
+rm -rf _build #Optional, only relevant after initial build
+rm -rf *.qcow2 #Optional, only relevant after initial build
+./automotive-image-builder/automotive-image-builder build --distro cs9 --mode package --define 'ssh_permit_root_login=true' --define 'ssh_permit_password_auth=true' --define 'extra_repos=[{"id":"local","baseurl":"file:///root/rpmbuild/RPMS/noarch"}]' --define 'extra_rpms=["qm-1.0", "vim-enhanced", "openssh-server", "openssh-clients", "python3", "polkit", "rsync", "strace", "dnf", "gdb"]' --target qemu --export qcow2 images/qm-minimal.mpp.yml cs9-qemu-qm-container.x86_64.qcow2
 ```
+
+If you would like more information on building automotive images with automotive-image-builder, please see the
+[Automotive SIG pages for AutoSD](https://sigs.centos.org/automotive/getting-started/about-automotive-image-builder/)
 
 Run the virtual machine, default user: root, pass: password.
 To change default values, use the [defaults.ipp.yml](https://gitlab.com/CentOS/automotive/src/automotive-image-builder/-/blob/main/include/defaults.ipp.yml) file.
 
 ```bash
-./runvm --nographics ./cs9-qemu-qm-minimal-regular.x86_64.qcow2
+./automotive-image-builder/automotive-image-runner --nographics ./cs9-qemu-qm-container.x86_64.qcow2
 ```
 
 ## Creating Releases
