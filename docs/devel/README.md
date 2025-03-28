@@ -5,6 +5,7 @@
 - [Building QM rpm manually with changes](#building-qm-rpm-manually-with-changes)
 - [Building CentOS AutoSD and QM manually](#building-centos-autosd-and-qm-manually)
 - [Creating Releases](#creating-releases)
+- [Subpackages](#subpackages)
 - [Useful Commands](#useful-commands)
   - [Installing software inside QM partition](#installing-software-inside-qm-partition)
   - [Removing software inside QM partition](#removing-software-inside-qm-partition)
@@ -147,6 +148,10 @@ After that, follow the steps below using GitHub UI.
 
 **Publish Release**
 ![Click on publish release](./pics/creatingreleases/04-click-on-publish-release.jpeg)
+
+## Subpackages
+
+Subpackages are **experimental approach** to deliver in a single point (RPM) dropin files and additional requirements. [Click here for more information](experimental/SUBPACKAGES.md)
 
 ## Useful Commands
 
