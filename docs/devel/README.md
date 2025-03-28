@@ -377,3 +377,82 @@ bash-5.1#
 ```
 
 As you can see above, the error occurs because the Quadlet is attempting to use an unsupported key from the Service section in the Container group. Removing the unsupported key ```Command``` from ```ros2-rolling.container``` and then reloading or restarting the service should resolve the issue.
+
+### Managing CPU usage
+
+Using the steps below, it's possible to manage CPU usage of the `qm.service` by modifying service attributes and utilizing drop-in files.
+
+#### Setting the CPUWeight attribute
+
+Modifying the `CPUWeight` attribute affects the priority the of `qm.service`. A higher value prioritizes the service, while a lower value deprioritizes it.
+
+Inspect the current CPUWeight value:
+
+```bash
+systemctl show  qm.service | grep CPUWeight
+```
+
+Set the CPUWeight value:
+
+```bash
+systemctl set-property qm.service CPUWeight=500
+```
+
+#### Limiting CPUQuota
+
+It's also possible to limit the percentage of the CPU allocated to the `qm.service` by defining `CPUQuota`. The percentage specifies how much CPU time the unit shall get at maximum, relative to the total CPU time available on one CPU.
+
+Inspect the current `CPUQuota` value:
+
+```bash
+systemctl show  qm.service | grep CPUQuota
+```
+
+Set the `CPUQuota` value of `qm.service` on the host using:
+
+```bash
+systemctl set-property qm.service CPUQuota=50%
+```
+
+Verify the `CPUQuota` drop in file has been created using the command below.
+
+```bash
+systemctl show  qm.service | grep CPUQuota
+```
+
+Expected output:
+
+```bash
+CPUQuotaPerSecUSec=500ms
+CPUQuotaPeriodUSec=infinity
+DropInPaths=/usr/lib/systemd/system/service.d/10-timeout-abort.conf /etc/systemd/system.control/qm.service.d/50-CPUQuota.conf
+```
+
+To test maxing out CPU usage and then inspect using the `top` command, follow these steps:
+
+- From within the qm container, execute this command to stress the CPU:
+
+```bash
+dd if=/dev/zero of=/dev/null
+```
+
+- Set the `CPUQuota` value of `qm.service` on the host using:
+
+```bash
+systemctl set-property qm.service CPUQuota=50%
+```
+
+- Observe the limited CPU consumption from the `qm.service`, as shown in the output of the command below:
+
+```bash
+top | head
+```
+
+Expected output:
+
+```bash
+    PID USER      PR  NI    VIRT    RES    SHR S  %CPU  %MEM     TIME+ COMMAND
+1213867 root      20   0    2600   1528   1528 R  50.0   0.0   4:15.21 dd
+   3471 user      20   0  455124   7568   6492 S   8.3   0.0   1:43.64 ibus-en+
+      1 root      20   0   65576  37904  11116 S   0.0   0.1   0:40.00 systemd
+```
