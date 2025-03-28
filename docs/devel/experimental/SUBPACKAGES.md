@@ -26,7 +26,7 @@ a RPM package into the system.
 ### Modularity
 
 - No configuration change, no typo or distribution rebuild/update.
-- Just dnf install/remove from the tradicional rpm schema.
+- Just dnf install/remove from the traditional rpm schema.
 
 ### Customizability
 
