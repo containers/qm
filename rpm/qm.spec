@@ -1,8 +1,5 @@
 %global debug_package %{nil}
 
-# rootfs macros
-%global rootfs_qm %{_prefix}/lib/qm/rootfs/
-
 # Define the feature flag: 1 to enable, 0 to disable
 # By default it's disabled: 0
 

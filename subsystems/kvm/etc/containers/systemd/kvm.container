@@ -4,6 +4,8 @@ After=network.target
 
 [Container]
 Image=quay.io/qm-images/kvm:latest
+ContainerName=kvm-container
+AddDevice=-/dev/kvm
 
 [Install]
 WantedBy=multi-user.target
