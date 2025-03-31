@@ -13,6 +13,7 @@
   - [Listing QM service](#listing-qm-service)
   - [List QM container via podman](#list-qm-container-via-podman)
   - [Extend QM quadlet managed by podman](#extend-qm-quadlet-managed-by-podman)
+  - [Managing CPU usage](#managing-cpu-usage)
   - [Connecting to QM container via podman](#connecting-to-qm-container-via-podman)
   - [SSH guest CentOS Automotive Stream Distro](#ssh-guest-centos-automotive-stream-distro)
   - [Check if HOST and Container are using different network namespace](#check-if-host-and-container-are-using-different-network-namespace)
@@ -254,6 +255,83 @@ systemctl daemon-reload
 systemctl restart qm
 systemctl is-active qm
 active
+```
+
+### Managing CPU usage
+
+Using the steps below, it's possible to manage CPU usage of the `qm.service` by modifying service attributes and utilizing drop-in files.
+
+#### Setting the CPUWeight attribute
+
+Modifying the `CPUWeight` attribute affects the priority the of `qm.service`. A higher value prioritizes the service, while a lower value deprioritizes it.
+
+Inspect the current CPUWeight value:
+
+```bash
+systemctl show -p CPUWeight qm.service
+```
+
+Set the CPUWeight value:
+
+```bash
+systemctl set-property qm.service CPUWeight=500
+```
+
+#### Limiting CPUQuota
+
+It's also possible to limit the percentage of the CPU allocated to the `qm.service` by defining `CPUQuota`. The percentage specifies how much CPU time the unit shall get at maximum, relative to the total CPU time available on one CPU.
+
+Inspect the current `CPUQuota` value via the `CPUQuotaPerSecUSec` property:
+
+```bash
+systemctl show -p CPUQuotaPerSecUSec qm.service
+```
+
+Set the `CPUQuota` value of `qm.service` on the host using:
+
+```bash
+systemctl set-property qm.service CPUQuota=50%
+```
+
+Verify the `CPUQuota` drop in file has been created using the command below.
+
+```bash
+systemctl show qm.service | grep "DropInPath"
+```
+
+Expected output:
+
+```bash
+DropInPaths=/usr/lib/systemd/system/service.d/10-timeout-abort.conf /etc/systemd/system.control/qm.service.d/50-CPUQuota.conf
+```
+
+To test maxing out CPU usage and then inspect using the `top` command, follow these steps:
+
+- Set the `CPUQuota` value of `qm.service` on the host using:
+
+```bash
+systemctl set-property qm.service CPUQuota=50%
+```
+
+- Execute this command to stress the CPU for 30 seconds:
+
+```bash
+podman exec qm timeout 30 dd if=/dev/zero of=/dev/null
+```
+
+- Observe the limited CPU consumption from the `qm.service`, as shown in the output of the command below:
+
+```bash
+top | head
+```
+
+Expected output:
+
+```bash
+    PID USER      PR  NI    VIRT    RES    SHR S  %CPU  %MEM     TIME+ COMMAND
+1213867 root      20   0    2600   1528   1528 R  50.0   0.0   4:15.21 dd
+   3471 user      20   0  455124   7568   6492 S   8.3   0.0   1:43.64 ibus-en+
+      1 root      20   0   65576  37904  11116 S   0.0   0.1   0:40.00 systemd
 ```
 
 ### Connecting to QM container via podman
