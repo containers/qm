@@ -30,11 +30,56 @@ unconfined_domain(ipc_t)
 
 qm_domain_template(qm)
 
+
+
+#########################################
+#
+# bluechi-agent inside QM
+#
+
+type qm_bluechi_agent_t;
+type qm_bluechi_agent_exec_t;
+init_daemon_domain(qm_bluechi_agent_t, qm_bluechi_agent_exec_t)
+
+allow qm_bluechi_agent_t qm_file_t:chr_file read;
+allow qm_bluechi_agent_t qm_file_t:dir { open read search getattr };
+allow qm_bluechi_agent_t qm_file_t:file { execute getattr open read };
+allow qm_bluechi_agent_t qm_file_t:file map;
+allow qm_bluechi_agent_t qm_file_t:lnk_file read;
+allow qm_bluechi_agent_t qm_file_t:sock_file write;
+allow qm_bluechi_agent_t qm_t:unix_dgram_socket sendto;
+allow qm_bluechi_agent_t qm_t:unix_stream_socket connectto;
+allow qm_bluechi_agent_t self:unix_dgram_socket { create getopt setopt };
+allow qm_bluechi_agent_t self:tcp_socket create_stream_socket_perms;
+
+allow qm_bluechi_agent_t qm_t:dbus { send_msg acquire_svc };
+allow qm_bluechi_agent_t qm_t:system status;
+allow qm_bluechi_agent_t qm_t:system { reload start stop status };
+allow qm_bluechi_agent_t qm_file_t:service { reload start stop status };
+
+allow qm_t qm_bluechi_agent_t:dir search;
+allow qm_t qm_bluechi_agent_t:file { getattr ioctl open read };
+allow qm_t qm_bluechi_agent_t:lnk_file read;
+allow qm_t qm_bluechi_agent_t:dbus send_msg;
+allow qm_t qm_bluechi_agent_t:process { signull signal sigkill };
+
+unconfined_server_stream_connectto(qm_bluechi_agent_t)
+
+# Allow qm_bluechi_agent_t to connect to any port instead of labelled ones.
+gen_tunable(qm_bluechi_agent_port_connect_any, true)
+
 optional_policy(`
 	require{
 		type bluechi_var_run_t;
+		type bluechi_agent_port_t;
 		type bluechi_t;
 	}
-	stream_connect_pattern(qm_t, bluechi_var_run_t, bluechi_var_run_t, bluechi_t)
-	unconfined_server_stream_connectto(qm_t)
+
+	tunable_policy(`qm_bluechi_agent_port_connect_any',`
+		corenet_tcp_connect_all_ports(qm_bluechi_agent_t)
+	',`
+		allow qm_bluechi_agent_t bluechi_agent_port_t:tcp_socket name_connect;
+	')
+
+	stream_connect_pattern(qm_bluechi_agent_t, bluechi_var_run_t, bluechi_var_run_t, bluechi_t)
 ')
