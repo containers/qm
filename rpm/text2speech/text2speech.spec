@@ -12,18 +12,9 @@ URL: https://github.com/containers/qm
 Source0: %{url}/archive/qm-text2speech-%{version}.tar.gz
 BuildArch: noarch
 
-# Build requirements
-BuildRequires: make
-BuildRequires: podman
-BuildRequires: selinux-policy
-BuildRequires: selinux-policy-devel
-
 # Runtime dependencies
-Requires: qm = %{version}-%{release}
+Requires: qm >= %{version}
 Requires: qm-mount-bind-sound
-Requires: selinux-policy >= %{_selinux_policy_version}
-Requires: selinux-policy-base >= %{_selinux_policy_version}
-Requires: podman
 Requires: espeak
 
 %description -n qm-text2speech
@@ -37,7 +28,7 @@ This subpackage provides a drop-in configuration for the QM environment to enabl
 %install
 
 %post
-dnf  --setopt=reposdir=/etc/qm/yum.repos.d  --installroot /usr/lib/qm/rootfs/ install espeak -y
+dnf install  --setopt=reposdir=/etc/yum.repos.d  --installroot /usr/lib/qm/rootfs/ espeak-ng
 
 %files
 %license LICENSE
@@ -45,4 +36,4 @@ dnf  --setopt=reposdir=/etc/qm/yum.repos.d  --installroot /usr/lib/qm/rootfs/ in
 
 %changelog
 * Fri Jul 21 2023 RH Container Bot <rhcontainerbot@fedoraproject.org>
-- Initial standalone spec for the QM KVM subpackage.
+- Initial standalone spec for the QM espeak subpackage.

@@ -36,9 +36,11 @@ To illustrate the difference, consider the following example:
 podman run -it --network=host fedora /bin/bash
 
 # Run a container with network=private (default)
-podman run -it fedora /bin/bash
+podman run -it --network=private fedora /bin/bash
 ```
 
 In the first example, the container will share the host's network namespace, while in the second example, the container will have its own isolated network namespace.
 
 For more information, see the [Podman Networking Tutorial](https://github.com/containers/podman/blob/main/docs/tutorials/basic_networking.md).
+
+For network modes configuration example using quadlets, see [Qaudlet Network Example](https://github.com/containers/qm/blob/main/docs/quadlet-examples/network/README.md).

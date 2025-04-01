@@ -1,0 +1,30 @@
+site_name: QM Documentation
+
+repo_url: https://github.com/containers/qm
+repo_name: qm
+
+copyright: Copyright Contributors to the QM project
+nav:
+  - Home: index.md
+
+theme:
+  name: material
+  features:
+    - content.code.copy
+    - navigation.indexes
+
+extra_javascript:
+  - assets/js/tab-sync.js
+
+markdown_extensions:
+  - toc:
+      permalink: True
+  - sane_lists
+  - smarty
+  - admonition
+  - pymdownx.snippets:
+      base_path: ["doc"]
+      check_paths: True
+  - pymdownx.superfences:
+  - pymdownx.tabbed:
+      alternate_style: true

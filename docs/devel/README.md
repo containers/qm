@@ -4,6 +4,8 @@
 
 - [Building QM rpm manually with changes](#building-qm-rpm-manually-with-changes)
 - [Building CentOS AutoSD and QM manually](#building-centos-autosd-and-qm-manually)
+- [Creating Releases](#creating-releases)
+- [Subpackages](#subpackages)
 - [Useful Commands](#useful-commands)
   - [Installing software inside QM partition](#installing-software-inside-qm-partition)
   - [Removing software inside QM partition](#removing-software-inside-qm-partition)
@@ -11,13 +13,13 @@
   - [Listing QM service](#listing-qm-service)
   - [List QM container via podman](#list-qm-container-via-podman)
   - [Extend QM quadlet managed by podman](#extend-qm-quadlet-managed-by-podman)
+  - [Managing CPU usage](#managing-cpu-usage)
   - [Connecting to QM container via podman](#connecting-to-qm-container-via-podman)
   - [SSH guest CentOS Automotive Stream Distro](#ssh-guest-centos-automotive-stream-distro)
   - [Check if HOST and Container are using different network namespace](#check-if-host-and-container-are-using-different-network-namespace)
   - [Debugging with podman in QM using --root](#debugging-with-podman-in-qm)
   - [Creating your own drop-in QM sub-package](#creating-your-own-dropin-qm-subpackage)
-  - [Let automation create/publish PR sub-packages](#let-automation-create-publish-pr-subpackages)
-  - [Install PR copr sub-packages on local machine](#install-pr-copr-sub-packages-on-local-machine)
+  - [Install PR copr subpackages on local machine](#install-pr-copr-subpackages-on-local-machine)
   - [Debugging with quadlet](#debugging-with-quadlet)
 
 ## Building QM rpm manually with changes
@@ -34,7 +36,7 @@ dnf install -y rpm-build golang-github-cpuguy83-md2man selinux-policy-devel
 **2.** Clone the repo
 
 ```bash
-git clone https://github.com/containers/qm.git
+git clone https://github.com/containers/qm.git && cd qm
 ```
 
 **3.** Build the RPM
@@ -74,11 +76,17 @@ ls /root/rpmbuild/RPMS/noarch/qm-1.0-1.noarch.rpm
 /root/rpmbuild/RPMS/noarch/qm-1.0-1.noarch.rpm
 ```
 
-**2.** Create a local repository with the new package
+**2.** Download additional packages required by the image
+
+```bash
+sudo dnf download --destdir /root/rpmbuild/RPMS/noarch/ selinux-policy selinux-policy-any
+```
+
+**3.** Create a local repository with the new package
 
 ```bash
 dnf install createrepo_c -y
-cd /root/rpmbuild/RPMS/
+cd /root/rpmbuild/RPMS/noarch/
 createrepo .
 ```
 
@@ -89,31 +97,62 @@ referring to [this link](https://sigs.centos.org/automotive/building/).
 
 The following commands will execute:
 
+- Install the podman package
+- Clone the sample-images repository and required submodules (automotive-image-builder)
 - Cleanups before a fresh build
-- Remove old qcow2 images used (regular and ostree)
-- Finally creates a new image (BASED ON target name, ostree or regular)
+- Finally creates a new qcow2 image (BASED ON distro name, mode (ostree or regular) and uses the qemu-qm-container sample image)
   NOTE:
   - The path for the new QM rpm file (/root/rpmbuild/RPMS/noarch)
-  - extra_rpms - useful for debug (do not use spaces between packages or will break)
+  - extra_rpms - useful for debug.
   - ssh enabled
+
+The command below utilises automotive-image-builder to produce a `qm-minimal` qcow2 image for cs9,
+other example images such as `simple-qm-container` and the `simple-qm`
+image can be found in the images directory of the sample-images repository.
 
 ```bash
 dnf install podman -y && dnf clean all
 git clone https://gitlab.com/CentOS/automotive/sample-images.git
 git submodule update --init
 cd sample-images/
-rm -rf _build
-rm -f cs9-qemu-qmcontainer-regular.x86_64.qcow2
-rm -f cs9-qemu-qmcontainer-ostree.x86_64.qcow2
-./build --distro cs9 --target qemu --define 'extra_repos=[{\"id\":\"local\",\"baseurl\":\"file:///root/rpmbuild/RPMS/noarch\"}]' --define 'extra_rpms=[\"qm-1.0\",\"vim-enhanced\",\"strace\",\"dnf\",\"gdb\",\"polkit\",\"rsync\",\"python3\",\"openssh-server\",\"openssh-clients\"]' --define 'ssh_permit_root_login=true' --define 'ssh_permit_password_auth=true' cs9-qemu-qmcontainer-regular.x86_64.qcow2
+rm -rf _build #Optional, only relevant after initial build
+rm -rf *.qcow2 #Optional, only relevant after initial build
+./automotive-image-builder/automotive-image-builder build --distro cs9 --mode package --define 'ssh_permit_root_login=true' --define 'ssh_permit_password_auth=true' --define 'extra_repos=[{"id":"local","baseurl":"file:///root/rpmbuild/RPMS/noarch"}]' --define 'extra_rpms=["qm-1.0", "vim-enhanced", "openssh-server", "openssh-clients", "python3", "polkit", "rsync", "strace", "dnf", "gdb"]' --target qemu --export qcow2 images/qm-minimal.mpp.yml cs9-qemu-qm-container.x86_64.qcow2
 ```
+
+If you would like more information on building automotive images with automotive-image-builder, please see the
+[Automotive SIG pages for AutoSD](https://sigs.centos.org/automotive/getting-started/about-automotive-image-builder/)
 
 Run the virtual machine, default user: root, pass: password.
 To change default values, use the [defaults.ipp.yml](https://gitlab.com/CentOS/automotive/src/automotive-image-builder/-/blob/main/include/defaults.ipp.yml) file.
 
 ```bash
-./runvm --nographics ./cs9-qemu-qm-minimal-regular.x86_64.qcow2
+./automotive-image-builder/automotive-image-runner --nographics ./cs9-qemu-qm-container.x86_64.qcow2
 ```
+
+## Creating Releases
+
+Initially make sure to [bump **qm.te** and **VERSION** files in the git repo](https://github.com/containers/qm/pull/760) to the next release, i.e: *v0.7.5*.
+After that, follow the steps below using GitHub UI.
+
+**Create a new Release**
+![Click on Releases](./pics/creatingreleases/00-Click-on-Releases.jpeg)
+
+**Draft a new release**
+![Draft a new release](./pics/creatingreleases/01-Draft-a-new-release.png)
+
+**Create a new tag**
+![Create a tag](./pics/creatingreleases/02-Create-a-tag.jpeg)
+
+**Generate release notes**
+![Generate release notes](./pics/creatingreleases/03-Generate-release-notes.jpeg)
+
+**Publish Release**
+![Click on publish release](./pics/creatingreleases/04-click-on-publish-release.jpeg)
+
+## Subpackages
+
+Subpackages are **experimental approach** to deliver in a single point (RPM) dropin files and additional requirements. [Click here for more information](experimental/SUBPACKAGES.md)
 
 ## Useful Commands
 
@@ -156,7 +195,7 @@ ago
       Tasks: 7 (limit: 7772)
      Memory: 82.1M (swap max: 0B)
         CPU: 945ms
-     CGroup: /QM.slice/qm.service
+     CGroup: /qm.service
              ├─libpod-payload-a83253ae278d7394cb38e975535590d71de90a41157b547040
 4abd6311fd8cca
              │ ├─init.scope
@@ -216,6 +255,83 @@ systemctl daemon-reload
 systemctl restart qm
 systemctl is-active qm
 active
+```
+
+### Managing CPU usage
+
+Using the steps below, it's possible to manage CPU usage of the `qm.service` by modifying service attributes and utilizing drop-in files.
+
+#### Setting the CPUWeight attribute
+
+Modifying the `CPUWeight` attribute affects the priority the of `qm.service`. A higher value prioritizes the service, while a lower value deprioritizes it.
+
+Inspect the current CPUWeight value:
+
+```bash
+systemctl show -p CPUWeight qm.service
+```
+
+Set the CPUWeight value:
+
+```bash
+systemctl set-property qm.service CPUWeight=500
+```
+
+#### Limiting CPUQuota
+
+It's also possible to limit the percentage of the CPU allocated to the `qm.service` by defining `CPUQuota`. The percentage specifies how much CPU time the unit shall get at maximum, relative to the total CPU time available on one CPU.
+
+Inspect the current `CPUQuota` value via the `CPUQuotaPerSecUSec` property:
+
+```bash
+systemctl show -p CPUQuotaPerSecUSec qm.service
+```
+
+Set the `CPUQuota` value of `qm.service` on the host using:
+
+```bash
+systemctl set-property qm.service CPUQuota=50%
+```
+
+Verify the `CPUQuota` drop in file has been created using the command below.
+
+```bash
+systemctl show qm.service | grep "DropInPath"
+```
+
+Expected output:
+
+```bash
+DropInPaths=/usr/lib/systemd/system/service.d/10-timeout-abort.conf /etc/systemd/system.control/qm.service.d/50-CPUQuota.conf
+```
+
+To test maxing out CPU usage and then inspect using the `top` command, follow these steps:
+
+- Set the `CPUQuota` value of `qm.service` on the host using:
+
+```bash
+systemctl set-property qm.service CPUQuota=50%
+```
+
+- Execute this command to stress the CPU for 30 seconds:
+
+```bash
+podman exec qm timeout 30 dd if=/dev/zero of=/dev/null
+```
+
+- Observe the limited CPU consumption from the `qm.service`, as shown in the output of the command below:
+
+```bash
+top | head
+```
+
+Expected output:
+
+```bash
+    PID USER      PR  NI    VIRT    RES    SHR S  %CPU  %MEM     TIME+ COMMAND
+1213867 root      20   0    2600   1528   1528 R  50.0   0.0   4:15.21 dd
+   3471 user      20   0  455124   7568   6492 S   8.3   0.0   1:43.64 ibus-en+
+      1 root      20   0   65576  37904  11116 S   0.0   0.1   0:40.00 systemd
 ```
 
 ### Connecting to QM container via podman
@@ -285,44 +401,26 @@ mkdir /usr/share/containers/storage: read-only file system
 
 We recommend using the existing drop-in files as a guide and adapting them to your specific needs. However, here are the step-by-step instructions:
 
-1) Create a drop-in file in the directory: `etc/qm/containers/containers.conf.d`
-2) Add it as a sub-package to `rpm/qm.spec`
-3) Test it by running: `make clean && VERSION=YOURVERSIONHERE make rpm`
+1) Create a drop-in file in the directory: `etc/qm/containers/containers.conf.d/`
+2) Add it as a sub-package to `rpm/<subpackage>.spec`
+3) Test it by running: `make clean && make TARGETS=<subpackage> subpackages`
 4) Additionally, test it with and without enabling the sub-package using (by default it should be disabled but there are cases where it will be enabled by default if QM community decide):
 
 Example changing the spec and triggering the build via make (feel free to automate via sed, awk etc):
 
 ```bash
-# Define the feature flag: 1 to enable, 0 to disable
-# By default it's disabled: 0
-%define enable_qm_dropin_img_tempdir 1
+# Use make file to run specific subpackage
+make TARGETS=windowmanager subpackages
 
-$ make clean && VERSION=YOURVERSIONHERE make rpm
-```
-
-### Let automation create publish PR subpackages
-
-subpuckges could be created by Packit and uploaded
-by Copr to packit/containers-qm-<PR_ID> repo.
-Default macros for each subpackage deactivated by default.
-
-To enable PR repo apply the follwoing
-
-1. Enable subpackage spec macro definition in .packit.sh
-Add the following line at the end of file,
-
-```bash
-# Update build additional rpms in spec
-sed -i 's/\(<spec_file_macro_name> \).*/\11/' ${SPEC_FILE}
 ```
 
 Check rpms created in PT Actions under PR Checks > Packit-as-a-Service
-In case new tests need the sub-package, it will be innstalled immediatly
+In case new tests need the sub-package, it will be installed immediatly
 on Packit-as-a-Service test phase.
 
-### Install PR copr sub-packages on local machine
+### Install PR copr subpackages on local machine
 
-1. Enbale repo in your machine
+1. Enable repo in your machine
 This part is done automatically by TestingFarm guest provisioning.
 In case of manual installation,
 

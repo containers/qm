@@ -40,7 +40,7 @@ systemctl status qm.service
       Tasks: 11 (limit: 76801)
      Memory: 275.1M (swap max: 0B)
         CPU: 4.527s
-     CGroup: /QM.slice/qm.service
+     CGroup: /qm.service
              ├─libpod-payload-00de006493bc970788d6c830beb494a58a9a2847a5eda200812d3a8b4e214814
              │ ├─init.scope
              │ │ └─993676 /sbin/init
@@ -53,11 +53,13 @@ systemctl status qm.service
 ...
 ```
 
-## CGROUPS QM.slice
+## CGroups and container configuration
 
-Notice that the QM environment is running systemd and other services within the
-QM.Slice. This slice can be used to modify the cgroups controls of all of the
-processes within the QM environment.
+The options in the qm.container file overridden by using drop-in files, in the
+directories `/etc/containers/systemd/qm.container.d` or`
+`/usr/lib/containers/systemd/qm.container.d. This allows overriding for example
+CGroup options like Service.CPUWeight, or podman options like Container.Volume.
+Such options will affect all the processes running in the qm container.
 
 ## Install Additional packages in QM
 
