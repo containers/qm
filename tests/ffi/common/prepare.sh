@@ -72,12 +72,6 @@ prepare_images() {
    # 3. Writes a configuration file qm_image_tmp_dir.conf in /etc/qm/containers/containers.conf.d
    #    with the content specifying the temporary directory for image copying as /var/tmp.dir.
 
-   if is_ostree; then
-      exec_cmd "mkdir -p /var/qm/tmp.dir"
-      exec_cmd "mkdir -p ${CONTAINERS_CONF_DIR}"
-      exec_cmd "echo -e '[engine]\nimage_copy_tmp_dir=\"${QM_TMP_DIR}\"' > ${CONTAINERS_CONF_DIR}/${QM_IMAGE_TMP_DIR_CONF}"
-   fi
-
    exec_cmd "podman pull quay.io/centos-sig-automotive/ffi-tools:latest"
    # Copy container image registry to /var/qm/lib/containers
    image_id=$(podman images | grep quay.io/centos-sig-automotive/ffi-tools | awk -F " " '{print $3}')
