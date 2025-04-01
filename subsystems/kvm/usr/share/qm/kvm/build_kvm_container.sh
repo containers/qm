@@ -7,13 +7,14 @@ ARCHS=("amd64" "aarch64")
 IMAGE_NAME="kvm"
 TAG="latest"
 MANIFEST_NAME="${IMAGE_NAME}-manifest:${TAG}"
+FEDORA_USER_PASSWORD=${FEDORA_USER_PASSWORD:-$(openssl rand -base64 12)}
 
 #IMG_REG=quay.io
 #IMG_ORG=qm-images
 
 rm -f ./Fedora-Cloud-Base-Generic.qcow2
 podman manifest rm "$MANIFEST_NAME"
-podman manifest create "$MANIFEST_NAME"
+podman manifest create "$MANIFEST_NAME" || exit 1
 
 for ARCH in "${ARCHS[@]}"; do
     ARCH_QEMU=$([[ "$ARCH" == "amd64" ]] && echo "x86_64" || echo "$ARCH")
@@ -24,7 +25,7 @@ for ARCH in "${ARCHS[@]}"; do
              --edit '/etc/ssh/sshd_config: s/#PasswordAuthentication.*/PasswordAuthentication yes/' \
              --firstboot-command 'dnf remove -y cloud-init' \
              --firstboot-command "useradd -m -s /bin/bash -G wheel fedora" \
-             --firstboot-command "echo 'fedora:fedora' | chpasswd"
+             --firstboot-command "echo fedora:$FEDORA_USER_PASSWORD | chpasswd"
 
     echo "Adding ${IMAGE_NAME}:${ARCH} to the manifest"
     podman build \
