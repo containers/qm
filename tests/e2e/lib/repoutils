@@ -74,7 +74,7 @@ install_qm_rpms() {
       fi
   fi
 
-  dnf install -y bluechi-ctl bluechi-agent bluechi-controller qm hostname
+  dnf install -y bluechi-ctl bluechi-agent bluechi-controller bluechi-is-online qm hostname
 }
 
 set_qm_rlimits() {

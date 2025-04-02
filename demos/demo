@@ -105,20 +105,15 @@ status() {
 }
 
 cpuweight() {
-    exec_color "sudo systemctl set-property --runtime QM.slice CPUWeight=50"
     exec_color "sudo systemctl set-property --runtime qm.service CPUWeight=50"
 
-    echo "Value stored in QM.slice/cpu.weight:"
-    sudo cat /sys/fs/cgroup/QM.slice/cpu.weight
+    echo "Value stored in qm.service/cpu.weight:"
+    sudo cat /sys/fs/cgroup/qm.service/cpu.weight
 
-    echo "Value stored in QM.slice/qm.service/cpu.weight:"
-    sudo cat /sys/fs/cgroup/QM.slice/qm.service/cpu.weight
-    exec_color "sudo systemctl set-property --runtime QM.slice CPUWeight=10"
+    exec_color "sudo systemctl set-property --runtime qm.service CPUWeight=10"
 
-    echo "Value stored in QM.slice/cpu.weight:"
-    sudo cat /sys/fs/cgroup/QM.slice/cpu.weight
-    echo "Value stored in QM.slice/qm.service/cpu.weight:"
-    sudo cat /sys/fs/cgroup/QM.slice/qm.service/cpu.weight
+    echo "Value stored in qm.service/cpu.weight:"
+    sudo cat /sys/fs/cgroup/qm.service/cpu.weight
     echo -e "\n\n[Press enter to continue]"
     read -r
 }

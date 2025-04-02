@@ -11,7 +11,7 @@ WantedBy=default.target
 # ManagedOOMSwap=auto|kill: Specifies how systemd-oomd.service will act on qm.
 # QM cgroup, pass directly to systemd and handled by it,
 # please refer to `man systemd.resource-control` for details.
-CPUWeight=50
+CPUWeight=idle
 Delegate=true
 IOWeight=50
 ManagedOOMSwap=kill
@@ -34,7 +34,10 @@ MemorySwapMax=0
 # Containers within the qm contain default set OOMScoreAdj to 750
 OOMScoreAdjust=500
 Restart=always
-Slice=QM.slice
+# qm.service is a toplevel cgroup, so CPUWeight is relative to all other cgroups in that
+# parent (such as user.slice and system.slice), otherwise the CPUWeight of qm.service
+# is only compared to the other children of its parent.
+Slice=-.slice
 Environment=ROOTFS=/usr/lib/qm/rootfs
 Environment=RWETCFS=/etc/qm
 Environment=RWVARFS=/var/qm
@@ -50,12 +53,6 @@ TasksMax=50%
 # For details see: https://docs.podman.io/en/latest/markdown/podman-systemd.unit.5.html#addcapability
 AddCapability=all
 
-# Unmask
-# -------
-# Specify the paths to unmask separated by a colon. unmask=ALL or /path/1:/path/2, or shell expanded paths (/proc/*):
-# If set to ALL, Podman will unmask all the paths that are masked or made read-only by default.
-# For details see: https://docs.podman.io/en/latest/markdown/podman-systemd.unit.5.html#unmask
-Unmask=ALL
 SecurityLabelNested=true
 SeccompProfile=/usr/share/qm/seccomp-no-rt.json
 

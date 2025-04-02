@@ -18,7 +18,9 @@ dist: ##             - Creates the QM kvm package
 		../qm/README.md \
 		../qm/SECURITY.md \
 		../qm/LICENSE \
-		../qm/etc/containers/systemd/qm.container.d/qm_dropin_mount_bind_kvm.conf
+		../qm/etc/containers/systemd/qm.container.d/qm_dropin_mount_bind_kvm.conf \
+		../qm/subsystems/kvm/etc/containers/systemd/kvm.container
+
 	cd ${ROOTDIR} && mv /tmp/qm-kvm-${VERSION}.tar.gz ./rpm
 
 .PHONY: kvm
