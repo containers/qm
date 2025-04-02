@@ -1,4 +1,4 @@
-summary: Test to show inside containers is killed fisrt in case of OOM
+summary: Test kernel OOM kills qm container on high score processes
 test: /bin/bash ./test.sh
 duration: 25m
 tag: ffi

@@ -6,6 +6,7 @@ After=local-fs.target
 ContainerName=ffi-qm
 Image=quay.io/centos-sig-automotive/ffi-tools:latest
 Exec=sleep infinity
+StopTimeout=1
 
 [Install]
 # Start by default on qm boot

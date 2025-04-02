@@ -30,6 +30,7 @@ Exec=/root/tests/FFI/bin/bluechi-tester --url="tcp:host=${controller_host_ip},po
      --numbersignals=11111111 \
      --signal="JobDone"
 Network=host
+StopTimeout=1
 EOF
         sed -i -e "s/tester-X/tester-${i}/g" "/etc/qm/containers/systemd/bluechi-tester-${i}.container"
 
