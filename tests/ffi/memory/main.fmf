@@ -1,4 +1,4 @@
-summary: Test is calling systemd as stand alone test
+summary: Test kernel OOM kills qm container on high score processes
 test: /bin/bash ./test.sh
 duration: 25m
 tag: ffi

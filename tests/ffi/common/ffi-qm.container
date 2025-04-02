@@ -1,0 +1,16 @@
+[Unit]
+Description=Container ffi-tools with precompiled checks
+After=local-fs.target
+
+[Container]
+ContainerName=ffi-qm
+Image=quay.io/centos-sig-automotive/ffi-tools:latest
+Exec=sleep infinity
+StopTimeout=1
+
+[Install]
+# Start by default on qm boot
+WantedBy=multi-user.target default.target
+
+[Service]
+Restart=always

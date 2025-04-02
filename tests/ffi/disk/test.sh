@@ -42,15 +42,11 @@ set_PodmanArgs(){
 }
 
 check_var_partition
-disk_cleanup
+trap disk_cleanup EXIT
 prepare_test
 
 set_PodmanArgs
 cat << EOF > "${DROP_IN_DIR}"/oom.conf
-[Service]
-OOMScoreAdjust=
-OOMScoreAdjust=1000
-
 [Container]
 PodmanArgs=
 PodmanArgs=${podmanArgs_of_qm}
@@ -58,9 +54,8 @@ PodmanArgs=${podmanArgs_of_qm}
 EOF
 
 reload_config
-prepare_images
 
-run_container_in_qm "ffi-qm"
+running_container_in_qm
 exec_cmd "podman exec -it qm /bin/bash -c \
          'podman exec -it ffi-qm ./QM/file-allocate'"
 
