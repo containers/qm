@@ -14,6 +14,8 @@ running_container_in_qm
 # Get result message of './modprobe_module'
 msg=$(podman exec -it qm /usr/bin/podman exec -it ffi-qm ./modprobe_module 2>&1)
 
+info_message "Output is: $msg"
+
 # Check result message displays right.
 if grep -eq "modprobe: FATAL: Module ext4 not found in directory /lib/modules/*" "$msg"; then
    if_error_exit "Module ext4 should not found in /lib/modules/ inside QM"

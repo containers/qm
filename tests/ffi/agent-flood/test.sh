@@ -10,8 +10,6 @@ fi
 
 . ../common/prepare.sh
 
-export QM_HOST_REGISTRY_DIR="/var/qm/lib/containers/registry"
-export QM_REGISTRY_DIR="/var/lib/containers/registry"
 export NUMBER_OF_NODES="${NUMBER_OF_NODES:-2}"
 WAIT_BLUECHI_AGENT_CONNECT="${WAIT_BLUECHI_AGENT_CONNECT:-5}"
 
@@ -26,7 +24,7 @@ Description=bluechi-tester-X
 After=local-fs.target
 
 [Container]
-Image=dir:/var/lib/containers/registry/tools-ffi:latest
+Image=quay.io/centos-sig-automotive/ffi-tools:latest
 Exec=/root/tests/FFI/bin/bluechi-tester --url="tcp:host=${controller_host_ip},port=842" \
      --nodename=bluechi-tester-X \
      --numbersignals=11111111 \

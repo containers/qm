@@ -1,4 +1,4 @@
-#!/bin/bash -vx
+#!/bin/bash -evx
 
 # shellcheck disable=SC1091
 
