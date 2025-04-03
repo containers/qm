@@ -7,13 +7,19 @@ SPECFILE_SUBPACKAGE_SOUND ?= ${ROOTDIR}/rpm/sound/sound.spec
 dist: ##             - Creates the QM sound package
 	cd $(ROOTDIR) && tar cvz \
 		--dereference \
-		--transform s/qm/qm-sound-${VERSION}/ \
+		--transform 's|subsystems/kvm/Makefile|Makefile|' \
+		--transform 's|rpm/sound/sound.spec|qm-sound.spec|' \
+		--transform 's|qm|qm-sound-${VERSION}|' \
 		-f /tmp/qm-sound-${VERSION}.tar.gz \
+		../qm/rpm/sound/sound.spec \
+		../qm/subsystems/sound/Makefile \
+		../qm/tools/version-update \
 		../qm/README.md \
 		../qm/SECURITY.md \
 		../qm/LICENSE \
 		../qm/etc/containers/systemd/qm.container.d/qm_dropin_mount_bind_snd.conf \
 		../qm/subsystems/sound/etc/containers/systemd/audio.container
+
 	cd $(ROOTDIR) && mv /tmp/qm-sound-${VERSION}.tar.gz ./rpm
 
 .PHONY: sound

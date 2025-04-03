@@ -4,6 +4,7 @@ After=network.target
 
 [Container]
 Image=quay.io/qm-images/audio:latest
+Network=host
 
 [Install]
 WantedBy=multi-user.target
