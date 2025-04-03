@@ -2,10 +2,12 @@ site_name: QM Documentation
 
 repo_url: https://github.com/containers/qm
 repo_name: qm
+edit_uri: blob/main/docs/docs/
 
 copyright: Copyright Contributors to the QM project
 nav:
   - Home: index.md
+  - Contributing: contributing.md
 
 theme:
   name: material
@@ -23,7 +25,7 @@ markdown_extensions:
   - smarty
   - admonition
   - pymdownx.snippets:
-      base_path: ["doc"]
+      base_path: ["docs"]
       check_paths: True
   - pymdownx.superfences:
   - pymdownx.tabbed:
