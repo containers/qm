@@ -1,0 +1,53 @@
+#!/usr/bin/env python3
+# flake8: noqa: E501
+
+import os
+
+
+def format_bytes(value):
+    try:
+        num = int(value)
+        if num >= 1 << 30:
+            return f"{num / (1 << 30):.2f}G"
+        elif num >= 1 << 20:
+            return f"{num / (1 << 20):.2f}M"
+        elif num >= 1 << 10:
+            return f"{num / (1 << 10):.2f}K"
+        else:
+            return f"{num}B"
+    except Exception:
+        return value
+
+
+def get_memory_usage(cgroup_path="/sys/fs/cgroup/qm.service"):
+    current_path = os.path.join(cgroup_path, "memory.current")
+    max_path = os.path.join(cgroup_path, "memory.max")
+
+    try:
+        with open(current_path, "r") as f:
+            mem_current = int(f.read().strip())
+    except Exception as e:
+        return f"Error reading memory.current: {e}"
+
+    try:
+        with open(max_path, "r") as f:
+            mem_max_raw = f.read().strip()
+
+        if mem_max_raw == "max":
+            return f"{format_bytes(mem_current)} used (no memory limit)"
+
+        # Handle when it's a number
+        try:
+            mem_max = int(mem_max_raw)
+            percent = (mem_current / mem_max) * 100
+            return f"{format_bytes(mem_current)} used / {format_bytes(mem_max)} total ({percent:.2f}%)"
+        except ValueError:
+            return f"{format_bytes(mem_current)} used (invalid memory.max: {mem_max_raw})"
+
+    except Exception as e:
+        return f"Error reading memory.max: {e}"
+
+
+if __name__ == "__main__":
+    print(get_memory_usage())
+
