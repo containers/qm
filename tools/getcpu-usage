@@ -1,0 +1,50 @@
+#!/usr/bin/env python3
+# flake8: noqa: E501
+
+import os
+import time
+
+
+def count_cpus(cpuset_str):
+    total = 0
+    for part in cpuset_str.split(','):
+        if '-' in part:
+            start, end = map(int, part.split('-'))
+            total += end - start + 1
+        else:
+            total += 1
+    return total
+
+
+def get_cpu_usage(cgroup_path="/sys/fs/cgroup/qm.service", interval=1.0):
+    cpu_stat_path = os.path.join(cgroup_path, "cpu.stat")
+    cpuset_path = os.path.join(cgroup_path, "cpuset.cpus")
+
+    try:
+        with open(cpu_stat_path, "r") as f:
+            usage1 = int(next(line.split()[1] for line in f if line.startswith("usage_usec")))
+
+        time.sleep(interval)
+
+        with open(cpu_stat_path, "r") as f:
+            usage2 = int(next(line.split()[1] for line in f if line.startswith("usage_usec")))
+
+        delta = usage2 - usage1
+
+        if os.path.exists(cpuset_path):
+            with open(cpuset_path, "r") as f:
+                cpus = count_cpus(f.read().strip())
+        else:
+            cpus = os.cpu_count() or 1
+
+        cpu_percent = (delta / (interval * cpus * 1_000_000)) * 100
+        return round(cpu_percent, 2)
+
+    except Exception as e:
+        return f"Error: {e}"
+
+
+if __name__ == "__main__":
+    usage = get_cpu_usage()
+    print(f"CPU usage for qm.service cgroup: {usage}%")
+
