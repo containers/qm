@@ -13,3 +13,4 @@ WantedBy=multi-user.target
 Image=quay.io/qm-images/multimedia:latest
 Exec=fswebcam -r 1024x768 --jpeg 100 /tmp/screenshot.jpg
 Volume=/tmp:/tmp
+AddDevice=-/dev/video0
