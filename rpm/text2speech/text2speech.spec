@@ -1,8 +1,5 @@
 %global debug_package %{nil}
 
-# Define rootfs macro for QM environment
-%global rootfs_qm %{_prefix}/lib/qm/rootfs/
-
 Name: qm-text2speech
 Version: 0
 Release: 1%{?dist}
