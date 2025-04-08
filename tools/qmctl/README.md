@@ -1,6 +1,6 @@
 # QMCTL
 
-QMCTL is a command-line tool for managing QM containers using Podman. It provides a simple interface to inspect container internals, run commands, and monitor system-level resources.
+QMCTL offers a simple interface to inspect QM container namespaces, monitor cgroups and systemd resources, and run commands inside QM containers
 
 ## Usage
 
