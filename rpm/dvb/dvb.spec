@@ -1,8 +1,5 @@
 %global debug_package %{nil}
 
-# Define the rootfs macros
-%global rootfs_qm %{_prefix}/lib/qm/rootfs/
-
 Name: qm-mount-bind-dvb
 Version: 0
 Release: 1%{?dist}

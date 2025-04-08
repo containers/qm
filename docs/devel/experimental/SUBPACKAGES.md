@@ -65,6 +65,7 @@ Complete!
 If QM is already running, restart or reload your QM container environment to apply the new configurations.
 
 ```bash
+sudo systemctl daemon-reload
 sudo podman restart qm
 ```
 
@@ -83,6 +84,7 @@ The video sub-package exposes `/dev/video0` (or many video devices required) to 
 ```bash
 make TARGETS=video subpackages
 
+sudo systemctl daemon-reload
 sudo podman restart qm
 sudo dnf install ./rpmbuild/RPMS/noarch/qm_mount_bind_video-0.6.7-1.fc40.noarch.rpm
 ```
@@ -124,6 +126,7 @@ make TARGETS=sound subpackages
 sudo dnf install -y rpmbuild/RPMS/noarch/qm_mount_bind_sound-0.6.7-1.fc40.noarch.rpm
 
 # Restart QM container (if already running)
+sudo systemctl daemon-reload
 sudo podman restart qm
 ```
 
@@ -224,6 +227,7 @@ How to test this env?
 git clone https://github.com/containers/qm.git && cd qm
 make TARGETS=ros2_rolling subpackages
 sudo dnf install rpmbuild/RPMS/noarch/qm_ros2_rolling-0.6.7-1.fc40.noarch.rpm  -y
+sudo systemctl daemon-reload
 sudo podman restart qm  # if you have qm already running
 
 Testing using talked and listener examples

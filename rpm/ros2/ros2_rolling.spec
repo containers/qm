@@ -1,10 +1,9 @@
 %global debug_package %{nil}
 
-# rootfs macros for QM ROS2 Rolling
-%global rootfs_qm %{_prefix}/lib/qm/rootfs/
+%define qm_sysconfdir %{_sysconfdir}/qm
 
 Name: qm-ros2-rolling
-Version: 0
+Version: %{version}
 Release: 1%{?dist}
 Summary: Subpackage container for quadlet container to ROS2 Rolling environment
 License: GPL-2.0-only
@@ -27,16 +26,17 @@ containers managed by Podman and systemd within the QM environment.
 
 %install
 # Create the necessary directory structure
-install -d %{buildroot}%{rootfs_qm}%{_sysconfdir}/containers/systemd
+install -d %{buildroot}%{qm_sysconfdir}/containers/systemd
 
 # Install the ROS2 Rolling container file
-install -m 644 %{_builddir}/qm-ros2-%{version}/subsystems/ros2/etc/containers/systemd/ros2-rolling.container %{buildroot}%{rootfs_qm}%{_sysconfdir}/containers/systemd/ros2-rolling.container
+install -m 644 %{_builddir}/qm-ros2-%{version}/subsystems/ros2/etc/containers/systemd/ros2-rolling.container \
+      %{buildroot}%{qm_sysconfdir}/containers/systemd/ros2-rolling.container
 
 
 %files
 %license LICENSE
 %doc README.md SECURITY.md
-%{rootfs_qm}%{_sysconfdir}/containers/systemd/ros2-rolling.container
+%{qm_sysconfdir}/containers/systemd/ros2-rolling.container
 
 
 %changelog
