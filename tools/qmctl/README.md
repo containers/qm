@@ -3,6 +3,7 @@
 QMCTL is a command-line tool for managing QM containers using Podman. It provides a simple interface to inspect container internals, run commands, and monitor system-level resources.
 
 ## Usage
+
 Show container information
 
 ```bash
@@ -23,7 +24,8 @@ Run a command inside the container
 ```
 
 With verbose output
-```
+
+```bash
 ./qmctl --verbose show
 ```
 
