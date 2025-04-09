@@ -82,6 +82,59 @@ Installing:
 ...
 ```
 
+However, please note that this method may not work correctly for all packages, especially those that install files in `/var` or `/etc`.
+
+Recommended Method
+
+To ensure that packages are installed correctly, we recommend using the following script:
+
+```console
+#!/bin/bash
+
+DIR=$(mktemp -d)
+
+run_exit_cmds() {
+  umount $DIR/var
+  umount $DIR/etc
+  umount $DIR
+  rmdir $DIR
+}
+trap run_exit_cmds EXIT
+
+mount --bind /usr/lib/qm/rootfs $DIR
+mount --bind /var/qm $DIR/var
+mount --bind /etc/qm $DIR/etc
+
+dnf install --installroot=$DIR "$@"
+```
+
+This script creates a temporary environment that mirrors the QM environment, and installs the package using dnf. The package is installed to the temporary directory, which is then unmounted and deleted when the script exits.
+
+Usage
+
+To use this script, save it to a file (e.g. install_package.sh), make the file executable with `chmod +x install_package.sh`, and then run it with the package name as an argument:
+
+```console
+./install_package.sh <package_name>
+```
+
+This will install the package to the QM environment.
+
+Note: You can modify the script to install multiple packages by separating the package names with spaces.
+
+```console
+./install_package.sh package1 package2 package3
+```
+
+This will install all three packages to the QM environment.
+For example, to install the vim and git packages, you would run:
+
+```console
+./install_package.sh vim git
+```
+
+This will install both vim and git to the QM environment.
+
 ## Entering the QM
 
 To enter the QM environment, use this Podman command to
