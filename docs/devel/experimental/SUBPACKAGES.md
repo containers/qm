@@ -83,10 +83,9 @@ The video sub-package exposes `/dev/video0` (or many video devices required) to 
 
 ```bash
 make TARGETS=video subpackages
-
+sudo dnf install ./rpmbuild/RPMS/noarch/qm-mount-bind-video-0.6.7-1.fc40.noarch.rpm
 sudo systemctl daemon-reload
 sudo podman restart qm
-sudo dnf install ./rpmbuild/RPMS/noarch/qm_mount_bind_video-0.6.7-1.fc40.noarch.rpm
 ```
 
 This simulates a rear camera when the user shifts into reverse gear.
@@ -99,15 +98,15 @@ host> sudo podman exec -it qm bash
 bash-5.2# systemctl daemon-reload
 bash-5.2# systemctl start rear-camera
 
-# ls -la /tmp/screenshot.jpg
--rw-r--r--. 1 root root 516687 Oct 13 04:05 /tmp/screenshot.jpg
+# ls -la /var/tmp/screenshot.jpg
+-rw-r--r--. 1 root root 516687 Oct 13 04:05 /var/tmp/screenshot.jpg
 bash-5.2#
 ```
 
 ### Copy the screenshot to the host and view it
 
 ```bash
-host> sudo podman cp qm:/tmp/screenshot.jpg .
+host> sudo podman cp qm:/var/tmp/screenshot.jpg .
 ```
 
 Great job! Now imagine all the possibilities this opens up!
