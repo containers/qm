@@ -147,7 +147,7 @@ install() {
     setupRW "${ROOTFS}" "${RWETCFS}" "${RWVARFS}"
 
     EXTRA_FLAG=""
-    if grep -qi "^ID=fedora" /etc/os-release; then
+    if [ "$ID" == "fedora" ] && [ "$VERSION_ID" -ge 41 ]; then
         EXTRA_FLAG="--use-host-config"
     fi
 
