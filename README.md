@@ -209,7 +209,7 @@ Looking for quadlet examples files? See our [docs dir](docs/quadlet-examples/).
 
 ## Development
 
-If your looking for contribute to the project use our [development README guide](docs/devel/README.md) as start point.
+If you're looking to contribute to the project, use our [development README guide](docs/devel/README.md) to help you get started.
 
 ## Realtime
 

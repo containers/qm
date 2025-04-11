@@ -1,0 +1,24 @@
+name: Provide ReadtheDocs preview links for PRs
+on:
+  pull_request:
+    types:
+      - opened
+    paths:
+      - "docs/**"
+
+permissions:
+  pull-requests: write
+
+jobs:
+  documentation-links:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Post comment
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+          PR_NUMBER: ${{ github.event.pull_request.number }}
+          PROJECT_SLUG: qm
+        run: |
+          curl -X POST -H "Authorization: Bearer $GITHUB_TOKEN" \
+          -d '{"body":":book: Documentation preview: https://${{env.PROJECT_SLUG}}--${{env.PR_NUMBER}}.org.readthedocs.build/en/${{env.PR_NUMBER}}/ :book:"}' \
+          "https://api.github.com/repos/${{ github.repository }}/issues/$PR_NUMBER/comments"
