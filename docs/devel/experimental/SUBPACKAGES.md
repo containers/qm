@@ -255,7 +255,7 @@ hw:1,0: sound card 1, device 0
 
 We recommend using the existing drop-in files as a guide and adapting them to your specific needs. However, here are the step-by-step instructions:
 
-Please refer [Creating your own drop-in QM sub-package](docs/devel/README.md#creating-your-own-dropin-qm-subpackage)
+Please refer [Creating your own drop-in QM sub-package](/docs/devel/README.md#creating-your-own-dropin-qm-subpackage)
 
 ## QM sub-package ROS2
 
