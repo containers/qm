@@ -75,6 +75,49 @@ sudo podman restart qm
 sudo rpm -e qm_mount_bind_input
 ```
 
+## QM Sub-Package Input
+
+The `input` sub-package exposes `/dev/input/*` devices (such as keyboards, mice, touchpads, etc.) from the host system to the QM container.
+
+Follow the steps below to verify that the input sub-package properly mounts and exposes input devices inside the QM container.
+
+### Step 1: Verify input devices are NOT visible inside QM
+
+```bash
+host> sudo podman exec -it qm ls /dev/input
+ls: cannot access '/dev/input': No such file or directory
+```
+
+### Step 2: Build and install the input sub-package
+
+```bash
+host> make TARGETS=input subpackages
+host> sudo dnf install ./rpmbuild/RPMS/noarch/qm_mount_bind_input-0.7.4-1.fc41.noarch.rpm
+```
+
+### Step 3: Confirm input devices exist on the host
+
+```bash
+host> ls /dev/input
+by-id    event0  event2  event4  js0   mouse0  mouse2
+by-path  event1  event3  event5  mice  mouse1
+```
+
+### Step 4: Restart QM to apply the mount bind configuration
+
+```bash
+host> sudo systemctl daemon-reload
+host> sudo podman restart qm
+```
+
+### Step 5: Re-check input devices inside QM
+
+```bash
+host> sudo podman exec -it qm ls /dev/input
+event0  event2  event4  js0   mouse0  mouse2
+event1  event3  event5  mice  mouse1
+```
+
 ## QM sub-package Video
 
 The video sub-package exposes `/dev/video0` (or many video devices required) to the container. This feature is useful for demonstrating how to share a camera from the host system into a container using Podman drop-in. To showcase this functionality, we provide the following demo:
