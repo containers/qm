@@ -6,10 +6,12 @@
     - [Installing QM Sub-Packages](#installing-qm-sub-packages)
     - [Removing QM Sub-Packages](#removing-qm-sub-packages)
     - [Creating Your Own Drop-In QM Sub-Package](#creating-your-own-drop-in-qm-sub-package)
+    - [QM Sub-Package Input](#qm-sub-package-input)
+    - [QM Sub-Package tty7](#qm-sub-package-tty7)
+    - [QM Sub-Package Video](#qm-sub-package-video)
+    - [QM Sub-Package Sound](#qm-sub-package-sound)
     - [QM Sub-Package ROS2](#qm-sub-package-ros2)
     - [QM Sub-Package KVM](#qm-sub-package-kvm)
-    - [QM Sub-Package Sound](#qm-sub-package-sound)
-    - [QM Sub-Package Video](#qm-sub-package-video)
 
 ## QM Sub-packages
 
@@ -75,7 +77,13 @@ sudo podman restart qm
 sudo rpm -e qm_mount_bind_input
 ```
 
-## QM Sub-Package Input
+## Creating your own drop-in QM sub-package
+
+We recommend using the existing drop-in files as a guide and adapting them to your specific needs. However, here are the step-by-step instructions:
+
+Please refer [Creating your own drop-in QM sub-package](/docs/devel/README.md#creating-your-own-dropin-qm-subpackage)
+
+## QM sub-package Input
 
 The `input` sub-package exposes `/dev/input/*` devices (such as keyboards, mice, touchpads, etc.) from the host system to the QM container.
 
@@ -116,6 +124,40 @@ host> sudo podman restart qm
 host> sudo podman exec -it qm ls /dev/input
 event0  event2  event4  js0   mouse0  mouse2
 event1  event3  event5  mice  mouse1
+```
+
+## QM sub-package tty7
+
+The tty7 sub-package exposes `/dev/tty7` to the container. `/dev/tty7` is typically the virtual terminal associated with the graphical user interface (GUI) on Linux systems.
+
+Follow the steps below to verify that the input sub-package properly mounts and exposes input devices inside the QM container.
+
+### Step 1: Verify tty7 is NOT visible inside QM
+
+```bash
+host> sudo podman exec -it qm ls -l /dev/tty7
+ls: cannot access '/dev/tty7': No such file or directory
+```
+
+### Step 2: Build and install the tty7 sub-package
+
+```bash
+host> make TARGETS=tty7 subpackages
+host> sudo dnf install ./rpmbuild/RPMS/noarch/qm-mount-bind-tty7-0.7.4-1.fc41.noarch.rpm
+```
+
+### Step 3: Restart QM to apply the mount bind configuration
+
+```bash
+host> sudo systemctl daemon-reload
+host> sudo podman restart qm
+```
+
+### Step 4: Re-check tty7 inside QM
+
+```bash
+host> sudo podman exec -it qm ls -l /dev/tty7
+crw--w----. 1 root tty 4, 7 Apr 15 13:34 /dev/tty7
 ```
 
 ## QM sub-package Video
@@ -250,12 +292,6 @@ hw:1,0: sound card 1, device 0
 -c 2: two channels (stereo)
 -r 48000: sample rate of 48 kHz
 ```
-
-## Creating your own drop-in QM sub-package
-
-We recommend using the existing drop-in files as a guide and adapting them to your specific needs. However, here are the step-by-step instructions:
-
-Please refer [Creating your own drop-in QM sub-package](/docs/devel/README.md#creating-your-own-dropin-qm-subpackage)
 
 ## QM sub-package ROS2
 
