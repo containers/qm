@@ -2,7 +2,7 @@
 
 %define qm_sysconfdir %{_sysconfdir}/qm
 
-Name: qm-ros2-rolling
+Name: qm-ros2
 Version: %{version}
 Release: 1%{?dist}
 Summary: Subpackage container for quadlet container to ROS2 Rolling environment
@@ -29,16 +29,16 @@ containers managed by Podman and systemd within the QM environment.
 install -d %{buildroot}%{qm_sysconfdir}/containers/systemd
 
 # Install the ROS2 Rolling container file
-install -m 644 %{_builddir}/qm-ros2-%{version}/subsystems/ros2/etc/containers/systemd/ros2-rolling.container \
-      %{buildroot}%{qm_sysconfdir}/containers/systemd/ros2-rolling.container
+install -m 644 %{_builddir}/qm-ros2-%{version}/subsystems/ros2/etc/containers/systemd/ros2.container \
+      %{buildroot}%{qm_sysconfdir}/containers/systemd/ros2.container
 
 
 %files
 %license LICENSE
 %doc README.md SECURITY.md
-%{qm_sysconfdir}/containers/systemd/ros2-rolling.container
+%{qm_sysconfdir}/containers/systemd/ros2.container
 
 
 %changelog
 * Fri Jul 21 2023 RH Container Bot <rhcontainerbot@fedoraproject.org> - 0.6.8-1
-- Initial release of qm-ros2-rolling
+- Initial release of qm-ros2
