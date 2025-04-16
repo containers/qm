@@ -51,8 +51,8 @@ ${container_target}:/tmp/container-${srv}.container"
                 target_service_file=$(podman exec ${container_target} systemctl show -P  SourcePath qm.service)
 	        # START: remove DropCapability to run nested container
                 # TBD: use drop-in files to update qm.service
-                podman exec -it ${container_target} bash -c "sed -i '/^\s*DropCapability=sys_resource/ d' \"${target_service_file}\""
-	        if_error_exit "unable to remove DropCapability=sys_resource in qm.container"
+                podman exec -it ${container_target} bash -c "sed -i '/^\s*DropCapability=/ d' \"${target_service_file}\""
+	        if_error_exit "unable to remove DropCapability=<caps> in qm.container"
 
                 podman exec -it ${container_target} systemctl daemon-reload
                 if_error_exit "unable to execute daemon-reload"

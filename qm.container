@@ -64,7 +64,7 @@ SeccompProfile=/usr/share/qm/seccomp-no-rt.json
 PidsLimit=-1
 
 # Comment DropCapability this will allow FFI Tools to surpass their defaults.
-DropCapability=sys_resource
+DropCapability=sys_boot sys_resource
 
 AddDevice=-/dev/kvm
 AddDevice=-/dev/fuse
