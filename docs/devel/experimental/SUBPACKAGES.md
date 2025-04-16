@@ -310,6 +310,7 @@ sudo podman restart qm  # if you have qm already running
 
 Testing using talked and listener examples
 $host> sudo podman exec -it qm bash
+QM> . /opt/ros/jazzy/setup.bash # always replace jazz with the image ROS distro
 QM> ros2 run demo_nodes_cpp talker &
 QM> ros2 run demo_nodes_cpp listener
 ```
