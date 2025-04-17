@@ -35,6 +35,11 @@ optional_policy(`
 		type bluechi_var_run_t;
 		type bluechi_t;
 	}
-	stream_connect_pattern(qm_t, bluechi_var_run_t, bluechi_var_run_t, bluechi_t)
-	unconfined_server_stream_connectto(qm_t)
+
+	type qm_bluechi_agent_t;
+	type qm_bluechi_agent_exec_t;
+	init_daemon_domain(qm_bluechi_agent_t, qm_bluechi_agent_exec_t)
+
+	stream_connect_pattern(qm_bluechi_agent_t, bluechi_var_run_t, bluechi_var_run_t, bluechi_t)
+	unconfined_server_stream_connectto(qm_bluechi_agent_t)
 ')
