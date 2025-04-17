@@ -3,7 +3,8 @@ Description=ROS 2 Container Development env
 After=network.target
 
 [Container]
-Image=quay.io/qm-images/ros2:rolling
+Image=quay.io/fedora-sig-robotics/ros2:jazzy-cs9
+Exec=sleep infinity
 
 [Install]
 WantedBy=multi-user.target

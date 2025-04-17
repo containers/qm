@@ -308,8 +308,9 @@ sudo dnf install rpmbuild/RPMS/noarch/qm_ros2_rolling-0.6.7-1.fc40.noarch.rpm  -
 sudo systemctl daemon-reload
 sudo podman restart qm  # if you have qm already running
 
-Testing using talked and listener examples
+Testing using talker and listener examples
 $host> sudo podman exec -it qm bash
+QM> . /opt/ros/jazzy/setup.bash # always replace jazz with the image ROS distro
 QM> ros2 run demo_nodes_cpp talker &
 QM> ros2 run demo_nodes_cpp listener
 ```

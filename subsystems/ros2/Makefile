@@ -18,7 +18,7 @@ dist: ##             - Creates the QM ros2 package
 		../qm/README.md \
 		../qm/SECURITY.md \
 		../qm/LICENSE \
-		../qm/subsystems/ros2/etc/containers/systemd/ros2-rolling.container
+		../qm/subsystems/ros2/etc/containers/systemd/ros2.container
 	cd $(ROOTDIR) && mv /tmp/qm-ros2-${VERSION}.tar.gz ./rpm
 
 
