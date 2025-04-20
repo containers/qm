@@ -23,6 +23,13 @@ Run a command inside the container
 ./qmctl exec ls /dev --json
 ```
 
+Run a command inside a nested container in QM
+
+```bash
+./qmctl execin alpine uname -a
+./qmctl execin alpine ls /dev --json
+```
+
 With verbose output
 
 ```bash
