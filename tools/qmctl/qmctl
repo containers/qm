@@ -133,6 +133,46 @@ class QMCTL:
             self._print_output({"error": str(e)}, output_json, pretty)
             sys.exit(1)
 
+    def execin_in_container(self, command, output_json=False, pretty=True):
+        if not self._container_exists(self.container):
+            self._print_output(
+                {"error": f"Container '{self.container}' does not exist."},
+                output_json,
+                pretty
+            )
+            sys.exit(1)
+
+        if not command:
+            self._print_output({"error": "No container name provided to execute."}, output_json, pretty)
+            sys.exit(1)
+
+        if len(command) < 2:
+            self._print_output({"error": "No command provided to execute."}, output_json, pretty)
+            sys.exit(1)
+        container_name = command[0]
+        command_in_contaier = command[1:]
+
+        try:
+            result = subprocess.run(
+                ["podman", "exec", self.container, "podman", "exec", container_name ] + command_in_contaier,
+                capture_output=True,
+                text=True,
+                check=False
+            )
+
+            if result.returncode != 0:
+                raise RuntimeError(f"Command '{' '.join(command)}' failed with error: {result.stderr.strip()}")
+
+            self._print_output(
+                {"output": result.stdout.strip()},
+                output_json,
+                pretty
+            )
+
+        except Exception as e:
+            self._print_output({"error": str(e)}, output_json, pretty)
+            sys.exit(1)
+
     def show_unix_sockets(self, output_json=False, pretty=True):
         try:
             result = subprocess.run(
@@ -278,14 +318,15 @@ def main():
         description="QMCTL: Manage QM container settings via Podman.",
         epilog="""
 Examples:
-  ./qmctl show                             Show raw container config
-  ./qmctl show resources                   Show live systemd-cgtop for qm.service
-  ./qmctl show unix-domain-sockets        Show UNIX sockets inside container
-  ./qmctl show shared-memory              Show shared memory (ipcs)
-  ./qmctl show namespaces                 Show namespaces from container
-  ./qmctl show available-devices          Show devices from container config
-  ./qmctl show all                        Show all options + cgtop snapshot
-  ./qmctl exec uname -a                   Run 'uname -a' in container
+  ./qmctl show                              Show raw container config
+  ./qmctl show resources                    Show live systemd-cgtop for qm.service
+  ./qmctl show unix-domain-sockets          Show UNIX sockets inside container
+  ./qmctl show shared-memory                Show shared memory (ipcs)
+  ./qmctl show namespaces                   Show namespaces from container
+  ./qmctl show available-devices            Show devices from container config
+  ./qmctl show all                          Show all options + cgtop snapshot
+  ./qmctl exec uname -a                     Run 'uname -a' in container
+  ./qmctl execin alpine ls /dev             Run 'ls /dev' in alpine a nested container inside QM
 """,
         formatter_class=argparse.RawTextHelpFormatter
     )
@@ -316,6 +357,10 @@ Examples:
     exec_parser.add_argument("cmd", nargs=argparse.REMAINDER, help="Command to execute")
     exec_parser.add_argument("--json", action="store_true", help="Output as JSON")
 
+    execin_parser = subparsers.add_parser("execin", help="Run command inside a nested continer in QM")
+    execin_parser.add_argument("cmd", nargs=argparse.REMAINDER, help="Command and continer name to execute")
+    execin_parser.add_argument("--json", action="store_true", help="Output as JSON")
+
     if argcomplete:
         argcomplete.autocomplete(parser)
 
@@ -343,6 +388,8 @@ Examples:
             qmctl.show(output_json=args.json, pretty=True)
     elif args.command == "exec":
         qmctl.exec_in_container(command=args.cmd, output_json=args.json, pretty=True)
+    elif args.command == "execin":
+        qmctl.execin_in_container(command=args.cmd, output_json=args.json, pretty=True)
     else:
         parser.print_help()
         sys.exit(1)
