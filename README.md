@@ -5,7 +5,7 @@
 3. [BlueChi](#bluechi)
 4. [RPM building dependencies](#rpm-building-dependencies)
 5. [How OOM score adjustment is used in QM](#how-oom-score-adjustment-is-used-in-qm)
-   - [Priority process of OOM killer in the QM context](#priority-process-of-OOM killer-in-the-qm-context)
+   - [Priority process of OOM killer in the QM context](#priority-process-of-OOM-killer-in-the-qm-context)
 6. [Contributing to the QM project](#contributing-to-the-qm-project)
 7. [Network settings](https://github.com/containers/qm/blob/main/docs/tutorials/NETWORK.md)
 8. [Realtime](#realtime)
