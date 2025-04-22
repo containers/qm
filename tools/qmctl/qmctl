@@ -133,6 +133,46 @@ class QMCTL:
             self._print_output({"error": str(e)}, output_json, pretty)
             sys.exit(1)
 
+    def copy_in_container(self, paths, output_json=False, pretty=True):
+        if not self._container_exists(self.container):
+            self._print_output(
+                {"error": f"Container '{self.container}' does not exist."},
+                output_json,
+                pretty
+            )
+            sys.exit(1)
+        if not paths or len(paths) != 2:
+            self._print_output(
+                {"error": "Please provide source and destination paths."},
+                output_json,
+                pretty
+            )
+            sys.exit(1)
+        src = paths[0]
+        dst = paths[1]
+        if not (self.container + ":" in src) ^ (self.container + ":" in dst):
+            self._print_output(
+                {"error": f"Please provide `{self.container}:` only in source or in destination"},
+                output_json,
+                pretty
+            )
+            sys.exit(1)
+
+        try:
+            result = subprocess.run(
+                ["podman", "cp", src, dst] ,
+                capture_output=True,
+                text=True,
+                check=False
+            )
+
+            if result.stderr.lower():
+                raise RuntimeError(result.stderr)
+
+        except Exception as e:
+            self._print_output({"error": str(e)}, output_json, pretty)
+            sys.exit(1)
+
     def execin_in_container(self, command, output_json=False, pretty=True):
         if not self._container_exists(self.container):
             self._print_output(
@@ -318,15 +358,17 @@ def main():
         description="QMCTL: Manage QM container settings via Podman.",
         epilog="""
 Examples:
-  ./qmctl show                              Show raw container config
-  ./qmctl show resources                    Show live systemd-cgtop for qm.service
-  ./qmctl show unix-domain-sockets          Show UNIX sockets inside container
-  ./qmctl show shared-memory                Show shared memory (ipcs)
-  ./qmctl show namespaces                   Show namespaces from container
-  ./qmctl show available-devices            Show devices from container config
-  ./qmctl show all                          Show all options + cgtop snapshot
-  ./qmctl exec uname -a                     Run 'uname -a' in container
-  ./qmctl execin alpine ls /dev             Run 'ls /dev' in alpine a nested container inside QM
+  ./qmctl show                               Show raw container config
+  ./qmctl show resources                     Show live systemd-cgtop for qm.service
+  ./qmctl show unix-domain-sockets           Show UNIX sockets inside container
+  ./qmctl show shared-memory                 Show shared memory (ipcs)
+  ./qmctl show namespaces                    Show namespaces from container
+  ./qmctl show available-devices             Show devices from container config
+  ./qmctl show all                           Show all options + cgtop snapshot
+  ./qmctl exec uname -a                      Run 'uname -a' in container
+  ./qmctl execin alpine ls /dev              Run 'ls /dev' in alpine a nested container inside QM
+  ./qmctl cp /path/to/file QM:/path/to/dir   Copy file from a path to QM
+  ./qmctl cp QM:/path/to/file /path/to/dir   Copy file from QM to dir
 """,
         formatter_class=argparse.RawTextHelpFormatter
     )
@@ -361,6 +403,10 @@ Examples:
     execin_parser.add_argument("cmd", nargs=argparse.REMAINDER, help="Command and continer name to execute")
     execin_parser.add_argument("--json", action="store_true", help="Output as JSON")
 
+    cp_parser = subparsers.add_parser("cp", help="Copy files from and to QM")
+    cp_parser.add_argument("paths", nargs=argparse.REMAINDER, help="source and destination to copy")
+    cp_parser.add_argument("--json", action="store_true", help="Output as JSON")
+
     if argcomplete:
         argcomplete.autocomplete(parser)
 
@@ -390,6 +436,8 @@ Examples:
         qmctl.exec_in_container(command=args.cmd, output_json=args.json, pretty=True)
     elif args.command == "execin":
         qmctl.execin_in_container(command=args.cmd, output_json=args.json, pretty=True)
+    elif args.command == "cp":
+        qmctl.copy_in_container(paths=args.paths, output_json=args.json, pretty=True)
     else:
         parser.print_help()
         sys.exit(1)
