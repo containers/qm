@@ -1,27 +1,24 @@
 # Topics
 
-1. [QM is a containerized environment for running functional safety Quality Management software](#qm-is-a-containerized-environment-for-running-functional-safety-quality-management-software)
-2. [SELinux policy](#selinux-policy)
-3. [BlueChi](#bluechi)
-4. [RPM building dependencies](#rpm-building-dependencies)
-5. [How OOM score adjustment is used in QM](#how-oom-score-adjustment-is-used-in-qm)
-   - [Priority process of OOM killer in the QM context](#priority-process-of-OOM-killer-in-the-qm-context)
-6. [Contributing to the QM project](#contributing-to-the-qm-project)
-7. [Network settings](https://github.com/containers/qm/blob/main/docs/tutorials/NETWORK.md)
-8. [Realtime](#realtime)
-9. [Talks and videos](#talks-and-videos)
-    - [Paving the Way for Uninterrupted Car Operations - DevConf Boston 2024](https://www.youtube.com/watch?v=jTrLqpw7E6Q)
-    - [Security - Sample Risk Analysis according to ISO26262](https://www.youtube.com/watch?v=jTrLqpw7E6Q&t=1268s)
-    - [ASIL and QM - Simulation and Service Monitoring using bluechi and podman](https://www.youtube.com/watch?v=jTrLqpw7E6Q&t=1680s)
-    - [Containers in a Car - DevConf.CZ 2023](https://www.youtube.com/watch?v=FPxka5uDA_4)
-10. [RPM mirrors](#rpm-mirrors)
-11. [Configuring QM](#configuring-qm)
+- [Topics](#topics)
+  - [QM is a containerized environment for running functional safety Quality Management software](#qm-is-a-containerized-environment-for-running-functional-safety-quality-management-software)
+  - [SELinux policy](#selinux-policy)
+  - [BlueChi](#bluechi)
+  - [RPM building dependencies](#rpm-building-dependencies)
+  - [How OOM score adjustment is used in QM](#how-oom-score-adjustment-is-used-in-qm)
+      - [Priority process of OOM killer in the QM context](#priority-process-of-oom-killer-in-the-qm-context)
+  - [Contributing to the QM project](#contributing-to-the-qm-project)
+  - [Realtime](#realtime)
+  - [Talks and videos](#talks-and-videos)
+  - [RPM mirrors](#rpm-mirrors)
+  - [Configuring QM](#configuring-qm)
+    - [Modifying the `MemoryHigh` variable](#modifying-the-memoryhigh-variable)
 
 ## QM is a containerized environment for running functional safety Quality Management software
 
-The main purpose of the Quality Management (QM) environment is to allow users to configure 
-an environment that prevents applications and container tools from interfering with 
-other processes on the system, such as in Automotive Safety Integrity Level (ASIL) 
+The main purpose of the Quality Management (QM) environment is to allow users to configure
+an environment that prevents applications and container tools from interfering with
+other processes on the system, such as in Automotive Safety Integrity Level (ASIL)
 processes and applications.
 
 The QM environment uses containerization tools, such as cgroups, namespaces, and
@@ -36,7 +33,7 @@ environment and uses Quadlet to set it up. Refer to the [docs directory](docs/qu
 for example Quadlet files.
 
 Software installed in the QM environment under `/usr/lib/qm/rootfs` is
-automatically isolated from the host. To further isolate these processes 
+automatically isolated from the host. To further isolate these processes
 from other processes in the QM, developers can use container tools, such as Podman.
 
 ## SELinux policy
@@ -44,15 +41,15 @@ from other processes in the QM, developers can use container tools, such as Podm
 The SELinux policy isolates QM parts of the operating system
 from the other domain-specific functional safety levels, such as ASIL.
 
-The main purpose of this policy is to prevent applications and container 
-tools from interfering with other processes on the system. The QM must 
+The main purpose of this policy is to prevent applications and container
+tools from interfering with other processes on the system. The QM must
 isolate containers from `qm_t` processes as well as from other containers.
 
 For now, all of the control processes in the QM other than containers run
 with the same `qm_t` type.
 
-For support with a specific SELinux issue, open a [QM issue](https://github.com/containers/qm/issues) 
-and include the SELinux error output from a recent QM-related operation. 
+For support with a specific SELinux issue, open a [QM issue](https://github.com/containers/qm/issues)
+and include the SELinux error output from a recent QM-related operation.
 
 The following commands yield output that can help determine the root cause of the issue:
 
@@ -68,16 +65,16 @@ sealert -a /var/log/audit/audit.log
 
 The package configures the bluechi-agent within the QM.
 
-BlueChi is a systemd service controller intended for use in highly regulated 
-ecosystems that feature multi-node environments with a predefined number of nodes. 
+BlueChi is a systemd service controller intended for use in highly regulated
+ecosystems that feature multi-node environments with a predefined number of nodes.
 Potential use cases can be found in industries that require functional safety,
 such as the transportation industry in which services must be controlled across different
 edge devices and where traditional orchestration tools do not comply with
 regulatory requirements.
 
-Systems with QM installed have two systemd processes running on them. The QM 
-bluechi-agent is based on the hosts `/etc/bluechi/agent.conf` file. By default, any 
-changes to the system's `agent.conf` file are reflected in the QM `/etc/bluechi/agent.conf` file. 
+Systems with QM installed have two systemd processes running on them. The QM
+bluechi-agent is based on the hosts `/etc/bluechi/agent.conf` file. By default, any
+changes to the system's `agent.conf` file are reflected in the QM `/etc/bluechi/agent.conf` file.
 You can further customize the QM bluechi-agent by adding content to the
 `/usr/lib/qm/rootfs/etc/bluechi/agent.conf.d/` directory.
 
@@ -93,12 +90,12 @@ repository for access to the `golang-github-cpuguy83-md2man` package.
 
 ## How OOM score adjustment is used in QM
 
-The `oom_score_adj` parameter refers to the Out-of-Memory score adjustment in Linux operating systems. 
-The Out-of-Memory (OOM) killer uses the `oom_score_adj` parameter to decide which processes to terminate 
+The `oom_score_adj` parameter refers to the Out-of-Memory score adjustment in Linux operating systems.
+The Out-of-Memory (OOM) killer uses the `oom_score_adj` parameter to decide which processes to terminate
 when the system is critically low on memory.
 
-By fine-tuning which processes are more likely to be terminated during low-memory situations, 
-critical processes can be protected, which enhances the overall stability of the system. 
+By fine-tuning which processes are more likely to be terminated during low-memory situations,
+critical processes can be protected, which enhances the overall stability of the system.
 
 - For example, ASIL applications are essential to maintaining functional safety in automotive systems.
 You can set their OOM score adjustment value from *-1* to *-1000*. To prioritize their operation
@@ -205,7 +202,7 @@ SeccompProfile=""
 
 ## Talks and videos
 
-Let's spread the knowledge regarding QM. If you have interesting content pertaining to 
+Let's spread the knowledge regarding QM. If you have interesting content pertaining to
 QM-related technology, please share it with us.
 
 ## RPM mirrors
@@ -214,21 +211,21 @@ Looking for a specific version of QM? Search the [CentOS Automotive SIG Stream M
 
 ## Configuring QM
 
-To run QM on an immutable OSTree-based OS, we use systemd units with Podman Quadlet.  
+To run QM on an immutable OSTree-based OS, we use systemd units with Podman Quadlet.
 For more information on how `podman-systemd.unit` works, refer to the manual:
 
 `man podman-systemd.unit`
 
 The default QM configuration drop-in file is located in `/usr/share/containers/systemd/qm.container`.
-Modifying the original service file is not an option. Instead, create drop-in files to 
+Modifying the original service file is not an option. Instead, create drop-in files to
 modify the default configuration.
 
 **NOTE:** The configuration is built in alphabetical order of the drop-in files.
 
 ### Modifying the `MemoryHigh` variable
 
-To override the default settings, create a new drop-in `.conf` file in the 
-`/etc/containers/systemd/qm.container.d/` directory. This method ensures that QM memory 
+To override the default settings, create a new drop-in `.conf` file in the
+`/etc/containers/systemd/qm.container.d/` directory. This method ensures that QM memory
 usage is controlled without modifying the base system configuration.
 
 **Procedure**
@@ -243,7 +240,7 @@ infinity
 
 ```
 
-The command output `infinity` indicates that `MemoryHigh` is unlimited. You can 
+The command output `infinity` indicates that `MemoryHigh` is unlimited. You can
 see this setting in `/usr/share/containers/systemd/qm.container`.
 
 2. Create a directory for the new drop-in file:
