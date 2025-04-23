@@ -6,7 +6,7 @@
   - [BlueChi](#bluechi)
   - [RPM building dependencies](#rpm-building-dependencies)
   - [How OOM score adjustment is used in QM](#how-oom-score-adjustment-is-used-in-qm)
-      - [Priority process of OOM killer in the QM context](#priority-process-of-oom-killer-in-the-qm-context)
+    - [Priority process of OOM killer in the QM context](#priority-process-of-oom-killer-in-the-qm-context)
   - [Contributing to the QM project](#contributing-to-the-qm-project)
   - [Realtime](#realtime)
   - [Talks and videos](#talks-and-videos)
@@ -116,7 +116,7 @@ $ cat /usr/share/qm/containers.conf | grep oom_score_adj
 oom_score_adj = 750
 ```
 
-#### Priority process of OOM killer in the QM context
+### Priority process of OOM killer in the QM context
 
 ```txt
 +-------------------------------------------------------------+
@@ -228,7 +228,7 @@ To override the default settings, create a new drop-in `.conf` file in the
 `/etc/containers/systemd/qm.container.d/` directory. This method ensures that QM memory
 usage is controlled without modifying the base system configuration.
 
-**Procedure**
+*Procedure*
 
 1. Check the current memory limit:
 
@@ -243,7 +243,7 @@ infinity
 The command output `infinity` indicates that `MemoryHigh` is unlimited. You can
 see this setting in `/usr/share/containers/systemd/qm.container`.
 
-2. Create a directory for the new drop-in file:
+1. Create a directory for the new drop-in file:
 
 ```bash
 
@@ -251,7 +251,7 @@ mkdir -p /etc/containers/systemd/qm.container.d/
 
 ```
 
-3.  Create a new drop-in file:
+1.  Create a new drop-in file:
 
 ```bash
 
@@ -262,7 +262,7 @@ vim /etc/containers/systemd/qm.container.d/100-MemoryMax.conf
 In this example, the new drop-in file is named `100-MemoryMax.conf`. You can choose a different name,
 but be aware that the configuration is built in alphabetical order of the drop-in files.
 
-4. Edit the file to add the following content:
+1. Edit the file to add the following content:
 
 ```bash
 
@@ -274,7 +274,7 @@ MemoryHigh=2G
 
 `MemoryHigh` is specified in gigabytes. 2G means 2 gigabytes.
 
-5. Preview the updated systemd configuration:
+1. Preview the updated systemd configuration:
 
 ```bash
 
@@ -282,7 +282,7 @@ MemoryHigh=2G
 
 ```
 
-6. Reload systemd and restart `qm.service` to apply the configuration changes:
+1. Reload systemd and restart `qm.service` to apply the configuration changes:
 
 ```bash
 
@@ -292,7 +292,7 @@ systemctl restart qm.service
 
 ```
 
-7. Verify the value of `MemoryHigh`:
+1. Verify the value of `MemoryHigh`:
 
 ```bash
 
