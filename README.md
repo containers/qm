@@ -228,8 +228,6 @@ To override the default settings, create a new drop-in `.conf` file in the
 `/etc/containers/systemd/qm.container.d/` directory. This method ensures that QM memory
 usage is controlled without modifying the base system configuration.
 
-*Procedure*
-
 1. Check the current memory limit:
 
 ```bash
@@ -251,12 +249,10 @@ mkdir -p /etc/containers/systemd/qm.container.d/
 
 ```
 
-1.  Create a new drop-in file:
+1. Create a new drop-in file:
 
 ```bash
-
 vim /etc/containers/systemd/qm.container.d/100-MemoryMax.conf
-
 ```
 
 In this example, the new drop-in file is named `100-MemoryMax.conf`. You can choose a different name,
