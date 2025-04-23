@@ -37,11 +37,48 @@ function add_syscall_deny_list() {
     local syscall_name="$1"
     local seccomp_file_path="$2"
 
+    local temp_file
     temp_file=$(mktemp)
-    jq --tab \
-       --arg syscall "$syscall_name" \
-       '.syscalls += [{"names": [$syscall], "action": "SCMP_ACT_ERRNO", "args": [], "errnoRet": 1, "errno": "EPERM"}]' \
-       "${seccomp_file_path}" > "$temp_file" && mv "$temp_file" "${seccomp_file_path}"
+
+    if [[ "$syscall_name" == "sched_setscheduler" ]]; then
+        jq --tab \
+           '.syscalls += [{
+               "names": ["sched_setscheduler"],
+               "action": "SCMP_ACT_ERRNO",
+               "args": [
+                   {
+                       "index": 1,
+                       "value": 0,
+                       "valueTwo": 0,
+                       "op": "SCMP_CMP_NE"
+                   },
+                   {
+                       "index": 1,
+                       "value": 3,
+                       "valueTwo": 0,
+                       "op": "SCMP_CMP_NE"
+                   },
+                   {
+                       "index": 1,
+                       "value": 5,
+                       "valueTwo": 0,
+                       "op": "SCMP_CMP_NE"
+                   }
+               ],
+               "errnoRet": 1,
+               "errno": "EPERM"
+           }]' "$seccomp_file_path" > "$temp_file" && mv "$temp_file" "$seccomp_file_path"
+    else
+        jq --tab \
+           --arg syscall "$syscall_name" \
+           '.syscalls += [{
+               "names": [$syscall],
+               "action": "SCMP_ACT_ERRNO",
+               "args": [],
+               "errnoRet": 1,
+               "errno": "EPERM"
+           }]' "$seccomp_file_path" > "$temp_file" && mv "$temp_file" "$seccomp_file_path"
+    fi
 
     rm "$temp_file" &> /dev/null
 }
