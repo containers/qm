@@ -30,6 +30,13 @@ Run a command inside a nested container in QM
 ./qmctl execin alpine ls /dev --json
 ```
 
+Copy files to and from QM
+
+```bash
+./qmctl cp README.md qm:/tmp
+./qmctl cp qm:/tmp/README.md ./
+```
+
 With verbose output
 
 ```bash
