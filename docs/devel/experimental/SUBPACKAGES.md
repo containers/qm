@@ -8,6 +8,7 @@
     - [Creating Your Own Drop-In QM Sub-Package](#creating-your-own-drop-in-qm-sub-package)
     - [QM Sub-Package Input](#qm-sub-package-input)
     - [QM Sub-Package tty7](#qm-sub-package-tty7)
+    - [QM Sub-Package ttyUSB0](#qm-sub-package-ttyusb0)
     - [QM Sub-Package Video](#qm-sub-package-video)
     - [QM Sub-Package Sound](#qm-sub-package-sound)
     - [QM Sub-Package ROS2](#qm-sub-package-ros2)
@@ -159,6 +160,48 @@ host> sudo podman restart qm
 host> sudo podman exec -it qm ls -l /dev/tty7
 crw--w----. 1 root tty 4, 7 Apr 15 13:34 /dev/tty7
 ```
+
+## QM sub-package ttyUSB0
+
+The ttyUSB0 sub-package exposes /dev/ttyUSB0 to the QM container. This device node is commonly used for USB-to-serial adapters, which are widely used to connect embedded systems, IoT devices, or other serial-based equipment.
+
+### Step 1: Verify ttyUSB0 is NOT visible inside QM
+
+```bash
+host> sudo podman exec -it qm ls -l /dev/ttyUSB0
+ls: cannot access '/dev/ttyUSB0': No such file or directory
+```
+
+### Step 2: Build and install the ttyUSB0 sub-package
+
+```bash
+host> make TARGETS=ttyUSB0 subpackages
+host> sudo dnf install ./rpmbuild/RPMS/noarch/qm-mount-bind-ttyUSB0-0.7.4-1.fc41.noarch.rpm
+```
+
+### Step 3: Restart QM to apply the configuration
+
+```bash
+host> sudo systemctl daemon-reload
+host> sudo podman restart qm
+```
+
+### Step 4: Re-check ttyUSB0 inside QM
+
+```bash
+host> sudo podman exec -it qm ls -l /dev/ttyUSB0
+crw-rw-rw-. 1 root root 4, 64 Apr 24 08:50 /dev/ttyUSB0
+```
+
+### Additional Notes
+
+- Make sure the USB-to-serial device is connected to the host machine before restarting QM.
+- You can fake ttyUSB0 connection on host machine for testing reasons with:
+
+    ```bash
+    sudo mknod /dev/ttyUSB0 c 4 64
+    sudo chmod 666 /dev/ttyUSB0
+    ```
 
 ## QM sub-package Video
 
