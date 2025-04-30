@@ -1,6 +1,6 @@
 %global debug_package %{nil}
 
-Name: qm_mount_bind_ttyUSB0
+Name: qm-mount-bind-ttyUSB0
 Version: 0
 Release: 1%{?dist}
 Summary: Drop-in configuration for QM containers to mount bind ttyUSB0
