@@ -1,7 +1,7 @@
 RPM_TOPDIR ?= $(PWD)/rpmbuild
 VERSION ?= $(shell cat VERSION)
 ROOTDIR ?= $(PWD)
-SPECFILE_SUBPACKAGE_VIDEO ?= ${ROOTDIR}/rpm/dvb/dvb.spec
+SPECFILE_SUBPACKAGE_DVB ?= ${ROOTDIR}/rpm/dvb/dvb.spec
 
 .PHONY: dist
 dist: ##             - Creates the QM dvb package

@@ -1,7 +1,7 @@
 RPM_TOPDIR ?= $(PWD)/rpmbuild
 VERSION ?= $(shell cat VERSION)
 ROOTDIR ?= $(PWD)
-SPECFILE_SUBPACKAGE_VIDEO ?= ${ROOTDIR}/rpm/radio/radio.spec
+SPECFILE_SUBPACKAGE_RADIO ?= ${ROOTDIR}/rpm/radio/radio.spec
 
 .PHONY: dist
 dist: ##             - Creates the QM radio package
@@ -12,7 +12,7 @@ dist: ##             - Creates the QM radio package
 		../qm/README.md \
 		../qm/SECURITY.md \
 		../qm/LICENSE \
-                ../qm/etc/containers/systemd/qm.container.d/qm_dropin_mount_bind_radio.conf
+        ../qm/etc/containers/systemd/qm.container.d/qm_dropin_mount_bind_radio.conf
 	cd $(ROOTDIR) && mv /tmp/qm-radio-${VERSION}.tar.gz ./rpm
 
 

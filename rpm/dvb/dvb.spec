@@ -22,7 +22,7 @@ This subpackage installs a drop-in configuration for QM containers to mount bind
 install -d %{buildroot}%{_sysconfdir}/containers/systemd/qm.container.d
 
 # Install the dvb drop-in configuration file
-install -m 644 %{_builddir}/qm-video-%{version}/etc/containers/systemd/qm.container.d/qm_dropin_mount_bind_dvb.conf \
+install -m 644 %{_builddir}/qm-dvb-%{version}/etc/containers/systemd/qm.container.d/qm_dropin_mount_bind_dvb.conf \
     %{buildroot}%{_sysconfdir}/containers/systemd/qm.container.d/qm_dropin_mount_bind_dvb.conf
 
 
