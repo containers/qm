@@ -1,6 +1,6 @@
 %global debug_package %{nil}
 
-Name: qm_mount_bind_input
+Name: qm-mount-bind-input
 Version: 0
 Release: 1%{?dist}
 Summary: Drop-in configuration for QM containers to mount bind input devices

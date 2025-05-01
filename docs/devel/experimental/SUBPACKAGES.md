@@ -8,6 +8,7 @@
     - [Creating Your Own Drop-In QM Sub-Package](#creating-your-own-drop-in-qm-sub-package)
     - [QM Sub-Package Input](#qm-sub-package-input)
     - [QM Sub-Package tty7](#qm-sub-package-tty7)
+    - [QM Sub-Package ttyUSB0](#qm-sub-package-ttyusb0)
     - [QM Sub-Package Video](#qm-sub-package-video)
     - [QM Sub-Package Sound](#qm-sub-package-sound)
     - [QM Sub-Package ROS2](#qm-sub-package-ros2)
@@ -81,7 +82,20 @@ sudo rpm -e qm_mount_bind_input
 
 We recommend using the existing drop-in files as a guide and adapting them to your specific needs. However, here are the step-by-step instructions:
 
-Please refer [Creating your own drop-in QM sub-package](/docs/devel/README.md#creating-your-own-dropin-qm-subpackage)
+1) Add a drop-in file to: `etc/containers/systemd/qm.container.d/qm_dropin_<subpackage>.conf>`
+2) Add your package as a sub-package to: `rpm/<subpackage_directory>/<subpackage>.spec`
+3) Add the makefile for the sub-package and any files required by the sub-package to: `subsystems/<subpackage_directory>`
+4) Test the sub-package build by running: `make clean && make TARGETS=<subpackage> subpackages`
+5) Install your sub-package using: `dnf install -y rpmbuild/RPMS/noarch/<subpackage>*.noarch.rpm`
+6) Restart podman container using: `sudo podman restart qm`
+7) Additionally, test it with and without enabling the sub-package using (by default it should be disabled but there are cases where it will be enabled by default if QM community decide):
+
+Example changing the spec and triggering the build via make (feel free to automate via sed, awk etc):
+
+```bash
+# Use make file to run specific subpackage
+make TARGETS=windowmanager subpackages
+```
 
 ## QM sub-package Input
 
@@ -159,6 +173,48 @@ host> sudo podman restart qm
 host> sudo podman exec -it qm ls -l /dev/tty7
 crw--w----. 1 root tty 4, 7 Apr 15 13:34 /dev/tty7
 ```
+
+## QM sub-package ttyUSB0
+
+The ttyUSB0 sub-package exposes /dev/ttyUSB0 to the QM container. This device node is commonly used for USB-to-serial adapters, which are widely used to connect embedded systems, IoT devices, or other serial-based equipment.
+
+### Step 1: Verify ttyUSB0 is NOT visible inside QM
+
+```bash
+host> sudo podman exec -it qm ls -l /dev/ttyUSB0
+ls: cannot access '/dev/ttyUSB0': No such file or directory
+```
+
+### Step 2: Build and install the ttyUSB0 sub-package
+
+```bash
+host> make TARGETS=ttyUSB0 subpackages
+host> sudo dnf install ./rpmbuild/RPMS/noarch/qm-mount-bind-ttyUSB0-0.7.4-1.fc41.noarch.rpm
+```
+
+### Step 3: Restart QM to apply the configuration
+
+```bash
+host> sudo systemctl daemon-reload
+host> sudo podman restart qm
+```
+
+### Step 4: Re-check ttyUSB0 inside QM
+
+```bash
+host> sudo podman exec -it qm ls -l /dev/ttyUSB0
+crw-rw-rw-. 1 root root 4, 64 Apr 24 08:50 /dev/ttyUSB0
+```
+
+### Additional Notes
+
+- Make sure the USB-to-serial device is connected to the host machine before restarting QM.
+- You can fake ttyUSB0 connection on host machine for testing reasons with:
+
+    ```bash
+    sudo mknod /dev/ttyUSB0 c 4 64
+    sudo chmod 666 /dev/ttyUSB0
+    ```
 
 ## QM sub-package Video
 
