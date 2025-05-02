@@ -2,7 +2,7 @@
 
 - [Topics](#topics)
   - [QM is a containerized environment for running functional safety Quality Management software](#qm-is-a-containerized-environment-for-running-functional-safety-quality-management-software)
-  - [SELinux policy](#selinux-policy)
+  - [QM SELinux policy](#qm-selinux-policy)
   - [BlueChi](#bluechi)
   - [RPM building dependencies](#rpm-building-dependencies)
   - [How OOM score adjustment is used in QM](#how-oom-score-adjustment-is-used-in-qm)
@@ -19,7 +19,8 @@
 The main purpose of the Quality Management (QM) environment is to allow users to configure
 an environment that prevents applications and container tools from interfering with
 other processes on the system, such as in Automotive Safety Integrity Level (ASIL)
-processes and applications.
+processes and applications. AutoSD is not a certified safety product. In the context of
+AutoSD, QM is not for use in production environments but for research and learning purposes only.
 
 The QM environment uses containerization tools, such as cgroups, namespaces, and
 security isolation, to prevent accidental interference by processes in the QM.
@@ -36,9 +37,9 @@ Software installed in the QM environment under `/usr/lib/qm/rootfs` is
 automatically isolated from the host. To further isolate these processes
 from other processes in the QM, developers can use container tools, such as Podman.
 
-## SELinux policy
+## QM SELinux policy
 
-The SELinux policy isolates QM parts of the operating system
+The QM SELinux policy isolates QM parts of the operating system
 from the other domain-specific functional safety levels, such as ASIL.
 
 The main purpose of this policy is to prevent applications and container
@@ -46,7 +47,7 @@ tools from interfering with other processes on the system. The QM must
 isolate containers from `qm_t` processes as well as from other containers.
 
 For now, all of the control processes in the QM other than containers run
-with the same `qm_t` type.
+with the same `qm_t` type. For more information, refer to `man qm_selinx`.
 
 For support with a specific SELinux issue, open a [QM issue](https://github.com/containers/qm/issues)
 and include the SELinux error output from a recent QM-related operation.
@@ -90,9 +91,11 @@ repository for access to the `golang-github-cpuguy83-md2man` package.
 
 ## How OOM score adjustment is used in QM
 
+The Linux host kernel controls ASIL and QM processes. The Out-of-Memory (OOM) Killer is part of the Linux
+kernel's memory management subsystem. OOM Killer terminates processes to release RAM in memory-constrained conditions.
 The `oom_score_adj` parameter refers to the Out-of-Memory score adjustment in Linux operating systems.
-The Out-of-Memory (OOM) killer uses the `oom_score_adj` parameter to decide which processes to terminate
-when the system is critically low on memory.
+The OOM Killer uses the `oom_score_adj` parameter to decide which processes to terminate when the system is
+critically low on memory.
 
 By fine-tuning which processes are more likely to be terminated during low-memory situations,
 critical processes can be protected, which enhances the overall stability of the system.
@@ -207,7 +210,7 @@ QM-related technology, please share it with us.
 
 ## RPM mirrors
 
-Looking for a specific version of QM? Search the [CentOS Automotive SIG Stream Mirror](https://mirror.stream.centos.org/SIGs/9-stream/automotive/aarch64/packages-main/Packages/q/).
+Looking for a specific version of QM? Search the [CentOS Automotive SIG Stream Mirror](https://mirror.stream.centos.org/SIGs/9-stream/automotive/aarch64/packages-main/Packages/q/). The packages in CentOS Automotive SIG Stream Mirror are for experimentation only.
 
 ## Configuring QM
 
