@@ -47,7 +47,7 @@ tools from interfering with other processes on the system. The QM must
 isolate containers from `qm_t` processes as well as from other containers.
 
 For now, all of the control processes in the QM other than containers run
-with the same `qm_t` type. For more information, refer to `man qm_selinx`.
+with the same `qm_t` type. For more information, refer to `man qm_selinux`.
 
 For support with a specific SELinux issue, open a [QM issue](https://github.com/containers/qm/issues)
 and include the SELinux error output from a recent QM-related operation.
