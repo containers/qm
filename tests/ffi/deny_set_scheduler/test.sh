@@ -3,7 +3,7 @@
 # shellcheck source=tests/ffi/common/prepare.sh
 . ../common/prepare.sh
 
-expected_result="Failed to set scheduler: Operation not permitted"
+expected_result="Failed to set scheduler: Function not implemented"
 
 trap disk_cleanup EXIT
 prepare_test
