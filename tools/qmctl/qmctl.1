@@ -1,0 +1,91 @@
+.TH QMCTL 1 "May 2025" "qmctl 1.0" "User Commands"
+.SH NAME
+qmctl \- manage QM container resources
+
+.SH SYNOPSIS
+.B qmctl
+[\fIOPTIONS\fR] \fICOMMAND\fR [\fIARGS...\fR]
+
+.SH DESCRIPTION
+.B qmctl
+is a command-line interface for managing Quality Management (QM) containers. It provides inspection, execution, and file copy operations between host and container environments.
+
+.SH COMMANDS
+.TP
+.B show [SUBCOMMAND]
+Display container-related information. Subcommands include:
+.RS
+.TP
+.BR resources
+Show live \fBsystemd-cgtop\fR resource usage (CPU/memory/etc.) for \fBqm.service\fR.
+.TP
+.BR unix-domain-sockets
+Show UNIX sockets inside the QM container.
+.TP
+.BR shared-memory
+List shared memory segments (via \fBipcs\fR) inside the container.
+.TP
+.BR namespaces
+Show namespace types used by the container.
+.TP
+.BR available-devices
+List devices defined in the container's configuration.
+.TP
+.BR all
+Display all of the above with a snapshot.
+.RE
+
+.TP
+.B exec \fICOMMAND...\fR
+Execute a command inside the QM container. Equivalent to \fBpodman exec\fR on the main container.
+
+.TP
+.B execin \fICONTAINER\fR \fICOMMAND...\fR
+Execute a command inside a nested container (e.g., one defined inside the main QM container using systemd-nspawn or Quadlet).
+
+.TP
+.B cp \fISRC\fR \fIDST\fR
+Copy files between host and QM container. Either path may use the format \fIQM:/path/to/file\fR.
+
+.SH OPTIONS
+.TP
+.BR -h ", " --help
+Show this help message and exit.
+
+.TP
+.BR --verbose
+Print accessed configuration file paths for debugging or auditing.
+
+.SH EXAMPLES
+.TP
+Display all container-related info:
+.B
+qmctl show all
+
+.TP
+Run \fBuname -a\fR inside the QM container:
+.B
+qmctl exec uname -a
+
+.TP
+Run \fBls /dev\fR inside the nested \fBalpine\fR container:
+.B
+qmctl execin alpine ls /dev
+
+.TP
+Copy a file from host to QM:
+.B
+qmctl cp /home/user/data.txt QM:/root/
+
+.TP
+Copy a file from QM container to host:
+.B
+qmctl cp QM:/etc/qm/config.toml /tmp/
+
+.SH SEE ALSO
+.BR podman(1),
+.BR quadlet(5),
+.BR systemd(1)
+
+.SH HOMEPAGE
+.BR https://github.com/containers/qm
