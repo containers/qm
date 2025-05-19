@@ -1,0 +1,18 @@
+summary: Test plan for QMCTL using TMT
+
+discover:
+    how: fmf
+    filter: 'tag:qmctl-test'
+
+prepare+:
+  - name: Set qmctl environment
+    how: shell
+    script: |
+        cd tests/qmctl-test
+        ./test_qmctl.sh
+
+execute:
+    how: tmt
+
+report:
+    how: junit
