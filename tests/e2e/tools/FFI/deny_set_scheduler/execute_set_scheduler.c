@@ -27,7 +27,7 @@ int main(int argc, char *argv[]) {
         } else if (strcmp(policy_name, "SCHED_RR")==0) {
             policy = SCHED_RR;
         } else {
-            printf("Unknow policy.\n");
+            printf("Unknown policy.\n");
             return EXIT_FAILURE;
         }
     }
