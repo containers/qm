@@ -1,0 +1,7 @@
+summary: Test plan for QMCTL using TMT
+test: ./test_qmctl.sh
+duration: 10m
+tag: qmctl-test
+tier: 0
+framework: shell
+id: 9b3f962e-758a-473b-b8ea-540a177b9134

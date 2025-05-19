@@ -1,0 +1,1 @@
+output: This is the file to copy
