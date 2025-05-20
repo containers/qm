@@ -1,3 +1,4 @@
+#define _GNU_SOURCE
 #include <stdio.h>
 #include <stdlib.h>
 #include <unistd.h>
@@ -5,24 +6,55 @@
 #include <errno.h>
 #include <string.h>
 
-int main() {
+int main(int argc, char *argv[]) {
     int pid = getpid();
-    int policy = SCHED_FIFO;  // Desired scheduling policy
+    int policy;  // Desired scheduling policy
+    char *policy_name;
     struct sched_param param;
 
-    // Assign the maximum priority for the SCHED_FIFO policy
+    if (argc == 2)
+    {
+        policy_name = argv[1];
+
+        if (strcmp(policy_name, "SCHED_OTHER")==0) {
+            policy = SCHED_OTHER;
+        } else if (strcmp(policy_name, "SCHED_BATCH")==0) {
+            policy = SCHED_BATCH;
+        } else if (strcmp(policy_name, "SCHED_IDLE")==0) {
+            policy = SCHED_IDLE;
+        } else if (strcmp(policy_name, "SCHED_FIFO")==0) {
+            policy = SCHED_FIFO;
+        } else if (strcmp(policy_name, "SCHED_RR")==0) {
+            policy = SCHED_RR;
+        } else {
+            printf("Unknown policy.\n");
+            return EXIT_FAILURE;
+        }
+    }
+    else if (argc > 2)
+    {
+        printf("Too many policies supplied.\n");
+        return EXIT_FAILURE;
+    }
+    else
+    {
+        printf("One policy expected.\n");
+        return EXIT_FAILURE;
+    }
+
+    // Assign the maximum priority for the policy
     param.sched_priority = sched_get_priority_max(policy);
     if (param.sched_priority == -1) {
-        fprintf(stderr, "Failed to get max priority for SCHED_FIFO: %s\n", strerror(errno));
+        fprintf(stderr, "Failed to get max priority for %s: %s\n", policy_name, strerror(errno));
         return EXIT_FAILURE;
     }
 
     // Attempt to set the scheduling policy and priority
     if (sched_setscheduler(pid, policy, &param) == -1) {
-        fprintf(stderr, "Failed to set scheduler: %s\n", strerror(errno));
+        printf("sched_setscheduler(%s) failed: errno=%d (%s)", policy_name, errno, strerror(errno));
         return EXIT_FAILURE;
+    } else {
+        printf("sched_setscheduler(%s) succeeded.", policy_name);
+        return EXIT_SUCCESS;
     }
-
-    printf("Scheduler set to SCHED_FIFO with priority %d\n", param.sched_priority);
-    return EXIT_SUCCESS;
 }
