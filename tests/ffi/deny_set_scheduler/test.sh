@@ -3,19 +3,44 @@
 # shellcheck source=tests/ffi/common/prepare.sh
 . ../common/prepare.sh
 
-expected_result="Failed to set scheduler: Function not implemented"
+policy_arr=(SCHED_OTHER SCHED_BATCH SCHED_IDLE SCHED_FIFO SCHED_RR)
+num_of_failed_policy=0
 
 trap disk_cleanup EXIT
 prepare_test
 reload_config
 
 running_container_in_qm
+# Copy the test from ffi-qm container to qm container
+podman exec -it qm /usr/bin/podman cp ffi-qm:/root/tests/FFI/bin/QM/test_sched_setscheduler /var/
 
-return_from_setscheduler=$(podman exec -it qm /usr/bin/podman exec -it ffi-qm ./QM/test_sched_setscheduler)
+for policy in "${policy_arr[@]}"; do
+    # Run the test inside qm container
+    return_from_setscheduler=$(podman exec -it qm ./var/test_sched_setscheduler "$policy")
 
-if [[ "${return_from_setscheduler}" =~ ${expected_result} ]]; then
-    info_message "PASS: set_scheduler() syscall denied in QM."
-else
-    info_message "FAIL: set_scheduler() syscall can be executed in QM."
+    # Assign the expected result according to the policy
+    if [[ "$policy" == "SCHED_OTHER" || "$policy" == "SCHED_BATCH" || "$policy" == "SCHED_IDLE" ]]; then
+        expected_result="sched_setscheduler($policy) succeeded."
+    elif [[ "$policy" == "SCHED_FIFO" || "$policy" == "SCHED_RR" ]]; then
+        expected_result="sched_setscheduler($policy) failed: errno=38 (Function not implemented)"
+    fi
+
+    # Check that the result is the same as expected
+    if [[ "${return_from_setscheduler}" == "${expected_result}" ]]; then
+        info_message "$expected_result"
+        info_message "PASS: The result of sched_setscheduler($policy) is as expected in QM."
+    else
+        info_message "$return_from_setscheduler"
+        info_message "FAIL: The result of sched_setscheduler($policy) is not what is expected in QM."
+        ((num_of_failed_policy++))
+    fi
+done
+
+# If there is a failed policy, then this test returns failure
+if [[ $num_of_failed_policy -gt 0 ]]; then
+    info_message "FAIL: sched_setscheduler() test failed."
     exit 1
+else
+    info_message "PASS: sched_setscheduler() test passed."
+    exit 0
 fi
