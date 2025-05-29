@@ -2,7 +2,7 @@ summary: Kvm Tier 0 - QM sanity test
 
 discover:
     how: fmf
-    filter: 'tier:0&tag:kvm'
+    filter: 'tier:0&tag:kvm|tier:0&tag:qmctl-test'
 
 prepare+:
     - name: Enable copr and install rpms
