@@ -2,6 +2,7 @@ RPM_TOPDIR ?= $(PWD)/rpmbuild
 VERSION ?= $(shell cat VERSION)
 ROOTDIR ?= $(PWD)
 SPECFILE_SUBPACKAGE_SOUND ?= ${ROOTDIR}/rpm/sound/sound.spec
+PACKAGE_NAME = qm-sound
 
 .PHONY: dist
 dist: ##             - Creates the QM sound package
@@ -31,4 +32,7 @@ sound: dist ##             - Creates a local RPM package, useful for development
 		--define="_topdir ${RPM_TOPDIR}" \
 		--define="version ${VERSION}" \
 		${SPECFILE_SUBPACKAGE_SOUND}
-
+	if [ ! -f ${RPM_TOPDIR}/RPMS/noarch/${PACKAGE_NAME}-${VERSION}*.noarch.rpm ]; then \
+		echo "rpmbuild failed to build: ${PACKAGE_NAME}"; \
+		exit 1; \
+	fi
