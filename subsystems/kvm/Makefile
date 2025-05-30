@@ -2,6 +2,7 @@ RPM_TOPDIR ?= $(PWD)/rpmbuild
 VERSION ?= $(shell cat VERSION)
 ROOTDIR ?= $(PWD)
 SPECFILE_SUBPACKAGE_IMG_KVM ?= ${ROOTDIR}/rpm/kvm/qm-kvm.spec
+PACKAGE_NAME = qm-kvm
 
 .PHONY: dist
 dist: ##             - Creates the QM kvm package
@@ -32,4 +33,7 @@ kvm: dist ##             - Creates a local RPM kvm package, useful for developme
 		--define="_topdir ${RPM_TOPDIR}" \
 		--define="version ${VERSION}" \
 		${SPECFILE_SUBPACKAGE_IMG_KVM}
-
+	if [ ! -f ${RPM_TOPDIR}/RPMS/noarch/${PACKAGE_NAME}-${VERSION}*.noarch.rpm ]; then \
+		echo "rpmbuild failed to build: ${PACKAGE_NAME}"; \
+		exit 1; \
+	fi

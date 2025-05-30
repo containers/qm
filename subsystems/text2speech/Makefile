@@ -2,6 +2,7 @@ RPM_TOPDIR ?= $(PWD)/rpmbuild
 VERSION ?= $(shell cat VERSION)
 ROOTDIR ?= $(PWD)
 SPECFILE_SUBPACKAGE_TEXT2SPEECH ?= ${ROOTDIR}/rpm/text2speech/text2speech.spec
+PACKAGE_NAME = qm-text2speech
 
 .PHONY: dist
 dist: ##             - Creates the QM input package
@@ -30,3 +31,7 @@ text2speech: dist ##            - Creates a local RPM package, useful for develo
 		--define="_topdir ${RPM_TOPDIR}" \
 		--define="version ${VERSION}" \
 		${SPECFILE_SUBPACKAGE_TEXT2SPEECH}
+	if [ ! -f ${RPM_TOPDIR}/RPMS/noarch/${PACKAGE_NAME}-${VERSION}*.noarch.rpm ]; then \
+		echo "rpmbuild failed to build: ${PACKAGE_NAME}"; \
+		exit 1; \
+	fi

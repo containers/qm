@@ -19,15 +19,24 @@ jobs:
 
       - name: Run make for each subsystem
         run: |
+          subsystem_build_failures=()
           for dir in subsystems/*; do
-            if [ -d "$dir" ]; then
-              subsystem=$(basename "$dir")
-              echo "Running make for $subsystem..."
-              make TARGETS=$subsystem subpackages
-              if [ $? -ne 0 ]; then
-                echo "❌ Make failed for $subsystem" >&2
-                exit 1
+              if [ -d "$dir" ]; then
+                  subsystem=$(basename "$dir")
+                  echo "Running make for $subsystem..."
+                  make TARGETS=$subsystem subpackages
+                  if [ $? -ne 0 ]; then
+                      subsystem_build_failures+=("$subsystem")
+                      echo "❌ Make failed for $subsystem" >&2
+                  fi
               fi
-            fi
           done
+          if (( ${#subsystem_build_failures[@]} == 0 )); then
+              echo "✅ All subsystems built successfully"; \
+              exit 0;
+          else
+              echo "❌ The following subsystems failed to build: ";
+              echo -e "\t${subsystem_build_failures[@]}" | tr ' ' ', ';
+              exit 1;
+          fi
 

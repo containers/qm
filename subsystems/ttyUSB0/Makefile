@@ -2,6 +2,7 @@ RPM_TOPDIR ?= $(PWD)/rpmbuild
 VERSION ?= $(shell cat VERSION)
 ROOTDIR ?= $(PWD)
 SPECFILE_SUBPACKAGE_TTYUSB0 ?= ${ROOTDIR}/rpm/ttyUSB0/ttyUSB0.spec
+PACKAGE_NAME = qm-mount-bind-ttyUSB0
 
 .PHONY: dist
 dist: ##             - Creates the QM ttyUSB0 package
@@ -30,4 +31,7 @@ ttyUSB0: dist ##             - Creates a local RPM package, useful for developme
 		--define="_topdir ${RPM_TOPDIR}" \
 		--define="version ${VERSION}" \
 		${SPECFILE_SUBPACKAGE_TTYUSB0}
-
+	if [ ! -f ${RPM_TOPDIR}/RPMS/noarch/${PACKAGE_NAME}-${VERSION}*.noarch.rpm ]; then \
+		echo "rpmbuild failed to build: ${PACKAGE_NAME}"; \
+		exit 1; \
+	fi

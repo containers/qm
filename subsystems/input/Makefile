@@ -2,6 +2,7 @@ RPM_TOPDIR ?= $(PWD)/rpmbuild
 VERSION ?= $(shell cat VERSION)
 ROOTDIR ?= $(PWD)
 SPECFILE_SUBPACKAGE_INPUT ?= ${ROOTDIR}/rpm/input/input.spec
+PACKAGE_NAME = qm-mount-bind-input
 
 .PHONY: dist
 dist: ##             - Creates the QM input package
@@ -24,3 +25,7 @@ input:  dist ##             - Creates a local RPM package, useful for developmen
 		--define="_topdir ${RPM_TOPDIR}" \
 		--define="version ${VERSION}" \
 		${SPECFILE_SUBPACKAGE_INPUT}
+	if [ ! -f ${RPM_TOPDIR}/RPMS/noarch/${PACKAGE_NAME}-${VERSION}*.noarch.rpm ]; then \
+		echo "rpmbuild failed to build: ${PACKAGE_NAME}"; \
+		exit 1; \
+	fi
