@@ -61,15 +61,18 @@ jobs:
     tf_extra_params:
       environments:
         - artifacts:
-          - &bluechi_copr_repo
-            type: repository-file
-            id: https://copr.fedorainfracloud.org/coprs/g/centos-automotive-sig/bluechi-snapshot/repo/centos-stream-9
-          - &bluechi_copr_repo_fedora
-            type: repository-file
-            id: https://copr.fedorainfracloud.org/coprs/g/centos-automotive-sig/bluechi-snapshot/repo/fedora
+            - &bluechi_copr_repo_c9s
+              type: repository-file
+              id: https://copr.fedorainfracloud.org/coprs/g/centos-automotive-sig/bluechi-snapshot/repo/centos-stream-9
+            - &bluechi_copr_repo_c10s
+              type: repository-file
+              id: https://copr.fedorainfracloud.org/coprs/g/centos-automotive-sig/bluechi-snapshot/repo/centos-stream-10
+            - &bluechi_copr_repo_fedora
+              type: repository-file
+              id: https://copr.fedorainfracloud.org/coprs/g/centos-automotive-sig/bluechi-snapshot/repo/fedora
           hardware:
             disk:
-             - size: ">= 20 GB"
+              - size: ">= 20 GB"
 
 
   - job: tests
@@ -78,17 +81,19 @@ jobs:
     tmt_plan: /plans/e2e/ffi
     targets:
       - epel-9-x86_64
+      - epel-10-x86_64
     tf_extra_params:
       environments:
         - artifacts:
-          - *bluechi_copr_repo
+            - *bluechi_copr_repo_c9s
+            - *bluechi_copr_repo_c10s
           tmt:
             context:
-             scenario : "ffi"
+              scenario: "ffi"
           hardware:
             disk:
-             - size: ">= 20 GB"
-             - size: ">= 20 GB"
+              - size: ">= 20 GB"
+              - size: ">= 20 GB"
 
   - job: tests
     trigger: pull_request
@@ -96,31 +101,33 @@ jobs:
     tmt_plan: /plans/e2e/tier-0
     targets:
       - epel-9-x86_64
+      - epel-10-x86_64
     tf_extra_params:
       environments:
         - artifacts:
-          - *bluechi_copr_repo
+            - *bluechi_copr_repo_c9s
+            - *bluechi_copr_repo_c10s
           hardware:
             disk:
-             - size: ">= 20 GB"
+              - size: ">= 20 GB"
 
   - job: tests
     trigger: pull_request
     identifier: kvm-tier-0
     tmt_plan: /plans/e2e/kvm-tier-0
     targets:
-      # TBF: fedora-latest -eq 42 no published to public-tf
-      - fedora-41
+      - fedora-42
       - epel-9-x86_64
     tf_extra_params:
       environments:
         - artifacts:
-          - *bluechi_copr_repo_fedora
+            - *bluechi_copr_repo_c9s
+            - *bluechi_copr_repo_fedora
           hardware:
             disk:
-             - size: ">= 20 GB"
+              - size: ">= 20 GB"
             virtualization:
-             is-supported: true
+              is-supported: true
 
   - job: tests
     trigger: pull_request
@@ -130,9 +137,9 @@ jobs:
       - epel-9-x86_64
     tf_extra_params:
       environments:
-          hardware:
-            disk:
-             - size: ">= 20 GB"
+        hardware:
+          disk:
+            - size: ">= 20 GB"
 
 
   - job: propose_downstream
