@@ -201,10 +201,11 @@ install() {
     fi
     # check if "${ROOTFS}"/etc/yum.repos.d/autosd.repo
     if  test ! -f "${ROOTFS}"/etc/yum.repos.d/autosd.repo; then
+       VERSION_ID=$(grep -oP '(?<=^VERSION_ID=)\w+' <<< "$(tr -d '"' < /etc/os-release)")
        cat > "${ROOTFS}"/etc/yum.repos.d/autosd.repo << EOF
 [autosd]
 name=Automotive-Sig \$releasever
-baseurl=https://autosd.sig.centos.org/AutoSD-9/nightly/repos/AutoSD/compose/AutoSD/\$basearch/os
+baseurl=https://autosd.sig.centos.org/AutoSD-$VERSION_ID/nightly/repos/AutoSD/compose/AutoSD/\$basearch/os
 enabled=1
 gpgcheck=0
 EOF

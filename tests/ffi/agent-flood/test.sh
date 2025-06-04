@@ -90,9 +90,12 @@ else
     exit 1
 fi
 
-#Stop QM bluechi-agent
-exec_cmd "podman exec -it qm /bin/bash -c \
-         \"systemctl stop bluechi-agent\""
+#Stop QM bluechi-agent once bluechi-agent is up
+qm_node=$(bluechictl status | grep qm | cut -d'|' -f1)
+if timeout 30 sh -c "until bluechictl status $qm_node bluechi-agent.service >/dev/null; do sleep 5; done"; then
+    info_message "PASS: bluechi-agent.service is online on $qm_node.";
+    exec_cmd 'podman exec -it qm sh -c "systemctl stop bluechi-agent"'
+fi
 
 #Prepare quadlet files for testing containers
 setup_test_containers_in_qm

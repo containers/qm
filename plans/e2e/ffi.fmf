@@ -11,9 +11,12 @@ provision:
    how: local
 
 adjust:
- - when: distro == centos-stream-9, fedora
+ - when: distro == centos-stream, fedora
    environment+:
        FFI_SETUP_OPTIONS: --set-qm-disk-part=yes
+ - when: distro == centos-stream-10
+   environment+:
+     LOCK_DISK_SPACE: 8G
 
  - when: scenario == ffi
    prepare+:
@@ -30,7 +33,7 @@ adjust:
             cp tests/ffi/common/ffi-qm.container /etc/qm/containers/systemd/
 
 execute:
-    how: tmt
+   how: tmt
 
 report:
     how: junit
