@@ -1,0 +1,322 @@
+import os
+import sys
+import json
+import subprocess
+import pty
+from collections import defaultdict
+
+class QMCTL:
+    def __init__(self,
+                 config_path="/usr/share/containers/systemd/qm.container",
+                 verbose=False,
+                 container_name="qm"):
+        self.config_path = config_path
+        self.container = container_name
+        self.verbose = verbose
+
+    def _log_path(self, action, path):
+        if self.verbose:
+            print(f"[verbose] {action}: {path}", file=sys.stderr)
+
+    def _container_exists(self, name):
+        try:
+            result = subprocess.run(
+                ["podman", "container", "exists", name],
+                stdout=subprocess.DEVNULL,
+                stderr=subprocess.DEVNULL
+            )
+            return result.returncode == 0
+        except Exception as e:
+            print(f"Error checking container existence: {e}", file=sys.stderr)
+            sys.exit(1)
+
+    def parse_to_dict(self, content):
+        parsed = defaultdict(dict)
+        current_section = None
+
+        for line in content.splitlines():
+            stripped = line.strip()
+            if not stripped or stripped.startswith("#"):
+                continue
+            if stripped.startswith("[") and stripped.endswith("]"):
+                current_section = stripped[1:-1]
+                parsed[current_section] = {}
+            elif "=" in stripped and current_section:
+                key, value = map(str.strip, stripped.split("=", 1))
+                parsed[current_section][key] = value
+            elif current_section:
+                parsed[current_section][stripped] = True
+
+        return dict(parsed)
+
+    def show(self, output_json=False, pretty=True):
+        if not os.path.exists(self.config_path):
+            self._print_output(
+                {"error": f"Configuration file {self.config_path} not found."},
+                output_json,
+                pretty
+            )
+            sys.exit(1)
+
+        self._log_path("Reading", self.config_path)
+        with open(self.config_path, "r") as file:
+            content = file.read()
+
+        if output_json:
+            parsed = self.parse_to_dict(content)
+            self._print_output({"path": self.config_path, "sections": parsed}, output_json, pretty)
+        else:
+            print(content, end="")
+
+    def exec_in_container(self, command, output_json=False, pretty=True):
+        if not self._container_exists(self.container):
+            self._print_output(
+                {"error": f"Container '{self.container}' does not exist."},
+                output_json,
+                pretty
+            )
+            sys.exit(1)
+
+        if not command:
+            self._print_output({"error": "No command provided to execute."}, output_json, pretty)
+            sys.exit(1)
+
+        try:
+            result = subprocess.run(
+                ["podman", "exec", self.container] + command,
+                capture_output=True,
+                text=True,
+                check=False
+            )
+
+            if "command not found" in result.stderr.lower():
+                raise RuntimeError(f"Command '{' '.join(command)}' not found inside the container.")
+
+            self._print_output(
+                {"output": result.stdout.strip()},
+                output_json,
+                pretty
+            )
+
+        except Exception as e:
+            self._print_output({"error": str(e)}, output_json, pretty)
+            sys.exit(1)
+
+    def copy_in_container(self, paths, output_json=False, pretty=True):
+        if not self._container_exists(self.container):
+            self._print_output(
+                {"error": f"Container '{self.container}' does not exist."},
+                output_json,
+                pretty
+            )
+            sys.exit(1)
+        if not paths or len(paths) != 2:
+            self._print_output(
+                {"error": "Please provide source and destination paths."},
+                output_json,
+                pretty
+            )
+            sys.exit(1)
+        src = paths[0]
+        dst = paths[1]
+        if not (self.container + ":" in src) ^ (self.container + ":" in dst):
+            self._print_output(
+                {"error": f"Please provide `{self.container}:` only in source or in destination"},
+                output_json,
+                pretty
+            )
+            sys.exit(1)
+
+        try:
+            result = subprocess.run(
+                ["podman", "cp", src, dst] ,
+                capture_output=True,
+                text=True,
+                check=False
+            )
+
+            if result.stderr.lower():
+                raise RuntimeError(result.stderr)
+
+        except Exception as e:
+            self._print_output({"error": str(e)}, output_json, pretty)
+            sys.exit(1)
+
+    def execin_in_container(self, command, output_json=False, pretty=True):
+        if not self._container_exists(self.container):
+            self._print_output(
+                {"error": f"Container '{self.container}' does not exist."},
+                output_json,
+                pretty
+            )
+            sys.exit(1)
+
+        if not command:
+            self._print_output({"error": "No container name provided to execute."}, output_json, pretty)
+            sys.exit(1)
+
+        if len(command) < 2:
+            self._print_output({"error": "No command provided to execute."}, output_json, pretty)
+            sys.exit(1)
+        container_name = command[0]
+        command_in_contaier = command[1:]
+
+        try:
+            result = subprocess.run(
+                ["podman", "exec", self.container, "podman", "exec", container_name ] + command_in_contaier,
+                capture_output=True,
+                text=True,
+                check=False
+            )
+
+            if result.returncode != 0:
+                raise RuntimeError(f"Command '{' '.join(command)}' failed with error: {result.stderr.strip()}")
+
+            self._print_output(
+                {"output": result.stdout.strip()},
+                output_json,
+                pretty
+            )
+
+        except Exception as e:
+            self._print_output({"error": str(e)}, output_json, pretty)
+            sys.exit(1)
+
+    def show_unix_sockets(self, output_json=False, pretty=True):
+        try:
+            result = subprocess.run(
+                ["podman", "exec", self.container, "ss", "-xl"],
+                capture_output=True,
+                text=True,
+                check=False
+            )
+
+            if "command not found" in result.stderr.lower():
+                raise RuntimeError(
+                    "'ss' command not found inside the QM container.\n"
+                    "To install it, run:\n"
+                    "  sudo dnf --installroot=/usr/lib/qm/rootfs/ install iproute -y"
+                )
+
+            if result.returncode != 0 or not result.stdout.strip():
+                raise RuntimeError("Failed to retrieve UNIX domain sockets using 'ss -xl'")
+
+            self._print_output(
+                {"UNIX domain sockets": result.stdout.strip()},
+                output_json,
+                pretty
+            )
+
+        except Exception as e:
+            self._print_output({"error": str(e)}, output_json, pretty)
+            sys.exit(1)
+
+    def show_shared_memory(self, output_json=False, pretty=True):
+        self.exec_in_container(["ipcs"], output_json=output_json, pretty=pretty)
+
+    def show_resources(self, output_json=False, pretty=True):
+        try:
+            print("[INFO] Starting systemd-cgtop stream for qm.service. Press Ctrl+C to exit.\n")
+            pid, fd = pty.fork()
+            if pid == 0:
+                os.execvp("systemd-cgtop", ["systemd-cgtop", "--batch", "qm.service"])
+            else:
+                while True:
+                    try:
+                        output = os.read(fd, 1024).decode()
+                        print(output, end="")
+                    except OSError:
+                        break
+        except KeyboardInterrupt:
+            print("\n[Interrupted] Exiting systemd-cgtop stream.")
+            sys.exit(0)
+        except Exception as e:
+            self._print_output({"error": str(e)}, output_json, pretty)
+            sys.exit(1)
+
+    def show_available_devices(self, output_json=False, pretty=True):
+        if not os.path.exists(self.config_path):
+            self._print_output({"error": f"Config file {self.config_path} not found"}, output_json, pretty)
+            sys.exit(1)
+
+        if not self._container_exists(self.container):
+            self._print_output(
+                {"error": f"Container '{self.container}' does not exist."},
+                output_json,
+                pretty
+            )
+            sys.exit(1)
+
+        try:
+            devices = []
+            self._log_path("Reading", self.config_path)
+            with open(self.config_path, "r") as file:
+                for line in file:
+                    if line.strip().startswith("AddDevice="):
+                        path = line.strip().split("=", 1)[1].lstrip("-").strip()
+                        devices.append(path)
+
+            if not devices:
+                raise RuntimeError("No 'AddDevice=' entries found in the container config.")
+
+            results = {}
+            for device in devices:
+                cmd = ["podman", "exec", self.container, "test", "-e", device]
+                exists = subprocess.run(cmd, stdout=subprocess.DEVNULL, stderr=subprocess.DEVNULL).returncode == 0
+                results[device] = exists
+
+            self._print_output(results, output_json, pretty)
+        except Exception as e:
+            self._print_output({"error": str(e)}, output_json, pretty)
+            sys.exit(1)
+
+    def show_namespaces(self, output_json=False, pretty=True):
+        try:
+            result = subprocess.run(
+                ["podman", "exec", self.container, "lsns"],
+                capture_output=True,
+                text=True,
+                check=False
+            )
+
+            if "command not found" in result.stderr.lower():
+                raise RuntimeError(
+                    "'lsns' command not found inside the QM container.\n"
+                    "To install it, run:\n"
+                    "  sudo dnf --installroot=/usr/lib/qm/rootfs/ install util-linux -y"
+                )
+
+            if result.returncode != 0 or not result.stdout.strip():
+                raise RuntimeError("Failed to retrieve namespace info using 'lsns'")
+
+            self._print_output(
+                {"Namespaces": result.stdout.strip()},
+                output_json,
+                pretty
+            )
+
+        except Exception as e:
+            self._print_output({"error": str(e)}, output_json, pretty)
+            sys.exit(1)
+
+    def _print_output(self, data, as_json, pretty):
+        if not isinstance(data, dict):
+            data = {"output": data}
+
+        if as_json:
+            print(json.dumps(data, indent=4 if pretty else None))
+            return
+
+        if "error" in data:
+            print(data["error"], file=sys.stderr)
+        elif all(isinstance(v, bool) for v in data.values()):
+            for key, value in data.items():
+                print(f"{key}: {'present in QM' if value else 'missing in QM'}")
+        else:
+            for key, value in data.items():
+                if isinstance(value, dict):
+                    print(f"{key}:")
+                    for sub_key, sub_val in value.items():
+                        print(f"  {sub_key}: {sub_val}")
+                else:
+                    print(f"{key}: {value}")
