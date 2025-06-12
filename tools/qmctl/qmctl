@@ -631,3 +631,103 @@ class QMCTL:
 # !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
 # End of the QMCTL class
 # !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
+
+# !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
+# Start of the ArgumentParserWithDefaults class
+# !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
+
+
+class ArgumentParserWithDefaults(argparse.ArgumentParser):
+    """Subclass ArgumentParser to enhance help messages.
+
+    This class automatically adds default values to the help text of
+    arguments.
+    """
+
+    def add_argument(
+        self, *args, help=None, default=None, completer=None, **kwargs
+    ):
+        """Add an argument and automatically format the help message.
+
+        This method includes the default value in the help text.
+
+        Args:
+            *args: Positional arguments for the argument.
+            help (str): The help text for the argument.
+            default: The default value for the argument.
+            completer: A completer for shell autocompletion.
+            **kwargs: Additional keyword arguments.
+
+        Returns:
+            The Action object created by the parent class.
+        """
+        if default is not None and args[0] != "-h":
+            if help is not None and help != "==SUPPRESS==":
+                kwargs["help"] = (
+                    f"{help} (default: {default})"
+                )
+        action = super().add_argument(*args, **kwargs)
+        if completer is not None:
+            action.completer = completer
+        return action
+
+
+# !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
+# End of the ArgumentParserWithDefaults class
+# !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
+
+# !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
+# Start of the SubcommandInitializer class
+# !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
+
+
+class SubcommandInitializer:
+    """A generic class to initialize subparsers for command-line applications.
+
+    This class encapsulates the common logic for adding a subparser,
+    defining its arguments, and setting its default function.
+    """
+
+    def __init__(self, subparsers, name, help_text, default_func,
+                 args_config=None):
+        """Initialize a new SubcommandInitializer instance.
+
+        Args:
+            subparsers: The subparser object from the main parser (e.g.,
+                from parser.add_subparsers()).
+            name (str): The name of the subcommand (e.g., "show", "run").
+            help_text (str): The help string for the subcommand.
+            default_func (callable): The function to be called when this
+                subcommand is used. This function will receive the parsed
+                arguments.
+            args_config (list, optional): A list of dictionaries, where each
+                dictionary defines an argument for the subparser. Each dict
+                should contain keys corresponding to argparse.add_argument
+                parameters (e.g., 'name', 'nargs', 'default', 'choices',
+                'action', 'help'). Defaults to None (no additional arguments).
+        """
+        self.subparsers = subparsers
+        self.name = name
+        self.help_text = help_text
+        self.default_func = default_func
+        self.args_config = args_config if args_config is not None else []
+
+    def initialize(self):
+        """Add the subparser to the main parser and configure its arguments.
+
+        Returns:
+            argparse.ArgumentParser: The created subparser object.
+        """
+        parser = self.subparsers.add_parser(self.name, help=self.help_text)
+
+        for arg_cfg in self.args_config:
+            arg_names = arg_cfg.pop('name')
+            parser.add_argument(*arg_names, **arg_cfg)
+
+        parser.set_defaults(func=self.default_func)
+        return parser
+
+
+# !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
+# End of the SubcommandInitializer class
+# !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
