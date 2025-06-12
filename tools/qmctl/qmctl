@@ -731,3 +731,352 @@ class SubcommandInitializer:
 # !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
 # End of the SubcommandInitializer class
 # !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
+
+def perror(*args, **kwargs):
+    """Print a message to the standard error stream."""
+    print(*args, file=sys.stderr, **kwargs)
+
+
+def handle_error(e, exit_code):
+    """Print an error message and exit the script.
+
+    Args:
+        e (Exception): The exception object caught.
+        exit_code (int): The exit code to use when exiting the script.
+    """
+    error_message = str(e).strip("'\"")
+    perror(f"Error: {error_message}")
+    sys.exit(exit_code)
+
+
+def run_command_with_error_handling(args, qmctl, parser):
+    """Execute the subcommand with centralized error handling.
+
+    Args:
+        args: The parsed command-line arguments.
+        qmctl: An instance of the QMCTL class.
+        parser: The argparse parser object, used for printing usage.
+    """
+    try:
+        if not args.subcommand:
+            parser.print_usage()
+            perror("Error: requires a subcommand")
+            sys.exit(errno.EINVAL)
+        args.func(args, qmctl)
+    except IndexError as e:
+        handle_error(e, errno.EINVAL)
+    except KeyError as e:
+        handle_error(e, 1)
+    except NotImplementedError as e:
+        handle_error(e, errno.ENOTSUP)
+    except subprocess.CalledProcessError as e:
+        handle_error(e, e.returncode)
+    except KeyboardInterrupt:
+        sys.exit(0)
+    except ConnectionError as e:
+        handle_error(e, errno.EINVAL)
+    except ValueError as e:
+        handle_error(e, errno.EINVAL)
+    except IOError as e:
+        handle_error(e, errno.EIO)
+
+
+def create_argument_parser(description):
+    """Create and configure the argument parser for the CLI.
+
+    Args:
+        description (str): The description text for the CLI tool.
+
+    Returns:
+        An initialized ArgumentParser for the CLI.
+    """
+    parser = ArgumentParserWithDefaults(
+        prog="qmctl",
+        description=description,
+        formatter_class=argparse.RawTextHelpFormatter,
+    )
+    configure_arguments(parser)
+    return parser
+
+
+def configure_arguments(parser):
+    """Configure the base command-line arguments for the parser.
+
+    Args:
+        parser (argparse.ArgumentParser): The main argument parser.
+    """
+    verbosity_group = parser.add_mutually_exclusive_group()
+    verbosity_group.add_argument(
+        "-v", "--verbose", action="store_true", help="Enable verbose output."
+    )
+
+
+def parse_arguments(parser):
+    """Parse command line arguments.
+
+    Args:
+        parser (argparse.ArgumentParser): The argument parser.
+
+    Returns:
+        The parsed arguments object.
+    """
+    return parser.parse_args()
+
+
+def post_parse_setup(args):
+    """Perform additional setup after parsing arguments.
+
+    Args:
+        args: The parsed command-line arguments.
+    """
+    pass
+
+
+def init_cli():
+    """Initialize the QMCTL CLI, parse arguments, and set up the environment.
+
+    Returns:
+        A tuple containing the configured parser and the parsed arguments.
+    """
+    description = get_description()
+    parser = create_argument_parser(description)
+    configure_subcommands(parser)
+    args = parse_arguments(parser)
+    post_parse_setup(args)
+    return parser, args
+
+
+def get_description():
+    """Return the description of the QMCTL tool.
+
+    Returns:
+        A string containing the tool's description.
+    """
+    return "QmCTL: Command Line Interface for QMCTL"
+
+
+def configure_subcommands(parser):
+    """Add subcommand parsers to the main argument parser.
+
+    Args:
+        parser (argparse.ArgumentParser): The main argument parser.
+    """
+    subparsers = parser.add_subparsers(dest="subcommand")
+    subparsers.required = False
+    init_show_subcommand(subparsers)
+    init_exec_subcommand(subparsers)
+    init_execin_subcommand(subparsers)
+    init_cp_subcommand(subparsers)
+
+
+# !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
+# Start of the Subcommand initialization functions
+# !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
+
+
+def init_show_subcommand(subparsers):
+    """Initialize the 'show' subcommand for displaying container info.
+
+    Args:
+        subparsers: The subparser object from the main parser.
+    """
+    name = "show"
+    help_text = "Show information about the QM container"
+    default_func = handle_show_command
+    args_config = [
+        {
+            'name': ['show_command_topic'],
+            'nargs': '?',
+            'default': 'container',
+            'choices': [
+                "container",
+                "unix-domain-sockets",
+                "shared-memory",
+                "resources",
+                "available-devices",
+                "namespaces",
+                "all",
+            ],
+            'help': "What to show"
+        },
+        {
+            'name': ['--json'],
+            'action': 'store_true',
+            'help': "Output as JSON"
+        }
+    ]
+    SubcommandInitializer(
+        subparsers, name, help_text, default_func, args_config
+    ).initialize()
+
+
+def init_exec_subcommand(subparsers):
+    """Initialize the 'exec' subcommand for running commands.
+
+    Args:
+        subparsers: The subparser object from the main parser.
+    """
+    name = "exec"
+    help_text = "Run command inside QM container"
+    default_func = handle_exec_command
+    args_config = [
+        {
+            'name': ['cmd'],
+            'nargs': argparse.REMAINDER,
+            'help': "Command to execute"
+        },
+        {
+            'name': ['--json'],
+            'action': 'store_true',
+            'help': "Output as JSON"
+        }
+    ]
+    SubcommandInitializer(
+        subparsers, name, help_text, default_func, args_config
+    ).initialize()
+
+
+def init_execin_subcommand(subparsers):
+    """Initialize the 'execin' subcommand for nested execution.
+
+    Args:
+        subparsers: The subparser object from the main parser.
+    """
+    name = "execin"
+    help_text = "Run command inside QM container in a nested container"
+    default_func = handle_execin_command
+    args_config = [
+        {
+            'name': ['cmd'],
+            'nargs': argparse.REMAINDER,
+            'help': "Command to execute in the nested container"
+        },
+        {
+            'name': ['--json'],
+            'action': 'store_true',
+            'help': "Output as JSON"
+        }
+    ]
+    SubcommandInitializer(
+        subparsers, name, help_text, default_func, args_config
+    ).initialize()
+
+
+def init_cp_subcommand(subparsers):
+    """Initialize the 'cp' subcommand for copying files.
+
+    Args:
+        subparsers: The subparser object from the main parser.
+    """
+    name = "cp"
+    help_text = "Copy files between host and QM container"
+    default_func = handle_cp_command
+    args_config = [
+        {
+            'name': ['paths'],
+            'nargs': 2,
+            'help': ("Source and destination paths (e.g., "
+                     "/path/to/file /path/in/container)")
+        },
+        {
+            'name': ['--json'],
+            'action': 'store_true',
+            'help': "Output as JSON"
+        }
+    ]
+    SubcommandInitializer(
+        subparsers, name, help_text, default_func, args_config
+    ).initialize()
+
+
+# !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
+# End of the Subcommand initialization functions
+# !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
+
+
+# !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
+# Start of the handle command functions
+# !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
+
+
+def handle_show_command(args, qmctl):
+    """Handle the logic for the 'show' subcommand.
+
+    Args:
+        args: The parsed command-line arguments.
+        qmctl: An instance of the QMCTL class.
+    """
+    all_show_commands = {
+        "all": qmctl.show_all,
+        "container": qmctl.show_container,
+        "unix-domain-sockets": qmctl.show_unix_sockets,
+        "shared-memory": qmctl.show_shared_memory,
+        "resources": qmctl.show_resources,
+        "available-devices": qmctl.show_available_devices,
+        "namespaces": qmctl.show_namespaces,
+    }
+
+    command_to_execute = all_show_commands.get(args.show_command_topic)
+
+    if command_to_execute:
+        command_to_execute(output_json=args.json, pretty=True)
+    else:
+        print(f"Error: Unknown show command '{args.show_command_topic}'.")
+
+
+def handle_exec_command(args, qmctl):
+    """Handle the logic for the 'exec' subcommand.
+
+    Args:
+        args: The parsed command-line arguments.
+        qmctl: An instance of the QMCTL class.
+    """
+    qmctl.exec_in_container(
+        command=args.cmd, output_json=args.json, pretty=True
+    )
+
+
+def handle_execin_command(args, qmctl):
+    """Handle the logic for the 'execin' subcommand.
+
+    Args:
+        args: The parsed command-line arguments.
+        qmctl: An instance of the QMCTL class.
+    """
+    qmctl.execin_in_container(
+        command=args.cmd, output_json=args.json, pretty=True
+    )
+
+
+def handle_cp_command(args, qmctl):
+    """Handle the logic for the 'cp' subcommand.
+
+    Args:
+        args: The parsed command-line arguments.
+        qmctl: An instance of the QMCTL class.
+    """
+    qmctl.copy_in_container(
+        paths=args.paths, output_json=args.json, pretty=True
+    )
+
+
+# !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
+# End of the handle command functions
+# !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
+
+
+def main():
+    """Define the main execution flow of the script."""
+    parser, args = init_cli()
+    qmctl = QMCTL(verbose=args.verbose)
+    try:
+        import argcomplete
+        argcomplete.autocomplete(parser)
+    except Exception:
+        pass
+
+    run_command_with_error_handling(args, qmctl, parser)
+
+
+if __name__ == "__main__":
+    main()
