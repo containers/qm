@@ -1,7 +1,21 @@
 #!/usr/bin/env python
+
+# Licensed under the Apache License, Version 2.0
+# you may not use this file except in compliance with the License.
+# You may obtain a copy of the License at
+#
+#     http://www.apache.org/licenses/LICENSE-2.0
+#
+# Unless required by applicable law or agreed to in writing, software
+# distributed under the License is distributed on an "AS IS" BASIS,
+# WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+# See the License for the specific language governing permissions and
+# limitations under the License.
+# flake8: noqa: E501
+
 """A Python interface for interacting with the 'qm' container.
 
-This module provides the QMCTL class for interacting with the 'qm'
+This module provides the QmController class for interacting with the 'qm'
 container managed by podman. It allows for executing commands, copying
 files, and inspecting various aspects of the container's state.
 """
@@ -13,49 +27,163 @@ import pty
 import argparse
 import errno
 from collections import defaultdict
+from typing import Any, Callable, Generator, Optional, Union
 
 
-# !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
-# Start of the QMCTL class
-# !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
+# Constants
+DEFAULT_CONFIG_PATH = "/usr/share/containers/systemd/qm.container"
+DEFAULT_CONTAINER_NAME = "qm"
+DEFAULT_JSON_INDENT = 4
+BUFFER_SIZE = 1024
+
+# Command patterns
+ADD_DEVICE_PREFIX = "AddDevice="
+COMMENT_PREFIX = "#"
+
+# Container commands
+PODMAN_EXEC = ["podman", "exec"]
+PODMAN_CP = ["podman", "cp"]
 
 
-class QMCTL:
+class QmError(Exception):
+    """Base exception for QM operations."""
+
+    def __init__(self, message: str, exit_code: int = 1) -> None:
+        """Initialize QmError with message and exit code."""
+        super().__init__(message)
+        self.exit_code = exit_code
+
+
+class ConfigNotFoundError(QmError):
+    """Raised when configuration file is not found."""
+
+    def __init__(self, config_path: str) -> None:
+        """Initialize ConfigNotFoundError with config path."""
+        super().__init__(
+            f"Configuration file {config_path} not found.", errno.ENOENT
+        )
+
+
+class ContainerNotFoundError(QmError):
+    """Raised when container does not exist."""
+
+    def __init__(self, container_name: str) -> None:
+        """Initialize ContainerNotFoundError with container name."""
+        super().__init__(f"Container '{container_name}' does not exist.")
+
+
+class CommandNotFoundError(QmError):
+    """Raised when command is not found in container."""
+
+    def __init__(self, command: list[str], container: str) -> None:
+        """Initialize CommandNotFoundError with command and container."""
+        super().__init__(
+            f"Command '{' '.join(command)}' not found in container "
+            f"'{container}'."
+        )
+
+
+class ValidationError(QmError):
+    """Raised when validation fails."""
+
+    def __init__(self, message: str) -> None:
+        """Initialize ValidationError with message."""
+        super().__init__(message)
+
+
+class OutputConfig:
+    """Configuration for output formatting."""
+
+    def __init__(self, output_json: bool = False, pretty: bool = True) -> None:
+        """Initialize OutputConfig with JSON and pretty print settings."""
+        self.output_json = output_json
+        self.pretty = pretty
+
+
+class QmController:
     """Manage and interact with the qm container."""
-
-    # !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
-    # Start of the QMCTL class private methods
-    # !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
 
     def __init__(
         self,
-        config_path="/usr/share/containers/systemd/qm.container",
-        verbose=False,
-        container_name="qm",
-    ):
-        """Initialize the QMCTL class.
+        config_path: str = DEFAULT_CONFIG_PATH,
+        verbose: bool = False,
+        container_name: str = DEFAULT_CONTAINER_NAME,
+    ) -> None:
+        """Initialize the QmController class.
 
         Args:
             config_path (str): The path to the container config file.
             verbose (bool): If True, enables verbose logging to stderr.
             container_name (str): The name of the container to interact with.
         """
-        self.config_path = config_path
-        self.container = container_name
-        self.verbose = verbose
+        self.config_path: str = config_path
+        self.container: str = container_name
+        self.verbose: bool = verbose
+        self.output_config: OutputConfig = OutputConfig()
 
-    def _log_path(self, action, path):
+    def _log_path(self, action: str, path: str) -> None:
         """Log the action being performed on a path if verbose is enabled."""
         if self.verbose:
             print(f"[verbose] {action}: {path}", file=sys.stderr)
 
-    def _print_output_and_exit(self, msg, exit_code=1):
-        """Print an error message to output and exit the script."""
-        self._print_output(
-            {"Error": msg})
-        exit(exit_code)
+    def _print_error_and_exit(self, error: QmError) -> None:
+        """Print error and exit - centralized error handling."""
+        if isinstance(error, QmError):
+            self._print_output({"Error": str(error)})
+            exit(error.exit_code)
+        else:
+            self._print_output({"Error": str(error)})
+            exit(1)
 
-    def _container_exists(self, name):
+    def _validate_path_exists(self, path: str) -> None:
+        """Check if a path exists."""
+        if not os.path.exists(path):
+            raise ConfigNotFoundError(self.config_path)
+
+    def _validate_container_exists(self) -> None:
+        """Check if container exists."""
+        if not self._container_exists(self.container):
+            raise ContainerNotFoundError(self.container)
+
+    def _validate_devices_specified(self, devices: list[str]) -> None:
+        """Validate that devices are specified."""
+        if not devices:
+            raise ValidationError(
+                "No devices specified in the container config. "
+                "Please add 'AddDevice=' entries to the config file."
+            )
+
+    def _validate_command_provided(self, command: list[str], context: str = "") -> None:
+        """Validate that a command is provided."""
+        if not command:
+            context_msg = f" {context}" if context else ""
+            raise ValidationError(f"No command provided{context_msg}.")
+
+    def _validate_paths_for_cp(self, paths: list[str]) -> tuple[str, str]:
+        """Validate and extract source and destination paths."""
+        if not paths or len(paths) != 2:
+            raise ValidationError(
+                "Please provide source and destination paths."
+            )
+
+        src, dst = paths
+        container_prefix = f"{self.container}:"
+        if not ((container_prefix in src) ^ (container_prefix in dst)):
+            raise ValidationError(
+                f"Provide `{self.container}:` only in source or destination"
+            )
+
+        return src, dst
+
+    def _validate_exec_command(self, command: list[str]) -> tuple[str, list[str]]:
+        """Validate command for execution and extract name and args."""
+        self._validate_command_provided(command, "to execute in container")
+
+        if len(command) < 2:
+            raise ValidationError("No command provided to execute.")
+        return command[0], command[1:]
+
+    def _container_exists(self, name: str) -> bool:
         """Check if a podman container with the given name exists."""
         try:
             command = ["podman", "container", "exists", name]
@@ -66,206 +194,121 @@ class QMCTL:
             )
             return result.returncode == 0
         except Exception as e:
-            self._print_output_and_exit(msg=e)
+            raise QmError(str(e)) from e
 
-    def _check_if_path_exists_and_handle_error(self, path):
-        """Check if a path exists and handle the error if it does not.
+    def _check_subprocess_result(self, result: subprocess.CompletedProcess, context: str, command: list[str]) -> None:
+        """Check subprocess result and raise appropriate errors."""
+        if "command not found" in result.stderr.lower():
+            cmd = command or ["unknown"]
+            raise CommandNotFoundError(cmd, self.container)
 
-        Args:
-            path (str): The path to check.
-
-        Raises:
-            RuntimeError: If the path does not exist.
-        """
-        if not os.path.exists(path):
-            msg = f"Configuration file {self.config_path} not found."
-            self._print_output_and_exit(msg, exit_code=errno.ENOENT)
-
-    def _check_if_container_exists_and_handle_error(self):
-        """Check if a container exists and handle the error if it does not.
-
-        This method uses `self.container` to check for container existence.
-
-        Raises:
-            RuntimeError: If the container does not exist.
-        """
-        if not self._container_exists(self.container):
-            msg = f"Container '{self.container}' does not exist."
-            self._print_output_and_exit(msg)
-
-    def _check_if_any_devcie_exists_and_handle_error(self, devices):
-        """Check if any device exists and handle the error if none do.
-
-        Args:
-            devices (list): A list of device paths to check.
-
-        Raises:
-            RuntimeError: If no devices are found in the list.
-        """
-        if not devices:
-            msg = (
-                "No devices specified in the container config. "
-                "Please add 'AddDevice=' entries to the config file."
-            )
-            self._print_output_and_exit(
-                {"Error": msg}
-            )
-
-    def _check_exit_if_string_in_string(self, string, substring, message):
-        """Exit if a substring is found in a string.
-
-        Args:
-            string (str): The string to check.
-            substring (str): The substring to look for.
-            message (str): The error message to print if
-            the substring is found.
-
-        Raises:
-            RuntimeError: If the substring is found in the string.
-        """
-        if substring in string:
-            self._print_output_and_exit(
-                message
-            )
-
-    def _check_result_returncode_and_output(self, result, msg):
-        """Check the return code and output of the subprocess result."""
         if result.returncode != 0:
-            self._print_output_and_exit(
-                f"{msg} Return code: {result.returncode}, "
-                f"Output: {result.stdout.strip()}")
-        if not result.stdout.strip():
-            self._print_output_and_exit(
-                f"{msg} No output returned.")
-
-    def _check_if_command_is_not_None(self, command, msg):
-        """Check if the command is not None.
-
-        Args:
-            command: The command to check.
-
-        Raises:
-            RuntimeError: If the command is None.
-        """
-        if not command:
-            self._print_output_and_exit(
-                {"Error": msg}
+            raise QmError(
+                f"{context} Return code: {result.returncode}, "
+                f"stderr: {result.stderr.strip()}"
             )
 
-    def _check_and_extract_src_dst_from_paths(self, paths):
-        """Check and extract source and destination paths from a list.
+        if not result.stdout.strip():
+            raise QmError(f"{context} No output returned.")
+
+    def _extract_devices_from_config(self) -> list[str]:
+        """Extract device paths from config file."""
+        devices = []
+        for line in self._read_config_lines(ADD_DEVICE_PREFIX):
+            # Extract path after "AddDevice=" and remove leading "-" if present
+            path = line.split("=", 1)[1].lstrip("-").strip()
+            devices.append(path)
+        return devices
+
+    def _run_command_for_each_device(self, devices, base_command):
+        """Run a command for each device in the container.
 
         Args:
-            paths (list): A list containing source and destination paths.
+            devices (list): List of device paths to test
+            base_command (list): Base command to run (e.g., ["test", "-e"])
 
         Returns:
-            tuple: A tuple containing the source and destination paths.
-
-        Raises:
-            RuntimeError: If the paths are not provided correctly.
+            dict: Device path -> success boolean mapping
         """
-        if not paths or len(paths) != 2:
-            msg = "Please provide source and destination paths."
-            self._print_output_and_exit({"Error": msg})
-
-        src, dst = paths
-        if not ((self.container + ":") in src ^ (self.container + ":") in dst):
-            msg = (
-                f"Provide `{self.container}:` only in source or destination"
-            )
-            self._print_output_and_exit({"Error": msg})
-
-        return src, dst
-
-    def _check_if_command_is_valid_and_get_name_and_command(
-            self, command):
-        self._check_if_command_is_not_None(
-            command,
-            "No container name provided to execute in."
-        )
-
-        if len(command) < 2:
-            self._print_output_and_exit(
-                {"Error": "No command provided to execute."}
-            )
-        return command[0], command[1:]
-
-    def _open_config_file_strip_and_append_to_devices(self, devices):
-        """Open the container config file and append device paths to a list.
-
-        Args:
-            devices (list): A list to append device paths found in the
-                config file.
-        """
-        self._check_if_path_exists_and_handle_error(self.config_path)
-
-        self._log_path("Reading", self.config_path)
-        with open(self.config_path, "r") as file:
-            for line in file:
-                if line.strip().startswith("AddDevice="):
-                    path = line.strip().split("=", 1)[1].lstrip("-").strip()
-                    devices.append(path)
-
-    def _run_command_for_each_device(devices, container, command):
-        """Run a command for each device in the container."""
         results = {}
         for device in devices:
-            command = command + [device]
+            command = base_command + [device]
+            full_command = PODMAN_EXEC + [self.container] + command
             result = subprocess.run(
-                command, stdout=subprocess.DEVNULL, stderr=subprocess.DEVNULL
+                full_command,
+                stdout=subprocess.DEVNULL,
+                stderr=subprocess.DEVNULL
             )
             results[device] = result.returncode == 0
         return results
 
-    def _handle_subprocess_result_for_podman_exec_lsn(self, result):
-        """Handle the result of a subprocess call to podman exec."""
-        msg = ("Error: 'lsns' command not found inside the QM container.\n"
-               "To install it, run:\n"
-               "  sudo dnf --installroot=/usr/lib/qm/rootfs/ "
-               "install util-linux -y")
-        self._check_exit_if_string_in_string(
-            result.stderr.lower(),
-            "command not found",
-            msg
-        )
-
-        msg = "Error: Failed to retrieve namespace info using 'lsns'."
-        self._check_result_returncode_and_output(result, msg)
-
-    def _print_output(self, data):
+    def _print_output(self, data: dict) -> None:
         """Print data as either plain text or JSON.
 
         Args:
             data (dict or any): The data to print.
-            as_json (bool): If True, print as JSON.
-            pretty (bool): If True and printing JSON, indent the output.
         """
         if not isinstance(data, dict):
             data = {"Output": data}
 
-        if self.output_json:
-            print(json.dumps(
-                data,
-                indent=4 if self.pretty else None
-            ))
-            return
-
-        if "error" in data:
-            print(data["Error"], file=sys.stderr)
-        elif all(isinstance(v, bool) for v in data.values()):
-            for key, value in data.items():
-                status = "present in QM" if value else "missing in QM"
-                print(f"{key}: {status}")
+        if self.output_config.output_json:
+            self._print_json_output(data)
         else:
-            for key, value in data.items():
-                if isinstance(value, dict):
-                    print(f"{key}:")
-                    for sub_key, sub_val in value.items():
-                        print(f"  {sub_key}: {sub_val}")
-                else:
-                    print(f"{key}: {value}")
+            self._print_text_output(data)
 
-    def _run_show_command_func(self, show_command_func):
+    def _print_json_output(self, data: dict) -> None:
+        """Print data as JSON."""
+        print(json.dumps(
+            data,
+            indent=DEFAULT_JSON_INDENT if self.output_config.pretty else None
+        ))
+
+    def _print_text_output(self, data: dict) -> None:
+        """Print data as formatted text."""
+        if "Error" in data:
+            self._print_error_output(data)
+        elif self._is_boolean_status_data(data):
+            self._print_boolean_output(data)
+        else:
+            self._print_general_output(data)
+
+    def _print_error_output(self, data: dict) -> None:
+        """Print error output to stderr."""
+        print(data["Error"], file=sys.stderr)
+
+    def _print_boolean_output(self, data: dict) -> None:
+        """Print boolean status output."""
+        for key, value in data.items():
+            status = "present in QM" if value else "missing in QM"
+            print(f"{key}: {status}")
+
+    def _print_general_output(self, data: dict) -> None:
+        """Print general key-value output."""
+        for key, value in data.items():
+            if isinstance(value, dict):
+                print(f"{key}:")
+                for sub_key, sub_val in value.items():
+                    print(f"  {sub_key}: {sub_val}")
+            else:
+                print(f"{key}: {value}")
+
+    def _is_boolean_status_data(self, data: dict) -> bool:
+        """Check if data contains only boolean values."""
+        return all(isinstance(v, bool) for v in data.values())
+
+    def _verify_devices_existence(self) -> None:
+        """Verify that devices specified in the config exist on the system."""
+        self._log_path("Reading", self.config_path)
+        devices = self._extract_devices_from_config()
+
+        self._validate_devices_specified(devices)
+
+        base_command = ["test", "-e"]
+        results = self._run_command_for_each_device(devices, base_command)
+
+        self._print_output(results)
+
+    def _run_show_command_func(self, show_command_func: Callable) -> None:
         """Run a command and print its output.
 
         Args:
@@ -274,23 +317,19 @@ class QMCTL:
         try:
             show_command_func()
         except Exception as e:
-            self._print_output_and_exit(
-                f"Failed to execute command: {str(e)}"
+            self._print_error_and_exit(
+                QmError(f"Failed to execute command: {str(e)}")
             )
-
-# !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
-# End of the QMCTL class private methods
-# !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
 
     class HandleLineInContent:
         """Helper class to parse a single line of INI-style content."""
 
-        def __init__(self, parsed, current_section=None):
+        def __init__(self, parsed: dict, current_section: Optional[str] = None) -> None:
             """Initialize the handler for a line in the content."""
             self.parsed = parsed
             self.current_section = current_section
 
-        def handle(self, stripped_line):
+        def handle(self, stripped_line: str) -> None:
             """Handle a line in the content based on its format."""
             if not stripped_line or stripped_line.startswith("#"):
                 return
@@ -303,11 +342,11 @@ class QMCTL:
             elif self.current_section:
                 self.parsed[self.current_section][stripped_line] = True
 
-        def get_parsed(self):
+        def get_parsed(self) -> dict:
             """Return the parsed content."""
             return self.parsed
 
-    def parse_to_dict(self, content):
+    def parse_to_dict(self, content: str) -> dict:
         """Parse an INI-style string content into a dictionary.
 
         Args:
@@ -322,7 +361,7 @@ class QMCTL:
             handle_line_in_context.handle(line.strip())
         return handle_line_in_context.get_parsed()
 
-    def show_all(self, output_json=False, pretty=True):
+    def show_all(self, output_json: bool = False, pretty: bool = True) -> None:
         """Display the content of the container configuration file.
 
         Args:
@@ -330,8 +369,7 @@ class QMCTL:
             pretty (bool): If True and output_json is True, pretty-print
                 the JSON.
         """
-        self.output_json = output_json
-        self.pretty = pretty
+        self._configure_output(output_json, pretty)
         all_show_commands_functions = [
             self.show_container,
             self.show_unix_sockets,
@@ -346,7 +384,7 @@ class QMCTL:
                 func
             )
 
-    def show_container(self, output_json=False, pretty=True):
+    def show_container(self, output_json: bool = False, pretty: bool = True) -> None:
         """Display the content of the container configuration file.
 
         Args:
@@ -354,15 +392,15 @@ class QMCTL:
             pretty (bool): If True and output_json is True, pretty-print
                 the JSON.
         """
-        self.output_json = output_json
-        self.pretty = pretty
-        self._check_if_path_exists_and_handle_error(self.config_path)
+        self._configure_output(output_json, pretty)
 
+        self._validate_path_exists(self.config_path)
         self._log_path("Reading", self.config_path)
+
         with open(self.config_path, "r") as file:
             content = file.read()
 
-        if self.output_json:
+        if self.output_config.output_json:
             parsed = self.parse_to_dict(content)
             self._print_output(
                 {"path": self.config_path, "sections": parsed}
@@ -370,7 +408,7 @@ class QMCTL:
         else:
             print(content, end="")
 
-    def show_unix_sockets(self, output_json=False, pretty=True):
+    def show_unix_sockets(self, output_json: bool = False, pretty: bool = True) -> None:
         """Show active UNIX domain sockets inside the container using 'ss'.
 
         Args:
@@ -378,28 +416,11 @@ class QMCTL:
             pretty (bool): If True and output_json is True, pretty-print
                 the JSON.
         """
-        self.output_json = output_json
-        self.pretty = pretty
+        self._configure_output(output_json, pretty)
         try:
-            result = subprocess.run(
-                ["podman", "exec", self.container, "ss", "-xl"],
-                capture_output=True,
-                text=True,
-                check=False,
-            )
-
-            self._check_exit_if_string_in_string(
-                result.stderr.lower(),
-                "command not found",
-                ("Error: 'ss' command not found inside the QM container.\n"
-                 "To install it, run:\n"
-                 "  sudo dnf --installroot=/usr/lib/qm/rootfs/ "
-                 "install iproute -y")
-            )
-
-            self._check_result_returncode_and_output(
-                result,
-                "Failed to retrieve UNIX domain sockets with 'ss -xl'."
+            result = self._run_podman_exec(
+                ["ss", "-xl"],
+                "Failed to retrieve UNIX domain sockets with 'ss -xl'"
             )
 
             self._print_output(
@@ -407,9 +428,9 @@ class QMCTL:
             )
 
         except Exception as e:
-            self._print_output_and_exit({"Error": str(e)})
+            self._print_error_and_exit(QmError(str(e)))
 
-    def show_shared_memory(self, output_json=False, pretty=True):
+    def show_shared_memory(self, output_json: bool = False, pretty: bool = True) -> None:
         """Show shared memory segments in the container using 'ipcs'.
 
         Args:
@@ -420,7 +441,7 @@ class QMCTL:
         self.exec_in_container(["ipcs"], output_json=output_json,
                                pretty=pretty)
 
-    def show_resources(self, output_json=False, pretty=True):
+    def show_resources(self, output_json: bool = False, pretty: bool = True) -> None:
         """Stream live resource usage for qm.service using systemd-cgtop.
 
         Note:
@@ -431,8 +452,7 @@ class QMCTL:
             output_json (bool): This parameter is ignored.
             pretty (bool): This parameter is ignored.
         """
-        self.output_json = output_json
-        self.pretty = pretty
+        self._configure_output(output_json, pretty)
         try:
             print(
                 "[INFO] Starting systemd-cgtop stream for qm.service. "
@@ -452,11 +472,11 @@ class QMCTL:
                         break
         except KeyboardInterrupt:
             msg = "KeyboardInterrupt: Exiting systemd-cgtop stream."
-            self._print_output_and_exit(msg, exit_code=0)
+            self._print_error_and_exit(QmError(msg, exit_code=0))
         except Exception as e:
-            self._print_output_and_exit(str(e))
+            self._print_error_and_exit(QmError(str(e)))
 
-    def show_available_devices(self, output_json=False, pretty=True):
+    def show_available_devices(self, output_json: bool = False, pretty: bool = True) -> None:
         """Verify device existence specified in the container config.
 
         Args:
@@ -464,29 +484,19 @@ class QMCTL:
             pretty (bool): If True and output_json is True, pretty-print
                 the JSON.
         """
-        self.output_json = output_json
-        self.pretty = pretty
-        self._check_if_path_exists_and_handle_error(self.config_path)
+        self._configure_output(output_json, pretty)
+        self._validate_path_exists(self.config_path)
 
-        self._check_if_container_exists_and_handle_error()
+        self._validate_container_exists()
 
         try:
-            devices = []
-            self._log_path("Reading", self.config_path)
-            self._open_config_file_strip_and_append_to_devices(devices)
-
-            self._check_if_any_devcie_exists_and_handle_error(devices)
-
-            command = ["podman", "exec", self.container, "test", "-e"]
-            results = self._run_command_for_each_device(devices,
-                                                        self.container,
-                                                        command)
-
-            self._print_output(results)
+            self._verify_devices_existence()
         except Exception as e:
-            self._print_output_and_exit(e)
+            self._print_error_and_exit(QmError(str(e)))
 
-    def show_namespaces(self, output_json=False, pretty=True):
+
+
+    def show_namespaces(self, output_json: bool = False, pretty: bool = True) -> None:
         """Show namespace information inside the container using 'lsns'.
 
         Args:
@@ -494,26 +504,21 @@ class QMCTL:
             pretty (bool): If True and output_json is True, pretty-print
                 the JSON.
         """
-        self.output_json = output_json
-        self.pretty = pretty
+        self._configure_output(output_json, pretty)
         try:
-            result = subprocess.run(
-                ["podman", "exec", self.container, "lsns"],
-                capture_output=True,
-                text=True,
-                check=False,
+            result = self._run_podman_exec(
+                ["lsns"],
+                "Failed to retrieve namespace info using 'lsns'"
             )
-
-            self._handle_subprocess_result_for_podman_exec_lsn(result)
 
             self._print_output(
                 {"Namespaces": result.stdout.strip()}
             )
 
         except Exception as e:
-            self._print_output_and_exit({"Error": str(e)})
+            self._print_error_and_exit(QmError(str(e)))
 
-    def exec_in_container(self, command, output_json=False, pretty=True):
+    def exec_in_container(self, command: list[str], output_json: bool = False, pretty: bool = True) -> None:
         """Execute a command inside the primary 'qm' container.
 
         Args:
@@ -522,29 +527,19 @@ class QMCTL:
             pretty (bool): If True and output_json is True, pretty-print
                 the JSON.
         """
-        self.output_json = output_json
-        self.pretty = pretty
+        self._configure_output(output_json, pretty)
 
-        self._check_if_container_exists_and_handle_error()
+        self._validate_container_exists()
 
-        self._check_if_command_is_not_None(
+        self._validate_command_provided(
             command,
             "No command provided to execute in the container."
         )
 
         try:
-            result = subprocess.run(
-                ["podman", "exec", self.container] + command,
-                capture_output=True,
-                text=True,
-                check=False,
-            )
-
-            self._check_exit_if_string_in_string(
-                result.stderr.lower(),
-                "command not found",
-                (f"Error: Command '{' '.join(command)}' not found in the "
-                 f"container '{self.container}'.")
+            result = self._run_podman_exec(
+                command,
+                f"Failed to execute command in container '{self.container}'"
             )
 
             self._print_output(
@@ -552,9 +547,9 @@ class QMCTL:
             )
 
         except Exception as e:
-            self._print_output_and_exit({"Error": str(e)})
+            self._print_error_and_exit(QmError(str(e)))
 
-    def copy_in_container(self, paths, output_json=False, pretty=True):
+    def copy_in_container(self, paths: list[str], output_json: bool = False, pretty: bool = True) -> None:
         """Copy files or directories between the host and the container.
 
         Args:
@@ -563,27 +558,26 @@ class QMCTL:
             pretty (bool): If True and output_json is True, pretty-print
                 the JSON.
         """
-        self.output_json = output_json
-        self.pretty = pretty
-        self._check_if_container_exists_and_handle_error()
+        self._configure_output(output_json, pretty)
+        self._validate_container_exists()
 
-        src, dst = self._check_and_extract_src_dst_from_paths(paths)
+        src, dst = self._validate_paths_for_cp(paths)
 
         try:
             result = subprocess.run(
-                ["podman", "cp", src, dst],
+                PODMAN_CP + [src, dst],
                 capture_output=True,
                 text=True,
                 check=False,
             )
 
-            if result.stderr.lower():
-                raise RuntimeError(result.stderr)
+            if result.returncode != 0:
+                raise RuntimeError(result.stderr or "Copy operation failed")
 
         except Exception as e:
-            self._print_output_and_exit({"Error": str(e)})
+            self._print_error_and_exit(QmError(str(e)))
 
-    def execin_in_container(self, command, output_json=False, pretty=True):
+    def execin_in_container(self, command: list[str], output_json: bool = False, pretty: bool = True) -> None:
         """Execute a command in a nested container inside the 'qm' container.
 
         Args:
@@ -593,22 +587,19 @@ class QMCTL:
             pretty (bool): If True and output_json is True, pretty-print
                 the JSON.
         """
-        self.output_json = output_json
-        self.pretty = pretty
-        self._check_if_container_exists_and_handle_error()
+        self._configure_output(output_json, pretty)
+        self._validate_container_exists()
 
-        container_name, command_in_contaier = \
-            self._check_if_command_is_valid_and_get_name_and_command(command)
+        container_name, command_args = (
+            self._validate_exec_command(command)
+        )
 
         try:
             cmd_list = [
-                "podman",
-                "exec",
-                self.container,
-                "podman",
-                "exec",
-                container_name,
-            ] + command_in_contaier
+                *PODMAN_EXEC, self.container,
+                *PODMAN_EXEC, container_name,
+                *command_args
+            ]
             result = subprocess.run(
                 cmd_list, capture_output=True, text=True, check=False
             )
@@ -626,15 +617,53 @@ class QMCTL:
             )
 
         except Exception as e:
-            self._print_output_and_exit({"Error": str(e)})
+            self._print_error_and_exit(QmError(str(e)))
 
-# !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
-# End of the QMCTL class
-# !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
+    def _configure_output(self, output_json: bool = False, pretty: bool = True) -> None:
+        """Configure output settings for this operation."""
+        self.output_config = OutputConfig(output_json, pretty)
 
-# !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
-# Start of the ArgumentParserWithDefaults class
-# !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
+    def _run_podman_exec(self, command: list[str], context: str = "Execute command") -> subprocess.CompletedProcess:
+        """Run podman exec with standard error handling.
+
+        Args:
+            command (list): Command to execute in container
+            context (str): Context description for error messages
+
+        Returns:
+            subprocess.CompletedProcess: The result of the subprocess run
+        """
+        full_command = PODMAN_EXEC + [self.container] + command
+        result = subprocess.run(
+            full_command,
+            capture_output=True,
+            text=True,
+            check=False,
+        )
+
+        self._check_subprocess_result(result, context, command)
+        return result
+
+    def _read_config_lines(self, filter_prefix: Optional[str] = None) -> Generator[str, None, None]:
+        """Read and filter config file lines.
+
+        Args:
+            filter_prefix (str, optional): Only yield lines starting with
+                this prefix
+
+        Yields:
+            str: Stripped lines from the config file
+        """
+        self._validate_path_exists(self.config_path)
+        self._log_path("Reading", self.config_path)
+
+        with open(self.config_path, "r") as file:
+            for line in file:
+                stripped = line.strip()
+                if not stripped or stripped.startswith(COMMENT_PREFIX):
+                    continue
+                if not filter_prefix or stripped.startswith(filter_prefix):
+                    yield stripped
 
 
 class ArgumentParserWithDefaults(argparse.ArgumentParser):
@@ -645,8 +674,8 @@ class ArgumentParserWithDefaults(argparse.ArgumentParser):
     """
 
     def add_argument(
-        self, *args, help=None, default=None, completer=None, **kwargs
-    ):
+        self, *args, help: Optional[str] = None, default: Optional[Any] = None, completer: Optional[Any] = None, **kwargs
+    ) -> argparse.Action:
         """Add an argument and automatically format the help message.
 
         This method includes the default value in the help text.
@@ -668,66 +697,361 @@ class ArgumentParserWithDefaults(argparse.ArgumentParser):
                 )
         action = super().add_argument(*args, **kwargs)
         if completer is not None:
-            action.completer = completer
+            # Set completer for shell autocompletion if available
+            action.completer = completer  # type: ignore
         return action
 
 
-# !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
-# End of the ArgumentParserWithDefaults class
-# !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
+def create_subcommand(
+    subparsers: argparse._SubParsersAction, name: str, help_text: str, default_func: Callable, args_config: Optional[list[dict[str, Any]]] = None
+) -> argparse.ArgumentParser:
+    """Create and configure a subcommand parser.
 
-# !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
-# Start of the SubcommandInitializer class
-# !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
+    Args:
+        subparsers: The subparser object from the main parser.
+        name (str): The name of the subcommand.
+        help_text (str): The help string for the subcommand.
+        default_func (callable): The function to be called when this
+            subcommand is used.
+        args_config (list, optional): List of argument configurations.
 
-
-class SubcommandInitializer:
-    """A generic class to initialize subparsers for command-line applications.
-
-    This class encapsulates the common logic for adding a subparser,
-    defining its arguments, and setting its default function.
+    Returns:
+        argparse.ArgumentParser: The created subparser.
     """
+    args_config = args_config or []
+    parser = subparsers.add_parser(name, help=help_text)
 
-    def __init__(self, subparsers, name, help_text, default_func,
-                 args_config=None):
-        """Initialize a new SubcommandInitializer instance.
+    for arg_cfg in args_config:
+        arg_names = arg_cfg.pop('name')
+        parser.add_argument(*arg_names, **arg_cfg)
 
-        Args:
-            subparsers: The subparser object from the main parser (e.g.,
-                from parser.add_subparsers()).
-            name (str): The name of the subcommand (e.g., "show", "run").
-            help_text (str): The help string for the subcommand.
-            default_func (callable): The function to be called when this
-                subcommand is used. This function will receive the parsed
-                arguments.
-            args_config (list, optional): A list of dictionaries, where each
-                dictionary defines an argument for the subparser. Each dict
-                should contain keys corresponding to argparse.add_argument
-                parameters (e.g., 'name', 'nargs', 'default', 'choices',
-                'action', 'help'). Defaults to None (no additional arguments).
-        """
-        self.subparsers = subparsers
-        self.name = name
-        self.help_text = help_text
-        self.default_func = default_func
-        self.args_config = args_config if args_config is not None else []
-
-    def initialize(self):
-        """Add the subparser to the main parser and configure its arguments.
-
-        Returns:
-            argparse.ArgumentParser: The created subparser object.
-        """
-        parser = self.subparsers.add_parser(self.name, help=self.help_text)
-
-        for arg_cfg in self.args_config:
-            arg_names = arg_cfg.pop('name')
-            parser.add_argument(*arg_names, **arg_cfg)
-
-        parser.set_defaults(func=self.default_func)
-        return parser
+    parser.set_defaults(func=default_func)
+    return parser
 
 
-# !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
-# End of the SubcommandInitializer class
-# !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
+def perror(*args: Any, **kwargs: Any) -> None:
+    """Print a message to the standard error stream."""
+    print(*args, file=sys.stderr, **kwargs)
+
+
+def handle_error(e: Exception, exit_code: int) -> None:
+    """Print an error message and exit the script.
+
+    Args:
+        e (Exception): The exception object caught.
+        exit_code (int): The exit code to use when exiting the script.
+    """
+    error_message = str(e).strip("'\"")
+    perror(f"Error: {error_message}")
+    sys.exit(exit_code)
+
+
+def run_command_with_error_handling(args: argparse.Namespace, controller: QmController, parser: argparse.ArgumentParser) -> None:
+    """Execute the subcommand with centralized error handling.
+
+    Args:
+        args: The parsed command-line arguments.
+        controller: An instance of the QmController class.
+        parser: The argparse parser object, used for printing usage.
+    """
+    try:
+        if not args.subcommand:
+            parser.print_usage()
+            perror("Error: requires a subcommand")
+            sys.exit(errno.EINVAL)
+        args.func(args, controller)
+    except KeyError as e:
+        handle_error(e, 1)
+    except NotImplementedError as e:
+        handle_error(e, errno.ENOTSUP)
+    except subprocess.CalledProcessError as e:
+        handle_error(e, e.returncode)
+    except KeyboardInterrupt:
+        sys.exit(0)
+    except (IndexError, ConnectionError, ValueError) as e:
+        handle_error(e, errno.EINVAL)
+    except IOError as e:
+        handle_error(e, errno.EIO)
+
+
+def create_argument_parser(description: str) -> argparse.ArgumentParser:
+    """Create and configure the argument parser for the CLI.
+
+    Args:
+        description (str): The description text for the CLI tool.
+
+    Returns:
+        An initialized ArgumentParser for the CLI.
+    """
+    parser = ArgumentParserWithDefaults(
+        prog="qmctl",
+        description=description,
+        formatter_class=argparse.RawTextHelpFormatter,
+    )
+    configure_arguments(parser)
+    return parser
+
+
+def configure_arguments(parser: argparse.ArgumentParser) -> None:
+    """Configure the base command-line arguments for the parser.
+
+    Args:
+        parser (argparse.ArgumentParser): The main argument parser.
+    """
+    verbosity_group = parser.add_mutually_exclusive_group()
+    verbosity_group.add_argument(
+        "-v", "--verbose", action="store_true", help="Enable verbose output."
+    )
+
+
+def parse_arguments(parser: argparse.ArgumentParser) -> argparse.Namespace:
+    """Parse command line arguments.
+
+    Args:
+        parser (argparse.ArgumentParser): The argument parser.
+
+    Returns:
+        The parsed arguments object.
+    """
+    return parser.parse_args()
+
+
+def post_parse_setup(args: argparse.Namespace) -> None:
+    """Perform additional setup after parsing arguments.
+
+    Args:
+        args: The parsed command-line arguments.
+    """
+    pass
+
+
+def init_cli() -> tuple[argparse.ArgumentParser, argparse.Namespace]:
+    """Initialize the QmController CLI, parse arguments, set up environment.
+
+    Returns:
+        A tuple containing the configured parser and the parsed arguments.
+    """
+    description = get_description()
+    parser = create_argument_parser(description)
+    configure_subcommands(parser)
+    args = parse_arguments(parser)
+    post_parse_setup(args)
+    return parser, args
+
+
+def get_description() -> str:
+    """Return the description of the QmController tool.
+
+    Returns:
+        A string containing the tool's description.
+    """
+    return "QmCTL: Command Line Interface for QM Container"
+
+
+def configure_subcommands(parser: argparse.ArgumentParser) -> None:
+    """Add subcommand parsers to the main argument parser.
+
+    Args:
+        parser (argparse.ArgumentParser): The main argument parser.
+    """
+    subparsers = parser.add_subparsers(dest="subcommand")
+    subparsers.required = False
+    init_show_subcommand(subparsers)
+    init_exec_subcommand(subparsers)
+    init_execin_subcommand(subparsers)
+    init_cp_subcommand(subparsers)
+
+
+def init_show_subcommand(subparsers: argparse._SubParsersAction) -> None    :
+    """Initialize the 'show' subcommand for displaying container info.
+
+    Args:
+        subparsers: The subparser object from the main parser.
+    """
+    name = "show"
+    help_text = "Show information about the QM container"
+    default_func = handle_show_command
+    args_config = [
+        {
+            'name': ['show_command_topic'],
+            'nargs': '?',
+            'default': 'container',
+            'choices': [
+                "container",
+                "unix-domain-sockets",
+                "shared-memory",
+                "resources",
+                "available-devices",
+                "namespaces",
+                "all",
+            ],
+            'help': "What to show"
+        },
+        {
+            'name': ['--json'],
+            'action': 'store_true',
+            'help': "Output as JSON"
+        }
+    ]
+    create_subcommand(
+        subparsers, name, help_text, default_func, args_config
+    )
+
+
+def init_exec_subcommand(subparsers: argparse._SubParsersAction) -> None:
+    """Initialize the 'exec' subcommand for running commands.
+
+    Args:
+        subparsers: The subparser object from the main parser.
+    """
+    name = "exec"
+    help_text = "Run command inside QM container"
+    default_func = handle_exec_command
+    args_config = [
+        {
+            'name': ['cmd'],
+            'nargs': argparse.REMAINDER,
+            'help': "Command to execute"
+        },
+        {
+            'name': ['--json'],
+            'action': 'store_true',
+            'help': "Output as JSON"
+        }
+    ]
+    create_subcommand(
+        subparsers, name, help_text, default_func, args_config
+    )
+
+
+def init_execin_subcommand(subparsers: argparse._SubParsersAction) -> None:
+    """Initialize the 'execin' subcommand for nested execution.
+
+    Args:
+        subparsers: The subparser object from the main parser.
+    """
+    name = "execin"
+    help_text = "Run command inside QM container in a nested container"
+    default_func = handle_execin_command
+    args_config = [
+        {
+            'name': ['cmd'],
+            'nargs': argparse.REMAINDER,
+            'help': "Command to execute in the nested container"
+        },
+        {
+            'name': ['--json'],
+            'action': 'store_true',
+            'help': "Output as JSON"
+        }
+    ]
+    create_subcommand(
+        subparsers, name, help_text, default_func, args_config
+    )
+
+
+def init_cp_subcommand(subparsers: argparse._SubParsersAction) -> None:
+    """Initialize the 'cp' subcommand for copying files.
+
+    Args:
+        subparsers: The subparser object from the main parser.
+    """
+    name = "cp"
+    help_text = "Copy files between host and QM container"
+    default_func = handle_cp_command
+    args_config = [
+        {
+            'name': ['paths'],
+            'nargs': 2,
+            'help': ("Source and destination paths (e.g., "
+                     "/path/to/file /path/in/container)")
+        },
+        {
+            'name': ['--json'],
+            'action': 'store_true',
+            'help': "Output as JSON"
+        }
+    ]
+    create_subcommand(
+        subparsers, name, help_text, default_func, args_config
+    )
+
+
+def handle_show_command(args: argparse.Namespace, controller: QmController) -> None:
+    """Handle the logic for the 'show' subcommand.
+
+    Args:
+        args: The parsed command-line arguments.
+        controller: An instance of the QmController class.
+    """
+    all_show_commands = {
+        "all": controller.show_all,
+        "container": controller.show_container,
+        "unix-domain-sockets": controller.show_unix_sockets,
+        "shared-memory": controller.show_shared_memory,
+        "resources": controller.show_resources,
+        "available-devices": controller.show_available_devices,
+        "namespaces": controller.show_namespaces,
+    }
+
+    command_to_execute = all_show_commands.get(
+        args.show_command_topic,
+        controller.show_container if args.show_command_topic is None else None)
+
+    if command_to_execute:
+        command_to_execute(output_json=args.json, pretty=True)
+    else:
+        print(f"Error: Unknown show command '{args.show_command_topic}'.")
+
+
+def handle_exec_command(args: argparse.Namespace, controller: QmController) -> None:
+    """Handle the logic for the 'exec' subcommand.
+
+    Args:
+        args: The parsed command-line arguments.
+        controller: An instance of the QmController class.
+    """
+    controller.exec_in_container(
+        command=args.cmd, output_json=args.json, pretty=True
+    )
+
+
+def handle_execin_command(args: argparse.Namespace, controller: QmController) -> None:
+    """Handle the logic for the 'execin' subcommand.
+
+    Args:
+        args: The parsed command-line arguments.
+        controller: An instance of the QmController class.
+    """
+    controller.execin_in_container(
+        command=args.cmd, output_json=args.json, pretty=True
+    )
+
+
+def handle_cp_command(args: argparse.Namespace, controller: QmController) -> None:
+    """Handle the logic for the 'cp' subcommand.
+
+    Args:
+        args: The parsed command-line arguments.
+        controller: An instance of the QmController class.
+    """
+    controller.copy_in_container(
+        paths=args.paths, output_json=args.json, pretty=True
+    )
+
+
+def main() -> None:
+    """Run the main qmctl command-line interface."""
+    parser, args = init_cli()
+    controller = QmController(verbose=args.verbose)
+    try:
+        import argcomplete
+        argcomplete.autocomplete(parser)
+    except Exception:
+        pass
+
+    run_command_with_error_handling(args, controller, parser)
+
+
+if __name__ == "__main__":
+    main()
