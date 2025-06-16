@@ -10,7 +10,7 @@
 /etc/qm(/.*)?	gen_context(system_u:object_r:qm_file_t,s0)
 
 # File context for ipc programs
-/var/run/ipc(/.*)?	gen_context(system_u:object_r:ipc_var_run_t,s0)
+/run/ipc(/.*)?	gen_context(system_u:object_r:ipc_var_run_t,s0)
 
 # File context for bluechi-agent inside QM
 /usr/lib/qm/rootfs/usr/libexec/bluechi-agent	--	gen_context(system_u:object_r:qm_bluechi_agent_exec_t,s0)
