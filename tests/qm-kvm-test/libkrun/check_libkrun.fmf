@@ -1,0 +1,7 @@
+summary: Test libkrun in qm
+test: /bin/bash ./check_libkrun.sh
+duration: 10m
+tier: 0
+tag: kvm
+framework: shell
+
