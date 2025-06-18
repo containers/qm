@@ -30,7 +30,19 @@ unconfined_domain(ipc_t)
 
 qm_domain_template(qm)
 
+#########################################
+# IPC between QM containers
+#########################################
 
+require {
+    type qm_file_t;
+    type qm_container_ipc_t;
+    class sock_file write;
+}
+
+#============= qm_container_ipc_t ==============
+allow qm_container_ipc_t qm_file_t:sock_file write;
+allow qm_container_ipc_t qm_t:unix_stream_socket connectto;
 
 #########################################
 #
