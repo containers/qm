@@ -15,6 +15,8 @@ install_libkrun() {
     exec_cmd "dnf install --setopt=reposdir=/etc/yum.repos.d  --installroot=/usr/lib/qm/rootfs -y libkrun crun-krun"
 }
 
+# This is a workaround to update the qm policy to add support for libkrun.
+# It should be removed after the qm policy is updated.
 update_qm_selinux_policy() {
     info_message "update_qm_selinux_policy(): update the qm selinux policy"
     touch /root/krun.te
