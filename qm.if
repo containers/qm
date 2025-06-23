@@ -83,7 +83,7 @@ template(`qm_domain_template',`
 	allow $1_t $1_file_type:chr_file mounton;
 	allow $1_t $1_file_type:sock_file mounton;
 
-	filetrans_pattern(ipc_t, $1_file_t, ipc_var_run_t, dir, "ipc")
+        filetrans_pattern($1_t, $1_file_t, ipc_var_run_t, dir, "ipc")
 	list_dirs_pattern($1_t, ipc_var_run_t, ipc_var_run_t)
 	allow $1_t ipc_var_run_t:dir mounton;
 
