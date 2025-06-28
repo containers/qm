@@ -31,6 +31,11 @@ unconfined_domain(ipc_t)
 qm_domain_template(qm)
 
 
+#########################################
+#
+# IPC between two QM containers
+#
+stream_connect_pattern(qm_container_ipc_t, ipc_var_run_t, qm_file_t, qm_t);
 
 #########################################
 #
