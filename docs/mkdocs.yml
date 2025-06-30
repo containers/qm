@@ -24,9 +24,6 @@ theme:
     - content.code.copy
     - navigation.indexes
 
-extra_javascript:
-  - assets/js/tab-sync.js
-
 markdown_extensions:
   - toc:
       permalink: True
