@@ -86,6 +86,7 @@ template(`qm_domain_template',`
 	filetrans_pattern(ipc_t, $1_file_t, ipc_var_run_t, dir, "ipc")
 	list_dirs_pattern($1_t, ipc_var_run_t, ipc_var_run_t)
 	allow $1_t ipc_var_run_t:dir mounton;
+	allow $1_container_ipc_t ipc_var_run_t:dir mounton;
 
 	manage_blk_files_pattern($1_t, $1_file_type, $1_file_type)
 	manage_chr_files_pattern($1_t, $1_file_type, $1_file_type)
