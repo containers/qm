@@ -1,10 +1,6 @@
-# Title: How to change the variables in qm containers.conf
-
-## Description
+# Changing variables in qm containers.conf
 
 The `container.conf` file needs to be modified to allow pulling images larger than 1G from the repository on OStree images.
-
-Input:
 
 ## Update container image_copy_tmp_dir if the image is an OStree
 
