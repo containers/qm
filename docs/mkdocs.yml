@@ -7,8 +7,15 @@ edit_uri: blob/main/docs/docs/
 copyright: Copyright Contributors to the QM project
 nav:
   - Home: index.md
-  - Getting Started:
-      - Installation: getting_started/installation.md
+  - Getting Started: getting_started.md
+  - Using QM: usage.md
+  - Setting up IPC: ipc.md
+  - How To:
+    - Android container: how_tos/android.md
+    - Using network modes with QM: how_tos/network.md
+    - Changing variables in QM: how_tos/qm_variables.md
+  - Experimental:
+    - QM Subpackages: experimental/subpackages.md
   - Additional resources: resources.md
 
 theme:
@@ -16,9 +23,6 @@ theme:
   features:
     - content.code.copy
     - navigation.indexes
-
-extra_javascript:
-  - assets/js/tab-sync.js
 
 markdown_extensions:
   - toc:
