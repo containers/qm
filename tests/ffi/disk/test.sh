@@ -56,10 +56,11 @@ EOF
 reload_config
 
 running_container_in_qm
+LOCK_DISK_SPACE=${LOCK_DISK_SPACE:-2G}
 exec_cmd "podman exec -it qm /bin/bash -c \
          'podman exec -it ffi-qm ./QM/file-allocate'"
 
-if ! eval "fallocate -l 2G /root/file.lock" ; then
+if ! eval "fallocate -l ${LOCK_DISK_SPACE} /root/file.lock" ; then
    info_message "FAIL: No space left on device."
    podman exec -it qm /bin/bash -c 'podman  rmi -i -f --all; echo $?'
    exit 1
