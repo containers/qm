@@ -56,7 +56,7 @@ check_kvm_is_active () {
 
     exec_cmd "podman exec qm systemctl start kvm"
     # Waiting for kvm to be ready
-    sleep 10
+    sleep 20
 
     if [ "$(podman exec qm systemctl is-active kvm)" == "active" ]; then
         info_message "PASS: check_kvm_is_active(): kvm is active in qm."
