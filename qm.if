@@ -414,6 +414,16 @@ template(`qm_domain_template',`
 	allow $1_t $1_container_wayland_t:dbus send_msg;
 	dev_read_sysfs($1_container_wayland_t)
 
+        #########################################
+        #
+        #   QM to QM IPC Communication
+        #
+        # Allow rw access to sock files labeled qm_file_t
+        allow $1_container_t $1_file_t:sock_file { read write };
+        # Allow container to connect to unix_stream_socket of qm_t processes
+        allow $1_container_t $1_t:unix_stream_socket connectto;
+
+
 	allow getty_t $1_file_type:chr_file rw_chr_file_perms;
 
 	read_files_pattern(systemd_hostnamed_t, $1_file_t, $1_file_t)
