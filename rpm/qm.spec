@@ -16,6 +16,11 @@
 # Format must contain '$x' somewhere to do anything useful
 %global _format() export %1=""; for x in %{modulenames}; do %1+=%2; %%1+=" "; done;
 
+# RHEL < 10 and Fedora < 40 use file context entries in /var/run
+%if %{defined rhel} && 0%{?rhel} < 10 || %{defined fedora} && 0%{?fedora} < 40
+%define legacy_var_run 1
+%endif
+
 # copr_username is only set on copr environments, not on others like koji
 # Check if copr is owned by rhcontainerbot
 %if "%{?copr_username}" != "rhcontainerbot"
@@ -90,6 +95,10 @@ use container tools like Podman.
 sed -i 's/^install: man all/install:/' Makefile
 
 %build
+%if %{defined legacy_var_run}
+sed -i 's|^/run/|/var/run/|' qm.fc
+%endif
+
 %{__make} all
 
 %install

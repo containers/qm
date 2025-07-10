@@ -1,20 +1,7 @@
-# Topics
+# Subpackages
 
-1. [QM Sub-Packages](#qm-sub-packages)
-    - [Key Features of QM Sub-Packages](#key-features-of-qm-sub-packages)
-    - [Building QM Sub-Packages](#building-qm-sub-packages)
-    - [Installing QM Sub-Packages](#installing-qm-sub-packages)
-    - [Removing QM Sub-Packages](#removing-qm-sub-packages)
-    - [Creating Your Own Drop-In QM Sub-Package](#creating-your-own-drop-in-qm-sub-package)
-    - [QM Sub-Package Input](#qm-sub-package-input)
-    - [QM Sub-Package tty7](#qm-sub-package-tty7)
-    - [QM Sub-Package ttyUSB0](#qm-sub-package-ttyusb0)
-    - [QM Sub-Package Video](#qm-sub-package-video)
-    - [QM Sub-Package Sound](#qm-sub-package-sound)
-    - [QM Sub-Package ROS2](#qm-sub-package-ros2)
-    - [QM Sub-Package KVM](#qm-sub-package-kvm)
-
-## QM Sub-packages
+Subpackages are **experimental approach** to deliver in a single point (RPM) dropin files
+and additional requirements.
 
 The qm project is designed to provide a flexible and modular environment for managing
 Quality Management (QM) software in containerized environments. One of the key features
@@ -24,24 +11,20 @@ to easily extend or customize their QM environment by adding specific configurat
 tools, or scripts to the containerized QM ecosystem by simple installing or uninstalling
 a RPM package into the system.
 
-## Key Features of QM Sub-Packages
+The key features of QM Sub-Packages are
 
-### Modularity
+- **Modularity**
+  - No configuration change, no typo or distribution rebuild/update.
+    - Just dnf install/remove from the traditional rpm schema.
+- **Customizability**
+  - Users can easily add specific configurations to enhance or modify the behavior of their QM containers.
+- **Maintainability**
+  - Sub-packages ensure that the base qm package remains untouched, allowing easy updates without breaking custom configurations.
+- **Simplicity**
+  - Like qm-dropin provide a clear directory structure and templates to guide users in customizing their QM environment.
 
-- No configuration change, no typo or distribution rebuild/update.
-- Just dnf install/remove from the traditional rpm schema.
-
-### Customizability
-
-- Users can easily add specific configurations to enhance or modify the behavior of their QM containers.
-
-### Maintainability
-
-- Sub-packages ensure that the base qm package remains untouched, allowing easy updates without breaking custom configurations.
-
-### Simplicity
-
-- Like qm-dropin provide a clear directory structure and templates to guide users in customizing their QM environment.
+!!! note
+    The following sections describe the currently available QM subpackages.
 
 ## Building QM sub-packages
 
