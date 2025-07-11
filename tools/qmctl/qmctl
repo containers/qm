@@ -703,7 +703,7 @@ class ArgumentParserWithDefaults(argparse.ArgumentParser):
 
 
 def create_subcommand(
-    subparsers: argparse._SubParsersAction, name: str, help_text: str, default_func: Callable, args_config: Optional[list[dict[str, Any]]] = None
+    subparsers: argparse._SubParsersAction, name: str, help_text: str, default_func: Callable, args_config: Optional[list[dict[str, Any]]] = None, epilog: Optional[str] = None
 ) -> argparse.ArgumentParser:
     """Create and configure a subcommand parser.
 
@@ -714,12 +714,13 @@ def create_subcommand(
         default_func (callable): The function to be called when this
             subcommand is used.
         args_config (list, optional): List of argument configurations.
+        epilog (str, optional): Additional text to display after the help.
 
     Returns:
         argparse.ArgumentParser: The created subparser.
     """
     args_config = args_config or []
-    parser = subparsers.add_parser(name, help=help_text)
+    parser = subparsers.add_parser(name, help=help_text, epilog=epilog, formatter_class=argparse.RawTextHelpFormatter)
 
     for arg_cfg in args_config:
         arg_names = arg_cfg.pop('name')
@@ -845,7 +846,38 @@ def get_description() -> str:
     Returns:
         A string containing the tool's description.
     """
-    return "QmCTL: Command Line Interface for QM Container"
+    return """QmCTL: Command Line Interface for QM Container
+
+Examples:
+  # Show container configuration
+  qmctl show
+  qmctl show container
+
+  # Show specific information
+  qmctl show available-devices
+  qmctl show unix-domain-sockets
+  qmctl show shared-memory
+  qmctl show resources
+  qmctl show namespaces
+  qmctl show all
+
+  # Execute commands in QM container
+  qmctl exec ls -la /tmp
+  qmctl exec cat /etc/hostname
+  qmctl exec ps aux
+
+  # Execute commands in nested container
+  qmctl execin radio bash -c "echo 'Hello from radio container'"
+  qmctl execin rear_camera ps aux
+
+  # Copy files between host and container named qm
+  qmctl cp /host/file.txt qm:/tmp/file.txt
+  qmctl cp qm:/tmp/data.log /host/backup/data.log
+
+  # Output as JSON
+  qmctl show --json
+  qmctl exec --json hostname
+  qmctl cp --json /host/file.txt qm:/tmp/file.txt"""
 
 
 def configure_subcommands(parser: argparse.ArgumentParser) -> None:
@@ -871,6 +903,32 @@ def init_show_subcommand(subparsers: argparse._SubParsersAction) -> None    :
     name = "show"
     help_text = "Show information about the QM container"
     default_func = handle_show_command
+    epilog = """Examples:
+  # Show container configuration (default)
+  qmctl show
+  qmctl show container
+
+  # Show available devices
+  qmctl show available-devices
+
+  # Show Unix domain sockets
+  qmctl show unix-domain-sockets
+
+  # Show shared memory segments
+  qmctl show shared-memory
+
+  # Show resource usage (interactive)
+  qmctl show resources
+
+  # Show namespaces
+  qmctl show namespaces
+
+  # Show all information
+  qmctl show all
+
+  # Output as JSON
+  qmctl show --json
+  qmctl show available-devices --json"""
     args_config = [
         {
             'name': ['show_command_topic'],
@@ -894,7 +952,7 @@ def init_show_subcommand(subparsers: argparse._SubParsersAction) -> None    :
         }
     ]
     create_subcommand(
-        subparsers, name, help_text, default_func, args_config
+        subparsers, name, help_text, default_func, args_config, epilog
     )
 
 
@@ -907,6 +965,24 @@ def init_exec_subcommand(subparsers: argparse._SubParsersAction) -> None:
     name = "exec"
     help_text = "Run command inside QM container"
     default_func = handle_exec_command
+    epilog = """Examples:
+  # List files in /tmp directory
+  qmctl exec ls -la /tmp
+
+  # Check container hostname
+  qmctl exec hostname
+
+  # View running processes
+  qmctl exec ps aux
+
+  # Check system information
+  qmctl exec uname -a
+
+  # Read file contents
+  qmctl exec cat /etc/os-release
+
+  # Output as JSON
+  qmctl exec --json hostname"""
     args_config = [
         {
             'name': ['cmd'],
@@ -920,7 +996,7 @@ def init_exec_subcommand(subparsers: argparse._SubParsersAction) -> None:
         }
     ]
     create_subcommand(
-        subparsers, name, help_text, default_func, args_config
+        subparsers, name, help_text, default_func, args_config, epilog
     )
 
 
@@ -933,6 +1009,21 @@ def init_execin_subcommand(subparsers: argparse._SubParsersAction) -> None:
     name = "execin"
     help_text = "Run command inside QM container in a nested container"
     default_func = handle_execin_command
+    epilog = """Examples:
+  # Execute command in radio container
+  qmctl execin radio ps aux
+
+  # Execute command in rear_camera container
+  qmctl execin rear_camera ls -la /tmp
+
+  # Run interactive bash in nested container
+  qmctl execin radio bash -c "echo 'Hello from radio container'"
+
+  # Check hostname in nested container
+  qmctl execin rear_camera hostname
+
+  # Output as JSON
+  qmctl execin --json radio hostname"""
     args_config = [
         {
             'name': ['cmd'],
@@ -946,7 +1037,7 @@ def init_execin_subcommand(subparsers: argparse._SubParsersAction) -> None:
         }
     ]
     create_subcommand(
-        subparsers, name, help_text, default_func, args_config
+        subparsers, name, help_text, default_func, args_config, epilog
     )
 
 
@@ -959,6 +1050,21 @@ def init_cp_subcommand(subparsers: argparse._SubParsersAction) -> None:
     name = "cp"
     help_text = "Copy files between host and QM container"
     default_func = handle_cp_command
+    epilog = """Examples:
+  # Copy file from host to container named qm
+  qmctl cp /host/file.txt qm:/tmp/file.txt
+
+  # Copy file from container to host
+  qmctl cp qm:/tmp/data.log /host/backup/data.log
+
+  # Copy directory from host to container
+  qmctl cp /host/config/ qm:/etc/myapp/
+
+  # Copy with different filename
+  qmctl cp /host/source.conf qm:/etc/target.conf
+
+  # Output as JSON
+  qmctl cp --json /host/file.txt qm:/tmp/file.txt"""
     args_config = [
         {
             'name': ['paths'],
@@ -973,7 +1079,7 @@ def init_cp_subcommand(subparsers: argparse._SubParsersAction) -> None:
         }
     ]
     create_subcommand(
-        subparsers, name, help_text, default_func, args_config
+        subparsers, name, help_text, default_func, args_config, epilog
     )
 
 
