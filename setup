@@ -20,7 +20,7 @@ AGENT_HOSTNAME="$(hostname)"
 AGENTCONF="/etc/bluechi/agent.conf.d/agent.conf"
 QM_CONTAINER_IDS=1000000000:1500000000
 CONTAINER_IDS=2500000000:1500000000
-PACKAGES_TO_INSTALL="selinux-policy-targeted podman systemd bluechi-agent procps-ng iptables-nft jq"
+PACKAGES_TO_INSTALL="selinux-policy-targeted podman systemd bluechi-agent procps-ng iptables-nft jq libkrun crun-krun"
 
 # RHEL kernel uses iptables-nft, not iptables-legacy, the tool should
 # make sure this package is removed.
@@ -180,6 +180,24 @@ install() {
     EXTRA_FLAG=""
     if [ "$ID" == "fedora" ] && [ "$VERSION_ID" -ge 41 ]; then
         EXTRA_FLAG="--use-host-config"
+    fi
+
+    if [ "$ID" == "centos" ]; then
+        # check if "${ROOTFS}"/etc/yum.repos.d
+        if [ -z "$(find "${ROOTFS}"/etc/yum.repos.d -mindepth 1 -maxdepth 1)" ]; then
+            cat > "${ROOTFS}/etc/yum.repos.d/libkrun.repo" << EOF
+[copr:copr.fedorainfracloud.org:group_centos-automotive-sig:libkrun]
+name=Copr repo for libkrun owned by @centos-automotive-sig
+baseurl=https://download.copr.fedorainfracloud.org/results/@centos-automotive-sig/libkrun/centos-stream-\$releasever-\$basearch/
+type=rpm-md
+skip_if_unavailable=True
+gpgcheck=1
+gpgkey=https://download.copr.fedorainfracloud.org/results/@centos-automotive-sig/libkrun/pubkey.gpg
+repo_gpgcheck=0
+enabled=1
+enabled_metadata=1
+EOF
+        fi
     fi
 
     # SecurityLabelNested not supported so far in CentOS Stream 9 or lower
