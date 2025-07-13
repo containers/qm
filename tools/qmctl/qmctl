@@ -394,19 +394,22 @@ class QmController:
         """
         self._configure_output(output_json, pretty)
 
-        self._validate_path_exists(self.config_path)
-        self._log_path("Reading", self.config_path)
+        try:
+            self._validate_path_exists(self.config_path)
+            self._log_path("Reading", self.config_path)
 
-        with open(self.config_path, "r") as file:
-            content = file.read()
+            with open(self.config_path, "r") as file:
+                content = file.read()
 
-        if self.output_config.output_json:
-            parsed = self.parse_to_dict(content)
-            self._print_output(
-                {"path": self.config_path, "sections": parsed}
-            )
-        else:
-            print(content, end="")
+            if self.output_config.output_json:
+                parsed = self.parse_to_dict(content)
+                self._print_output(
+                    {"path": self.config_path, "sections": parsed}
+                )
+            else:
+                print(content, end="")
+        except Exception as e:
+            self._print_error_and_exit(QmError(str(e)))
 
     def show_unix_sockets(self, output_json: bool = False, pretty: bool = True) -> None:
         """Show active UNIX domain sockets inside the container using 'ss'.
@@ -485,11 +488,10 @@ class QmController:
                 the JSON.
         """
         self._configure_output(output_json, pretty)
-        self._validate_path_exists(self.config_path)
-
-        self._validate_container_exists()
-
+        
         try:
+            self._validate_path_exists(self.config_path)
+            self._validate_container_exists()
             self._verify_devices_existence()
         except Exception as e:
             self._print_error_and_exit(QmError(str(e)))
@@ -529,14 +531,12 @@ class QmController:
         """
         self._configure_output(output_json, pretty)
 
-        self._validate_container_exists()
-
-        self._validate_command_provided(
-            command,
-            "No command provided to execute in the container."
-        )
-
         try:
+            self._validate_container_exists()
+            self._validate_command_provided(
+                command,
+                "No command provided to execute in the container."
+            )
             result = self._run_podman_exec(
                 command,
                 f"Failed to execute command in container '{self.container}'"
@@ -559,11 +559,10 @@ class QmController:
                 the JSON.
         """
         self._configure_output(output_json, pretty)
-        self._validate_container_exists()
-
-        src, dst = self._validate_paths_for_cp(paths)
-
+        
         try:
+            self._validate_container_exists()
+            src, dst = self._validate_paths_for_cp(paths)
             result = subprocess.run(
                 PODMAN_CP + [src, dst],
                 capture_output=True,
@@ -588,13 +587,12 @@ class QmController:
                 the JSON.
         """
         self._configure_output(output_json, pretty)
-        self._validate_container_exists()
-
-        container_name, command_args = (
-            self._validate_exec_command(command)
-        )
-
+        
         try:
+            self._validate_container_exists()
+            container_name, command_args = (
+                self._validate_exec_command(command)
+            )
             cmd_list = [
                 *PODMAN_EXEC, self.container,
                 *PODMAN_EXEC, container_name,
@@ -760,6 +758,8 @@ def run_command_with_error_handling(args: argparse.Namespace, controller: QmCont
             perror("Error: requires a subcommand")
             sys.exit(errno.EINVAL)
         args.func(args, controller)
+    except QmError as e:
+        handle_error(e, e.exit_code)
     except KeyError as e:
         handle_error(e, 1)
     except NotImplementedError as e:
