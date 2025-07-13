@@ -488,7 +488,7 @@ class QmController:
                 the JSON.
         """
         self._configure_output(output_json, pretty)
-        
+
         try:
             self._validate_path_exists(self.config_path)
             self._validate_container_exists()
@@ -559,7 +559,7 @@ class QmController:
                 the JSON.
         """
         self._configure_output(output_json, pretty)
-        
+
         try:
             self._validate_container_exists()
             src, dst = self._validate_paths_for_cp(paths)
@@ -587,7 +587,7 @@ class QmController:
                 the JSON.
         """
         self._configure_output(output_json, pretty)
-        
+
         try:
             self._validate_container_exists()
             container_name, command_args = (
