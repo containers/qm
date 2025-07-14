@@ -15,6 +15,7 @@ template(`qm_domain_template',`
 	gen_require(`
 		class dbus { send_msg acquire_svc };
 		class passwd rootok;
+		class process setcurrent;
 
 		attribute container_domain;
 		attribute filesystem_type;
@@ -60,6 +61,7 @@ template(`qm_domain_template',`
 	container_exec_share_files($1_t)
 	allow $1_t container_ro_file_t:file execmod;
 	allow $1_container_domain $1_file_type:chr_file { rw_inherited_file_perms };
+	allow $1_t self:process setcurrent;
 
 	attribute $1_file_type;
 	allow $1_file_type self:filesystem associate;
