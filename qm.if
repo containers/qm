@@ -17,9 +17,7 @@ template(`qm_domain_template',`
 		class passwd rootok;
 		class process setcurrent;
 
-		attribute container_domain;
 		attribute filesystem_type;
-		attribute container_init_domain;
 		attribute container_net_domain;
 		attribute container_user_domain;
 		attribute unconfined_domain_type;
@@ -452,7 +450,7 @@ template(`qm_domain_template',`
 	allow $1_container_domain self:packet_socket create_socket_perms;
 	allow $1_container_domain self:passwd rootok;
 	allow $1_container_domain self:peer recv;
-	allow $1_container_domain self:process  all_process_perms;
+	allow $1_container_domain self:process { execmem execstack fork getattr getcap getpgid getsched getsession setcap setpgid setrlimit setsched sigchld sigkill signal signull sigstop};
 	allow $1_container_domain self:sem create_sem_perms;
 	allow $1_container_domain self:shm create_shm_perms;
 	allow $1_container_domain self:socket_class_set { create_socket_perms map accept };
