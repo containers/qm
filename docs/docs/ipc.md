@@ -1,5 +1,22 @@
 # Setting up IPC
 
+## Table of Contents
+
+1. [Setting up IPC](#setting-up-ipc)
+
+   1.1 [ASIL to QM IPC](#example-asil-to-qm-app)
+   - [`/etc/systemd/system/ipc_server.socket`](#etcsystemdsystemipc_serversocket)
+   - [`/etc/qm/containers/systemd/ipc_client.container`](#etcqmcontainerssystemdipc_clientcontainer)
+   - [`/etc/containers/systemd/ipc_server.container`](#etccontainerssystemdipc_servercontainer)
+   - [`/etc/containers/systemd/qm.container.d/10-extra-volume.conf`](#etccontainerssystemdqmcontainerd10-extra-volumeconf)
+
+   1.2 [QM to QM IPC](#example-qm-to-qm-app)
+   - [`/etc/qm/containers/systemd/ipc_client.container`](#etcqmcontainerssystemdipc_clientcontainer-1)
+   - [`/etc/qm/containers/systemd/ipc_server.container`](#etcqmcontainerssystemdipc_servercontainer)
+   - [`/etc/qm/systemd/system/ipc_server.socket`](#etcqmsystemdsystemipc_serversocket)
+
+---
+
 In systems where **Automotive Safety Integrity Level (ASIL)** and **Quality Management (QM)**
 components coexist, strict separation is enforced to maintain safety and security boundaries via
 **SELinux (Security-Enhanced Linux)**, which labels processes and files with security contexts
@@ -19,9 +36,73 @@ orchestrated also using container orchestration patterns like **.pod (Podman pod
 **.kube (Kubernetes pod manifests)**, which group related services in shared namespaces to support efficient
 IPC within the same trust boundary.
 
+## Example ASIL to QM app
+<!-- markdownlint-disable MD024 -->
+### /etc/systemd/system/ipc_server.socket
+
+```console
+[Unit]
+Description=IPC Server Socket for asil-to-qm
+[Socket]
+ListenStream=%t/ipc/ipc.socket
+SELinuxContextFromNet=yes
+
+[Install]
+WantedBy=sockets.target
+```
+
+### /etc/qm/containers/systemd/ipc_client.container
+
+``` console
+[Unit]
+Description=Demo client service container (asil-to-qm)
+#Requires=ipc_server.socket
+#After=ipc_server.socket
+[Container]
+Image=quay.io/username/ipc-demo/ipc_client:latest
+Network=none
+Environment=SOCKET_PATH=/run/ipc/ipc.socket
+Volume=/run/ipc/:/run/ipc/
+SecurityLabelType=qm_container_ipc_t
+[Service]
+Restart=always
+[Install]
+WantedBy=multi-user.target
+```
+
+### /etc/containers/systemd/ipc_server.container
+
+```console
+[Unit]
+Description=Demo server service container (asil-to-qm)
+Requires=ipc_server.socket
+After=ipc_server.socket
+[Container]
+Image=quay.io/username/ipc-demo/ipc_server
+Network=none
+Environment=SOCKET_PATH=/run/ipc/ipc.socket
+Volume=/run/ipc/:/run/ipc/
+SecurityLabelType=ipc_t
+[Service]
+Restart=always
+Type=notify
+[Install]
+WantedBy=multi-user.target
+```
+
+### /etc/containers/systemd/qm.container.d/10-extra-volume.conf
+
+```console
+[Unit]
+Requires=ipc_server
+
+[Container]
+Volume=/run/ipc/:/run/ipc/
+```
+
 ## Example QM to QM app
 
-## /etc/qm/containers/systemd/ipc_client.container
+### /etc/qm/containers/systemd/ipc_client.container
 
 ```console
 [Unit]
@@ -39,7 +120,7 @@ Restart=always
 WantedBy=multi-user.target
 ```
 
-## /etc/qm/containers/systemd/ipc_server.container
+### /etc/qm/containers/systemd/ipc_server.container
 
 ```console
 [Unit]
@@ -58,7 +139,7 @@ Type=notify
 WantedBy=multi-user.target
 ```
 
-## /etc/qm/systemd/system/ipc_server.socket
+### /etc/qm/systemd/system/ipc_server.socket
 
 ```console
 [Unit]
@@ -70,3 +151,4 @@ SELinuxContextFromNet=yes
 [Install]
 WantedBy=sockets.target
 ```
+<!-- markdownlint-disable MD024 -->
