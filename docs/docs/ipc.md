@@ -13,7 +13,6 @@
    1.2 [QM to QM IPC](#example-qm-to-qm-app)
    - [`/etc/qm/containers/systemd/ipc_client.container`](#etcqmcontainerssystemdipc_clientcontainer-1)
    - [`/etc/qm/containers/systemd/ipc_server.container`](#etcqmcontainerssystemdipc_servercontainer)
-   - [`/etc/qm/systemd/system/ipc_server.socket`](#etcqmsystemdsystemipc_serversocket)
 
 ---
 
@@ -31,7 +30,7 @@ while maintaining SELinux isolation.
 On the other hand, **IPC between QM services** (e.g., two services or containers within the same QM domain)
 can occur as well. Since these components share the same SELinux type and context, they are allowed to
 communicate using standard Unix domain sockets located in /run. This approach simplifies internal QM
-communication without compromising the system's overall security posture. Such communication can be
+communication rely on containers ipc without compromising the system's overall security posture. Such communication can be
 orchestrated also using container orchestration patterns like **.pod (Podman pod definitions)** or
 **.kube (Kubernetes pod manifests)**, which group related services in shared namespaces to support efficient
 IPC within the same trust boundary.
@@ -56,8 +55,6 @@ WantedBy=sockets.target
 ``` console
 [Unit]
 Description=Demo client service container (asil-to-qm)
-#Requires=ipc_server.socket
-#After=ipc_server.socket
 [Container]
 Image=quay.io/username/ipc-demo/ipc_client:latest
 Network=none
@@ -107,8 +104,7 @@ Volume=/run/ipc/:/run/ipc/
 ```console
 [Unit]
 Description=Demo client service container
-Requires=ipc_server.socket
-After=ipc_server.socket
+
 [Container]
 Image=quay.io/username/ipc-demo/ipc_client:latest
 Network=none
@@ -125,8 +121,6 @@ WantedBy=multi-user.target
 ```console
 [Unit]
 Description=Demo server service container
-Requires=ipc_server.socket
-After=ipc_server.socket
 [Container]
 Image=quay.io/username/ipc-demo/ipc_server:latest
 Network=none
@@ -139,16 +133,4 @@ Type=notify
 WantedBy=multi-user.target
 ```
 
-### /etc/qm/systemd/system/ipc_server.socket
-
-```console
-[Unit]
-Description=IPC Server Socket
-[Socket]
-ListenStream=%t/ipc_server.socket
-SELinuxContextFromNet=yes
-
-[Install]
-WantedBy=sockets.target
-```
 <!-- markdownlint-disable MD024 -->
