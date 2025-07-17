@@ -104,11 +104,13 @@ Volume=/run/ipc/:/run/ipc/
 ```console
 [Unit]
 Description=Demo client service container
+Requires=ipc_server.service
+After=ipc_server.service
 
 [Container]
 Image=quay.io/username/ipc-demo/ipc_client:latest
 Network=none
-Volume=/run/:/run/
+Volume=/run/ipc.socket:/run/ipc.socket
 SecurityLabelLevel=s0:c1,c2
 [Service]
 Restart=always

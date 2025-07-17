@@ -344,8 +344,6 @@ template(`qm_domain_template',`
 	list_dirs_pattern($1_container_domain, $1_file_type, $1_file_type)
 	read_files_pattern($1_container_domain, $1_file_type, $1_file_type)
 
-        type $1_var_run_t;
-        files_type($1_var_run_t)
         filetrans_pattern($1_container_t, $1_file_t, $1_container_file_t, sock_file)
 
 	qm_container_template($1, kvm)
