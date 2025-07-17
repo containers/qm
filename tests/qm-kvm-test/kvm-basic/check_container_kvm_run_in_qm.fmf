@@ -1,0 +1,9 @@
+summary: Test containerized kvm in qm.
+require:
+  - sshpass
+test: /bin/bash ./check_container_kvm_run_in_qm.sh
+duration: 10m
+tier: 0
+tag: [kvm,setup]
+framework: shell
+

@@ -1,0 +1,27 @@
+summary: Test message queue limit enforcement in QM container and host isolation
+description: |
+    This test verifies that the fs.mqueue.queues_max=4 sysctl setting is properly
+    applied in the QM container and that the limit is enforced when creating message queues
+    while the host can create more queues.
+
+    The test will:
+    1. Create HOST_QUEUE_COUNT message queues on the host (before container test)
+    2. Verify QM container has fs.mqueue.queues_max=4 and can create exactly 4 queues
+    3. Create HOST_QUEUE_COUNT more message queues on the host (after container limit reached)
+    4. Demonstrate that host can create 2*HOST_QUEUE_COUNT total queues despite container limits
+
+    Expected results:
+        - Host message queues work independently before and after container test
+        - QM container sysctl fs.mqueue.queues_max returns 4
+        - QM container can create exactly 4 message queues then hits limit
+        - Host isolation: container limits don't affect host queue creation ability
+
+contact: Albert Esteve <aesteve@redhat.com>
+environment:
+    QM_QUEUE_COUNT: 6
+    HOST_QUEUE_COUNT: 5
+test: /bin/bash ./test.sh
+duration: 10m
+tag: ffi
+framework: shell
+id: 774b0232-e29f-4bde-bbab-766e95721965

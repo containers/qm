@@ -91,6 +91,17 @@ Mount=type=tmpfs,destination=/dev/shm
 #
 Rootfs=${ROOTFS}
 
+# The value for fs.mqueue.queues_max determines the maximum number of POSIX message queues
+# that can be created system-wide within the container. This value is set based on available
+# system resources and the expected usage pattern. The calculation is approximately:
+#   queues_max ≈ (system-wide RLIMIT_MSGQUEUE) / (msg_max * msgsize_max) / 2
+# where:
+#   - RLIMIT_MSGQUEUE is the total bytes allowed for all message queues (ulimit -q)
+#   - msg_max is the maximum number of messages allowed per queue (msg_max)
+#   - msgsize_max is the maximum size of each message (msgsize_max)
+# The division by 2 provides a safety margin to avoid exhausting resources and grant FFI.
+Sysctl=fs.mqueue.queues_max=4
+
 SecurityLabelNested=true
 SecurityLabelFileType=qm_file_t
 SecurityLabelLevel=s0
