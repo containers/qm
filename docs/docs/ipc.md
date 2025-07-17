@@ -30,7 +30,7 @@ while maintaining SELinux isolation.
 On the other hand, **IPC between QM services** (e.g., two services or containers within the same QM domain)
 can occur as well. Since these components share the same SELinux type and context, they are allowed to
 communicate using standard Unix domain sockets located in /run. This approach simplifies internal QM
-communication rely on containers ipc without compromising the system's overall security posture. Such communication can be
+communication relies on container IPC without compromising the system's overall security posture. Such communication can be
 orchestrated also using container orchestration patterns like **.pod (Podman pod definitions)** or
 **.kube (Kubernetes pod manifests)**, which group related services in shared namespaces to support efficient
 IPC within the same trust boundary.
