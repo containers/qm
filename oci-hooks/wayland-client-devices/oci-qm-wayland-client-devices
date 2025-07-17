@@ -1,0 +1,58 @@
+#!/bin/bash
+
+input="-"
+CONTAINER_CONFIG=$(cat "$input")
+
+GPU_ENABLED=$(echo "$CONTAINER_CONFIG" | jq -r '.annotations["org.containers.qm.wayland-client.gpu"] // empty')
+
+DEVNAME_LIST=()
+
+if [ -n "$GPU_ENABLED" ]; then
+    # Find all the render devices available
+    RENDER_DEVICES=$(find /dev/dri -type c \( -regex ".*/render.*" \))
+    for RENDER_DEVICE in $RENDER_DEVICES; do
+        DEVNAME_LIST+=("$RENDER_DEVICE")
+    done
+fi
+
+# Iterate over the DEVNAME_LIST to include the required information in the CONTAINER_CONFIG
+for DEVICE in "${DEVNAME_LIST[@]}"; do
+    if ! jq -e ".linux.devices[] | select(.path == \"$DEVICE\")" <<< "$CONTAINER_CONFIG" > /dev/null 2>&1; then
+        # shellcheck disable=SC2012
+        NEW_DEVICE=$(jq -n --arg path "$DEVICE"                                      \
+                           --arg dev_type "$(ls -l "$DEVICE" | head -c 1)"           \
+                           --arg major "$(printf "%d" "$(stat -c "%#t" "$DEVICE")")"      \
+                           --arg minor "$(printf "%d" "$(stat -c "%#T" "$DEVICE")")"      \
+                           --arg filemode "$(printf "%d" "$(stat -c '02%#a' "$DEVICE")")" \
+                           --arg uid "$(stat -c "%u" "$DEVICE")"                       \
+                           --arg gid "$(stat -c "%g" "$DEVICE")"                       \
+                        '{
+                            "path": $path,
+                            "type": $dev_type,
+                            "major": $major|tonumber,
+                            "minor": $minor|tonumber,
+                            "fileMode": $filemode|tonumber,
+                            "uid": $uid|tonumber,
+                            "gid": $gid|tonumber,
+                        }')
+
+        # shellcheck disable=SC2012
+        NEW_DEV_RESOURCE=$(jq -n                                                \
+                           --arg dev_type "$(ls -l "$DEVICE" | head -c 1)"      \
+                           --arg major "$(printf "%d" "$(stat -c "%#t" "$DEVICE")")" \
+                           --arg minor "$(printf "%d" "$(stat -c "%#T" "$DEVICE")")" \
+                        '{
+                            "allow": true,
+                            "type": $dev_type,
+                            "major": $major|tonumber,
+                            "minor": $minor|tonumber,
+                            "access": "rwm"
+                        }')
+
+        CONTAINER_CONFIG=$(jq ".linux.devices += [$NEW_DEVICE]" <<< "$CONTAINER_CONFIG")
+        CONTAINER_CONFIG=$(jq ".linux.resources.devices += [$NEW_DEV_RESOURCE]" <<< "$CONTAINER_CONFIG")
+    fi
+done
+
+echo "$CONTAINER_CONFIG" | jq .
+
