@@ -1,0 +1,12 @@
+{
+  "version": "1.0.0",
+  "hook": {
+    "path": "/usr/libexec/oci/hooks.d/oci-qm-wayland-session-devices"
+  },
+  "when": {
+    "annotations": {
+      "^org\\.containers\\.qm\\.wayland\\..*$": "^.*$"
+    }
+  },
+  "stages": ["precreate"]
+}

@@ -1,0 +1,80 @@
+#!/bin/bash
+
+input="-"
+CONTAINER_CONFIG=$(cat "$input")
+
+SEAT=$(echo "$CONTAINER_CONFIG" | jq -r '.annotations["org.containers.qm.wayland.seat"] // empty')
+
+DEVNAME_LIST=()
+
+if [ -n "$SEAT" ]; then
+    # Extract and resolve all the devices associated to a systemd-logind seat
+    SEAT_SYS_DEVICE_LIST=$(loginctl seat-status "$SEAT" | grep -oP '/sys\S+')
+
+    for DEVICE in $SEAT_SYS_DEVICE_LIST; do
+        DEVNAME=$(udevadm info -x "$DEVICE" | grep -oP '^E: DEVNAME=\K.*')
+
+        if [ -n "$DEVNAME" ]; then
+            DEVNAME_LIST+=("$DEVNAME")
+        fi
+    done
+
+    # Find all the input devices available
+    INPUT_DEVICES=$(find /dev/input -type c \( -regex ".*/event[0-9]+" -o -regex ".*/mice[0-9]*" -o -regex ".*/mouse[0-9]+" \))
+    for INPUT_DEVICE in $INPUT_DEVICES; do
+        DEVNAME_LIST+=("$INPUT_DEVICE")
+    done
+
+    # Find all the render devices available
+    RENDER_DEVICES=$(find /dev/dri -type c \( -regex ".*/render.*" \))
+    for RENDER_DEVICE in $RENDER_DEVICES; do
+        DEVNAME_LIST+=("$RENDER_DEVICE")
+    done
+
+    # Check if .linux.devices exists and is a list in $CONTAINER_CONFIG
+    if ! jq -e '.linux.devices | arrays' <<< "$CONTAINER_CONFIG" > /dev/null 2>&1; then
+        # Create an empty .linux.devices list if it does not exist
+        CONTAINER_CONFIG=$(jq '.linux.devices = []' <<< "$CONTAINER_CONFIG")
+    fi
+
+    # Iterate over the DEVNAME_LIST to include the required information in the CONTAINER_CONFIG
+    for DEVICE in "${DEVNAME_LIST[@]}"; do
+        if ! jq -e ".linux.devices[] | select(.path == \"$DEVICE\")" <<< "$CONTAINER_CONFIG" > /dev/null 2>&1; then
+            # shellcheck disable=SC2012
+            NEW_DEVICE=$(jq -n --arg path "$DEVICE"                                      \
+                               --arg dev_type "$(ls -l "$DEVICE" | head -c 1)"           \
+                               --arg major "$(printf "%d" "$(stat -c "%#t" "$DEVICE")")"      \
+                               --arg minor "$(printf "%d" "$(stat -c "%#T" "$DEVICE")")"      \
+                               --arg filemode "$(printf "%d" "$(stat -c '02%#a' "$DEVICE")")" \
+                               --arg uid "$(stat -c "%u" "$DEVICE")"                       \
+                               --arg gid "$(stat -c "%g" "$DEVICE")"                       \
+                            '{
+                                "path": $path,
+                                "type": $dev_type,
+                                "major": $major|tonumber,
+                                "minor": $minor|tonumber,
+                                "fileMode": $filemode|tonumber,
+                                "uid": $uid|tonumber,
+                                "gid": $gid|tonumber,
+                            }')
+
+            # shellcheck disable=SC2012
+            NEW_DEV_RESOURCE=$(jq -n                                                \
+                               --arg dev_type "$(ls -l "$DEVICE" | head -c 1)"      \
+                               --arg major "$(printf "%d" "$(stat -c "%#t" "$DEVICE")")" \
+                               --arg minor "$(printf "%d" "$(stat -c "%#T" "$DEVICE")")" \
+                            '{
+                                "allow": true,
+                                "type": $dev_type,
+                                "major": $major|tonumber,
+                                "minor": $minor|tonumber,
+                                "access": "rwm"
+                            }')
+
+            CONTAINER_CONFIG=$(jq ".linux.devices += [$NEW_DEVICE]" <<< "$CONTAINER_CONFIG")
+            CONTAINER_CONFIG=$(jq ".linux.resources.devices += [$NEW_DEV_RESOURCE]" <<< "$CONTAINER_CONFIG")
+        fi
+    done
+fi
+
+echo "$CONTAINER_CONFIG" | jq .
