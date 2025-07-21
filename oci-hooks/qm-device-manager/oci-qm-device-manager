@@ -1,0 +1,290 @@
+#!/bin/bash
+
+# Licensed under the Apache License, Version 2.0 (the "License");
+# you may not use this file except in compliance with the License.
+# You may obtain a copy of the License at
+#
+#     http://www.apache.org/licenses/LICENSE-2.0
+#
+# Unless required by applicable law or agreed to in writing, software
+# distributed under the License is distributed on an "AS IS" BASIS,
+# WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+# See the License for the specific language governing permissions and
+# limitations under the License.
+
+#
+# QM Device Manager OCI Hook
+#
+# This hook dynamically manages device access for QM containers based on annotations.
+# It replaces the static drop-in configurations from individual subpackages with
+# dynamic device mounting based on container annotations.
+#
+# Supported devices:
+# - audio: /dev/snd/* (ALSA sound devices)
+# - video: /dev/video*, /dev/media* (V4L2 video devices)
+# - input: /dev/input/* (input devices like keyboards, mice)
+# - ttys: /dev/tty0-7 (virtual TTY devices for window managers)
+# - ttyUSB: /dev/ttyUSB* (USB TTY devices for serial communication)
+# - dvb: /dev/dvb/* (DVB digital TV devices)
+# - radio: /dev/radio* (radio devices)
+#
+# Usage via annotations:
+# - org.containers.qm.device.audio=true
+# - org.containers.qm.device.video=true
+# - org.containers.qm.device.input=true
+# - org.containers.qm.device.ttys=true          # Mount all TTY devices (tty0-7)
+# - org.containers.qm.device.ttyUSB=true        # Mount all USB TTY devices (ttyUSB*)
+# - org.containers.qm.device.dvb=true
+# - org.containers.qm.device.radio=true
+
+set -euo pipefail
+
+# Configuration
+LOGFILE="/var/log/qm-device-manager.log"
+HOOK_NAME="qm-device-manager"
+
+# Logging function
+log() {
+    local level="$1"
+    shift
+    echo "$(date '+%Y-%m-%d %H:%M:%S') - $HOOK_NAME - $level - $*" >> "$LOGFILE"
+    if [[ "$level" == "ERROR" ]]; then
+        echo "$(date '+%Y-%m-%d %H:%M:%S') - $HOOK_NAME - $level - $*" >&2
+    fi
+}
+
+# Check if device exists and is a character/block device
+is_device_accessible() {
+    local device_path="$1"
+    [[ -c "$device_path" || -b "$device_path" ]]
+}
+
+# Get device information for OCI spec
+get_device_info() {
+    local device_path="$1"
+    local stat_output
+
+    if ! stat_output=$(stat -c "%f %t %T %a %u %g" "$device_path" 2>/dev/null); then
+        return 1
+    fi
+
+    read -r mode_hex major_hex minor_hex perms uid gid <<< "$stat_output"
+
+    # Convert hex to decimal
+    local mode_dec=$((0x$mode_hex))
+    local major_dec=$((0x$major_hex))
+    local minor_dec=$((0x$minor_hex))
+
+    # Determine device type (character or block)
+    local device_type
+    if [[ $((mode_dec & 0x2000)) -ne 0 ]]; then
+        device_type="c"  # Character device
+    elif [[ $((mode_dec & 0x6000)) -ne 0 ]]; then
+        device_type="b"  # Block device
+    else
+        return 1  # Not a device
+    fi
+
+    # Convert permissions to decimal
+    local file_mode=$((0$perms))
+
+    echo "$device_type $major_dec $minor_dec $file_mode $uid $gid"
+}
+
+# Add device to OCI spec using jq
+add_device_to_spec() {
+    local spec_json="$1"
+    local device_path="$2"
+    local device_info
+
+    if ! device_info=$(get_device_info "$device_path"); then
+        log "WARNING" "Failed to get device info for $device_path"
+        echo "$spec_json"
+        return
+    fi
+
+    read -r device_type major minor file_mode uid gid <<< "$device_info"
+
+    log "INFO" "Adding device: $device_path (type=$device_type, major=$major, minor=$minor)"
+
+    # Ensure .linux.devices array exists
+    local temp_spec
+    if ! temp_spec=$(echo "$spec_json" | jq --compact-output 'if .linux.devices == null then .linux.devices = [] else . end' 2>/dev/null); then
+        log "ERROR" "Failed to ensure .linux.devices array exists for $device_path"
+        echo "$spec_json"
+        return
+    fi
+
+    # Add device if it doesn't already exist
+    local result
+    if ! result=$(echo "$temp_spec" | jq --compact-output \
+                            --arg path "$device_path" \
+                            --arg type "$device_type" \
+                            --argjson major "$major" \
+                            --argjson minor "$minor" \
+                            --argjson fileMode "$file_mode" \
+                            --argjson uid "$uid" \
+                            --argjson gid "$gid" \
+                            'if (.linux.devices | map(.path) | index($path)) == null then .linux.devices += [{"path": $path, "type": $type, "major": $major, "minor": $minor, "fileMode": $fileMode, "uid": $uid, "gid": $gid}] else . end' 2>/dev/null); then
+        log "ERROR" "Failed to add device $device_path to spec"
+        echo "$temp_spec"  # Return the spec with array at least initialized
+        return
+    fi
+
+    echo "$result"
+}
+
+# Expand device patterns to actual device paths
+expand_device_patterns() {
+    local patterns=("$@")
+    local devices=()
+
+    for pattern in "${patterns[@]}"; do
+        if [[ "$pattern" == *"*"* ]]; then
+            # Pattern with wildcards - use shell globbing
+            # Disable nomatch option temporarily to handle no matches gracefully
+            set +o nomatch 2>/dev/null || true
+            for match in $pattern; do
+                if [[ -e "$match" ]]; then
+                    devices+=("$match")
+                fi
+            done
+            set -o nomatch 2>/dev/null || true
+        else
+            # Exact path
+            if [[ -e "$pattern" ]]; then
+                devices+=("$pattern")
+            fi
+        fi
+    done
+
+    printf '%s\n' "${devices[@]}"
+}
+
+# Process device annotations and add devices to spec
+process_device_annotation() {
+    local spec_json="$1"
+    local device_type="$2"
+    local device_value="${3:-true}"
+    local patterns
+    local devices
+    local device_count=0
+
+    case "$device_type" in
+        audio)
+            patterns=("/dev/snd/"*)
+            ;;
+        video)
+            patterns=("/dev/video"* "/dev/media"*)
+            ;;
+        input)
+            patterns=("/dev/input/"*)
+            ;;
+        ttys)
+            # Mount all virtual TTY devices (tty0-7)
+            patterns=("/dev/tty0" "/dev/tty1" "/dev/tty2" "/dev/tty3" "/dev/tty4" "/dev/tty5" "/dev/tty6" "/dev/tty7")
+            log "INFO" "Mounting all virtual TTY devices (tty0-7)"
+            ;;
+        ttyUSB)
+            # Mount all USB TTY devices (ttyUSB*)
+            patterns=("/dev/ttyUSB"*)
+            log "INFO" "Mounting all USB TTY devices (ttyUSB*)"
+            ;;
+        dvb)
+            patterns=("/dev/dvb/"*)
+            ;;
+        radio)
+            patterns=("/dev/radio"*)
+            ;;
+        *)
+            log "WARNING" "Unknown device type: $device_type"
+            echo "$spec_json"
+            return
+            ;;
+    esac
+
+    log "INFO" "Enabling $device_type devices"
+
+    # Get devices matching patterns
+    mapfile -t devices < <(expand_device_patterns "${patterns[@]}")
+
+    # Add each accessible device
+    for device in "${devices[@]}"; do
+        if is_device_accessible "$device"; then
+            spec_json=$(add_device_to_spec "$spec_json" "$device")
+            ((device_count++))
+        fi
+    done
+
+    log "INFO" "Found $device_count devices for $device_type"
+    echo "$spec_json"
+}
+
+# Main function
+main() {
+    local spec_json
+    local annotations
+    local total_devices=0
+
+    # Read OCI spec from stdin
+    if ! spec_json=$(cat); then
+        log "ERROR" "Failed to read OCI spec from stdin"
+        exit 1
+    fi
+
+    # Ensure linux section exists
+    if ! echo "$spec_json" | jq -e '.linux' >/dev/null 2>&1; then
+        spec_json=$(echo "$spec_json" | jq '.linux = {}')
+    fi
+
+    # Get annotations (both boolean and string values)
+    annotations=$(echo "$spec_json" | jq -r '.annotations // {} | to_entries[] | select(.key | startswith("org.containers.qm.device.")) | "\(.key)=\(.value)"' 2>/dev/null || true)
+
+    if [[ -z "$annotations" ]]; then
+        log "INFO" "No QM device annotations found"
+        echo "$spec_json"
+        return 0
+    fi
+
+    log "INFO" "Processing QM device annotations"
+
+    # Process each annotation
+    while IFS= read -r annotation; do
+        if [[ -z "$annotation" ]]; then
+            continue
+        fi
+
+        # Extract device key and value
+        device_key="${annotation%%=*}"
+        device_value="${annotation#*=}"
+        device_type="${device_key#org.containers.qm.device.}"
+
+        # Skip if value is not true/1/yes
+        if [[ ! "$device_value" =~ ^(true|1|yes)$ ]]; then
+            log "INFO" "Skipping annotation with invalid value: $annotation"
+            continue
+        fi
+
+        log "INFO" "Processing annotation: $annotation (device_type: $device_type, value: $device_value)"
+
+        # Process the device type
+        spec_json=$(process_device_annotation "$spec_json" "$device_type" "$device_value")
+
+    done <<< "$annotations"
+
+    # Count total devices added
+    total_devices=$(echo "$spec_json" | jq '.linux.devices // [] | length' 2>/dev/null || echo "0")
+    log "INFO" "Total devices in spec: $total_devices"
+
+    # Output the modified spec
+    echo "$spec_json"
+
+    log "INFO" "QM Device Manager hook completed successfully"
+}
+
+# Ensure log file exists
+mkdir -p "$(dirname "$LOGFILE")"
+touch "$LOGFILE"
+
+# Run main function
+main "$@"
