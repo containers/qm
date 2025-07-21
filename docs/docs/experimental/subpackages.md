@@ -257,6 +257,19 @@ The `wayland-client-devices` hook supports:
 |---------------|------------|------------------|
 | GPU Acceleration | `org.containers.qm.wayland-client.gpu=true` | GPU render devices (`/dev/dri/*`) for hardware acceleration |
 
+### Features
+
+- **Dynamic Device Discovery**: Automatically discovers and mounts available devices at container startup
+- **Annotation-Based Security**: Devices are only mounted when explicitly requested via annotations
+- **Multi-seat Support**: Enables proper device access in systemd-logind multi-seat environments
+- **GPU Acceleration**: Provides hardware acceleration for Wayland client applications
+- **Comprehensive Logging**: All hooks provide detailed logging for monitoring and debugging:
+  - Device Manager: `/var/log/qm-device-manager.log`
+  - Wayland Session: `/var/log/qm-wayland-session-devices.log`
+  - Wayland Client: `/var/log/qm-wayland-client-devices.log`
+- **Runtime Flexibility**: No system restart required when adding device access to new containers
+- **Lightweight Implementation**: Shell script-based hooks with minimal dependencies
+
 ### Building and Installing
 
 ```bash
@@ -357,8 +370,10 @@ ls -la /usr/share/containers/oci/hooks.d/
 # Check hook executables
 ls -la /usr/libexec/oci/hooks.d/
 
-# View device manager logs
+# View hook logs (all hooks provide comprehensive logging)
 tail -f /var/log/qm-device-manager.log
+tail -f /var/log/qm-wayland-session-devices.log
+tail -f /var/log/qm-wayland-client-devices.log
 
 # Test device access with qm-device-manager
 podman exec -it my-audio-app ls -la /dev/snd/
