@@ -13,6 +13,7 @@ Source0: %{url}/archive/qm-sound-%{version}.tar.gz
 BuildArch: noarch
 
 Requires: qm >= %{version}
+Requires: qm-oci-hooks
 
 %description
 This subpackage installs a drop-in configuration for QM containers,
