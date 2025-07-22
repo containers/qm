@@ -20,7 +20,7 @@ AGENT_HOSTNAME="$(hostname)"
 AGENTCONF="/etc/bluechi/agent.conf.d/agent.conf"
 QM_CONTAINER_IDS=1000000000:1500000000
 CONTAINER_IDS=2500000000:1500000000
-PACKAGES_TO_INSTALL="selinux-policy-targeted podman systemd bluechi-agent procps-ng iptables-nft jq"
+PACKAGES_TO_INSTALL="selinux-policy-targeted podman systemd procps-ng iptables-nft jq"
 
 # RHEL kernel uses iptables-nft, not iptables-legacy, the tool should
 # make sure this package is removed.
@@ -195,9 +195,13 @@ install() {
         dnf --installroot "${ROOTFS}" remove "${PACKAGES_TO_REMOVE}" -y
     fi
 
-    # check if "${ROOTFS}"/etc/yum.repos.d
-    if [ -z "$(find "${ROOTFS}"/etc/yum.repos.d -mindepth 1 -maxdepth 1)" ]; then
-       cat > "${ROOTFS}/etc/yum.repos.d/autosd.repo" << EOF
+    # check if "${ROOTFS}"/etc/yum.repos.d/
+    if test ! -d "${ROOTFS}"/etc/yum.repos.d ; then
+        mkdir -p -Z "${ROOTFS}"/etc/yum.repos.d
+    fi
+    # check if "${ROOTFS}"/etc/yum.repos.d/autosd.repo
+    if  test ! -f "${ROOTFS}"/etc/yum.repos.d/autosd.repo; then
+       cat > "${ROOTFS}"/etc/yum.repos.d/autosd.repo << EOF
 [autosd]
 name=Automotive-Sig \$releasever
 baseurl=https://autosd.sig.centos.org/AutoSD-9/nightly/repos/AutoSD/compose/AutoSD/\$basearch/os
@@ -205,6 +209,49 @@ enabled=1
 gpgcheck=0
 EOF
     fi
+
+    # Add libkrun & bluechi after rootfs created with repo files in qm
+    if [ "$ID" == "centos" ]; then
+        # check if "${ROOTFS}"/etc/yum.repos.d/libkrun.repo
+        if ! test -f "${ROOTFS}"/etc/yum.repos.d/libkrun.repo; then
+            cat > "${ROOTFS}"/etc/yum.repos.d/libkrun.repo << EOF
+[copr:copr.fedorainfracloud.org:group_centos-automotive-sig:libkrun]
+name=Copr repo for libkrun owned by @centos-automotive-sig
+baseurl=https://download.copr.fedorainfracloud.org/results/@centos-automotive-sig/libkrun/centos-stream-\$releasever-\$basearch/
+type=rpm-md
+skip_if_unavailable=True
+gpgcheck=1
+gpgkey=https://download.copr.fedorainfracloud.org/results/@centos-automotive-sig/libkrun/pubkey.gpg
+repo_gpgcheck=0
+enabled=1
+enabled_metadata=1
+EOF
+        fi
+    fi
+
+    # check if "${ROOTFS}"/etc/yum.repos.d/bluechi.repo
+    if ! test -f "${ROOTFS}"/etc/yum.repos.d/bluechi.repo; then
+        cat > "${ROOTFS}"/etc/yum.repos.d/bluechi.repo << EOF
+[copr:copr.fedorainfracloud.org:group_centos-automotive-sig:bluechi-snapshot]
+name=Copr repo for bluechi-snapshot owned by @centos-automotive-sig
+baseurl=https://download.copr.fedorainfracloud.org/results/@centos-automotive-sig/bluechi-snapshot/fedora-\$releasever-\$basearch/
+type=rpm-md
+skip_if_unavailable=True
+gpgcheck=1
+gpgkey=https://download.copr.fedorainfracloud.org/results/@centos-automotive-sig/bluechi-snapshot/pubkey.gpg
+repo_gpgcheck=0
+enabled=1
+enabled_metadata=1
+EOF
+
+        if [ "$ID" == "centos" ]; then
+            # set bluchi-repo to centos-stream
+            sed -i "s|fedora\-|centos-stream\-|" "${ROOTFS}/etc/yum.repos.d/bluechi.repo"
+        fi
+    fi
+
+    cmd_dnf_install="dnf -y install --releasever=${VERSION_ID} --setopt=reposdir=${ROOTFS}/etc/yum.repos.d --installroot ${ROOTFS} libkrun crun-krun bluechi-agent ${EXTRA_FLAG}"
+    ${cmd_dnf_install}
 
     dnf -y update --installroot "${ROOTFS}"
     rm -rf "${ROOTFS}"/etc/selinux/targeted/contexts/files/file_contexts/*
@@ -309,6 +356,7 @@ if [ "${REMOVE_QM_ROOTFS}" == "Y" ]; then
     # Get the one path below, i.e: /usr/lib/qm instead /usr/lib/qm/rootfs
     path_qm_rootfs=$(${QM_ROOTFS_TOOL} | sed 's|/[^/]*$||')
     rm -rf "${path_qm_rootfs}"
+    rm -rf "${RWETCFS}" "${RWVARFS}"
     exit 0
 fi
 
