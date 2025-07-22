@@ -39,7 +39,7 @@ export BUILD_QM_FROM_GH_URL=""
 export BUILD_BLUECHI_FROM_GH_URL=""
 export BRANCH_BLUECHI=""
 export BRANCH_QM=""
-export USE_QM_COPR="${PACKIT_COPR_PROJECT:-rhcontainerbot/qm}"
+export USE_QM_COPR="${PACKIT_COPR_PROJECT:-rhcontainerbot/podman-next}"
 
 # If no additional nodes are required, use 1
 if [ -z "${NUMBER_OF_NODES}" ]; then
@@ -83,7 +83,7 @@ Usage: ./run-test-e2e [OPTIONS]
 --branch-qm
 	Specify which branch the GitHub repo will be set. Requires --build-qm-from-gh-url
 --use-qm-copr
-        Specify to install rpms from rhcontainerbot/qm copr
+        Specify to install rpms from rhcontainerbot/podman-next copr
 --number-of-nodes
 	Specify number of nodes. (default 1)
 
