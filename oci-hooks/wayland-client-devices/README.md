@@ -13,12 +13,36 @@ applications that would run as qm's nested containers.
 2. **Container Configuration**: It dynamically modifies the container's OCI configuration to include the necessary
    GPU device permissions and access controls for Wayland client applications that require hardware acceleration.
 
+3. **Comprehensive Logging**: All operations are logged to `/var/log/qm-wayland-client-devices.log` for monitoring and debugging.
+
 ## Configuration
 
 The hook supports the following container annotation:
 
 - `org.containers.qm.wayland-client.gpu`: Enables GPU device access for Wayland clients. When this annotation is
   present, the hook will automatically detect and configure access to available render devices in `/dev/dri/`.
+
+## Logging
+
+The hook provides detailed logging of all operations:
+
+- **Log File**: `/var/log/qm-wayland-client-devices.log`
+- **Log Format**: `YYYY-MM-DD HH:MM:SS - qm-wayland-client-devices - LEVEL - MESSAGE`
+- **Log Levels**: INFO, WARNING, ERROR
+
+### Example Log Output
+
+```text
+2024-01-15 10:32:15 - qm-wayland-client-devices - INFO - Processing Wayland client GPU annotation: true
+2024-01-15 10:32:15 - qm-wayland-client-devices - INFO - Scanning for GPU render devices
+2024-01-15 10:32:15 - qm-wayland-client-devices - INFO - Adding GPU render device: /dev/dri/renderD128
+2024-01-15 10:32:15 - qm-wayland-client-devices - INFO - Found 1 GPU render devices
+2024-01-15 10:32:15 - qm-wayland-client-devices - INFO - Processing 1 GPU devices for Wayland client
+2024-01-15 10:32:15 - qm-wayland-client-devices - INFO - Added GPU device: /dev/dri/renderD128
+2024-01-15 10:32:15 - qm-wayland-client-devices - INFO - Successfully processed all GPU devices for Wayland client
+2024-01-15 10:32:15 - qm-wayland-client-devices - INFO - Total devices in final spec: 1
+2024-01-15 10:32:15 - qm-wayland-client-devices - INFO - QM Wayland Client Devices hook completed successfully
+```
 
 ## Example Configuration
 

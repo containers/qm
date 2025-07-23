@@ -15,3 +15,5 @@ This test suite do some basic sanity tests for qm to confirm that qm has been in
 5. Confirm that podman run and exec container in qm with service file successfully.
 
 6. Confirm that /var partition exist.
+
+7. Confirm that QM OCI hooks are installed and working properly.
