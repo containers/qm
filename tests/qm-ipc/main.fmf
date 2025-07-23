@@ -1,0 +1,7 @@
+summary: Test plan for qm ipc
+test: ./test_ipc.sh
+duration: 10m
+tag: qm-ipc
+tier: 0
+framework: shell
+id: b1e2c318-84bd-4119-8e10-ff4bc7cd31f4
