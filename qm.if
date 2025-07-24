@@ -577,6 +577,14 @@ template(`qm_domain_template',`
 	userdom_rw_inherited_user_pipes($1_container_domain)
 	userdom_use_user_ptys($1_container_domain)
 
+        optional_policy(`
+                gen_require(`
+                        type var_run_t;
+                ')
+		allow qm_container_ipc_t var_run_t:dir { add_name write };
+		allow qm_container_ipc_t var_run_t:sock_file { create setattr write };
+		allow qm_t var_run_t:dir mounton;
+        ')
 ')
 
 ########################################
