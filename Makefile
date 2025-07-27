@@ -100,3 +100,5 @@ install: man all ##             - Install QM files (including selinux)
 	install -D -m 644 containers.conf ${DESTDIR}${DATADIR}/qm/containers.conf
 	install -D -m 644 qm.container ${DESTDIR}${DATADIR}/containers/systemd/qm.container
 	install -D -m 755 tools/qm-is-ostree ${DESTDIR}${DATADIR}/qm/qm-is-ostree
+	install -D -m 755 tools/qmctl/qmctl ${DESTDIR}${PREFIX}/bin/qmctl
+	install -D -m 644 tools/qmctl/qmctl.1 ${DESTDIR}${DATADIR}/man/man1/qmctl.1
