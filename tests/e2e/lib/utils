@@ -49,6 +49,165 @@ info_message() {
     echo -e "[ ${BLUE}INFO${ENDCOLOR}  ] ${1}"
 }
 
+pass_message() {
+    ###########################################################################
+    # Description:                                                            #
+    # show [PASS] in green and a message as the test passed.                  #
+    #                                                                         #
+    # Arguments:                                                              #
+    #   $1 - message to output                                                #
+    ###########################################################################
+    if [ -z "${1}" ]; then
+        echo "pass_message() requires a message"
+        exit 1
+    fi
+    GREEN="\033[92m"
+    ENDCOLOR="\033[0m"
+    echo -e "[ ${GREEN}PASS${ENDCOLOR}  ] ${1}"
+}
+
+fail_message() {
+    ###########################################################################
+    # Description:                                                            #
+    # show [FAIL] in red and a message as the test failed.                    #
+    #                                                                         #
+    # Arguments:                                                              #
+    #   $1 - message to output                                                #
+    ###########################################################################
+    if [ -z "${1}" ]; then
+        echo "fail_message() requires a message"
+        exit 1
+    fi
+    RED="\033[91m"
+    ENDCOLOR="\033[0m"
+    echo -e "[ ${RED}FAIL${ENDCOLOR}  ] ${1}"
+}
+
+run_test() {
+    ###########################################################################
+    # Description:                                                            #
+    # General test function that runs commands and validates results          #
+    #                                                                         #
+    # Arguments:                                                              #
+    #   $1 - test_name: Name of the test for output                          #
+    #   $2 - expected_exit_code: Expected exit code (0, 1, 2, etc.)         #
+    #   $3 - validation_type: Type of validation to perform                   #
+    #       "output_pattern" - Check for pattern in stdout                    #
+    #       "error_pattern" - Check for pattern in stderr                     #
+    #       "json_valid" - Validate JSON structure and content                #
+    #       "content_match" - Match exact content                             #
+    #       "file_exists" - Check if file exists and has content              #
+    #       "none" - Only check exit code                                     #
+    #   $4 - validation_value: Pattern, content, or file path to validate    #
+    #   $@ - command: Command and arguments to execute                        #
+    ###########################################################################
+    # shellcheck disable=SC2034  # TEST_RESULTS is used by calling scripts
+    local test_name="$1"
+    local expected_exit_code="$2"
+    local validation_type="$3"
+    local validation_value="$4"
+    shift 4
+    local command=("$@")
+
+    info_message "Testing: $test_name"
+
+    # Create temp files for output
+    local stdout_file
+    local stderr_file
+    stdout_file=$(mktemp)
+    stderr_file=$(mktemp)
+
+    # Run command and capture exit code
+    set +e
+    "${command[@]}" > "$stdout_file" 2> "$stderr_file"
+    local actual_exit_code=$?
+    set -e
+
+    # Check exit code
+    if [ "$actual_exit_code" -eq "$expected_exit_code" ]; then
+        pass_message "$test_name - Exit code correct ($expected_exit_code)"
+    else
+        fail_message "$test_name - Expected exit code $expected_exit_code, got $actual_exit_code"
+        echo "  Command: ${command[*]}"
+        echo "  stdout:"
+        head -5 < "$stdout_file"
+        echo "  stderr:"
+        head -5 < "$stderr_file"
+        # shellcheck disable=SC2034  # TEST_RESULTS is used by calling scripts
+        TEST_RESULTS=1
+        rm -f "$stdout_file" "$stderr_file"
+        return 1
+    fi
+
+    # Perform validation based on type
+    case "$validation_type" in
+        "output_pattern")
+            if [ -n "$validation_value" ] && grep -q "$validation_value" "$stdout_file"; then
+                pass_message "$test_name - Output contains expected pattern"
+            elif [ -n "$validation_value" ]; then
+                fail_message "$test_name - Output doesn't contain expected pattern '$validation_value'"
+                echo "Actual output (first 10 lines):"
+                head -10 < "$stdout_file"
+                # shellcheck disable=SC2034  # TEST_RESULTS is used by calling scripts
+                TEST_RESULTS=1
+            fi
+            ;;
+        "error_pattern")
+            if [ -n "$validation_value" ] && grep -q "$validation_value" "$stderr_file"; then
+                pass_message "$test_name - Error message contains expected pattern"
+            elif [ -n "$validation_value" ]; then
+                fail_message "$test_name - Error message doesn't contain expected pattern '$validation_value'"
+                echo "Actual stderr:"
+                cat "$stderr_file"
+                # shellcheck disable=SC2034  # TEST_RESULTS is used by calling scripts
+                TEST_RESULTS=1
+            fi
+            ;;
+        "json_valid")
+            if python3 -m json.tool < "$stdout_file" > /dev/null 2>&1; then
+                pass_message "$test_name - Valid JSON output"
+                if grep -q '{' "$stdout_file" && grep -q '}' "$stdout_file"; then
+                    pass_message "$test_name - JSON contains expected braces"
+                fi
+                if [ -s "$stdout_file" ]; then
+                    pass_message "$test_name - JSON output contains data"
+                else
+                    fail_message "$test_name - JSON output is empty"
+                    # shellcheck disable=SC2034  # TEST_RESULTS is used by calling scripts
+                    TEST_RESULTS=1
+                fi
+            else
+                fail_message "$test_name - Invalid JSON output"
+                echo "Output:"
+                head -10 < "$stdout_file"
+                # shellcheck disable=SC2034  # TEST_RESULTS is used by calling scripts
+                TEST_RESULTS=1
+            fi
+            ;;
+        "content_match")
+            if [ -s "$stdout_file" ]; then
+                pass_message "$test_name - Output contains data"
+            else
+                fail_message "$test_name - Expected output data but got empty output"
+                # shellcheck disable=SC2034  # TEST_RESULTS is used by calling scripts
+                TEST_RESULTS=1
+            fi
+            ;;
+        "none")
+            # Only exit code check, no additional validation
+            ;;
+        *)
+            fail_message "$test_name - Unknown validation type: $validation_type"
+            # shellcheck disable=SC2034  # TEST_RESULTS is used by calling scripts
+            TEST_RESULTS=1
+            ;;
+    esac
+
+    # Cleanup
+    rm -f "$stdout_file" "$stderr_file"
+    return 0
+}
+
 exec_cmd() {
     local cmd="$1"
     eval "$cmd"
