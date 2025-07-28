@@ -1,0 +1,47 @@
+name: OCI Hooks Tests
+
+on:
+  push:
+    paths:
+      - 'oci-hooks/**'
+  pull_request:
+    paths:
+      - 'oci-hooks/**'
+
+jobs:
+  test:
+    runs-on: ubuntu-latest
+    container: python:3.11-slim
+
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v3
+
+      - name: Set up Go
+        uses: actions/setup-go@v4
+        with:
+          go-version: '1.21'
+
+      - name: Install dependencies
+        run: |
+          apt-get update && apt-get install -y jq
+          pip install tox
+          # Install shfmt for shell script formatting
+          go install mvdan.cc/sh/v3/cmd/shfmt@latest
+
+      - name: Make OCI hook scripts executable
+        run: |
+          chmod +x oci-hooks/qm-device-manager/oci-qm-device-manager
+          chmod +x oci-hooks/wayland-client-devices/oci-qm-wayland-client-devices
+
+      - name: Run code quality checks
+        run: |
+          cd oci-hooks
+          tox -e lint
+
+      - name: Run tests
+        env:
+          FORCE_MOCK_DEVICES: true
+        run: |
+          cd oci-hooks
+          tox -e all
