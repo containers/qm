@@ -2,19 +2,26 @@
 
 set -euo pipefail
 
-# Configuration
-LOGFILE="/var/log/qm-wayland-client-devices.log"
-HOOK_NAME="qm-wayland-client-devices"
+# Source common utilities and appropriate device support library
+SCRIPT_DIR="$(dirname "${BASH_SOURCE[0]}")"
 
-# Logging function
-log() {
-    local level="$1"
-    shift
-    echo "$(date '+%Y-%m-%d %H:%M:%S') - $HOOK_NAME - $level - $*" >> "$LOGFILE"
-    if [[ "$level" == "ERROR" ]]; then
-        echo "$(date '+%Y-%m-%d %H:%M:%S') - $HOOK_NAME - $level - $*" >&2
-    fi
-}
+# shellcheck source=../lib/common.sh disable=SC1091
+source "${SCRIPT_DIR}/../lib/common.sh"
+
+if [[ -n "${TEST_LOGFILE:-}" ]]; then
+    # Test mode - use mock device support
+    # shellcheck source=../lib/mock-device-support.sh disable=SC1091
+    source "${SCRIPT_DIR}/../lib/mock-device-support.sh"
+else
+    # Normal mode - use standard device support
+    # shellcheck source=../lib/device-support.sh disable=SC1091
+    source "${SCRIPT_DIR}/../lib/device-support.sh"
+fi
+
+# Configuration
+LOGFILE="${TEST_LOGFILE:-/var/log/qm-wayland-client-devices.log}"
+# shellcheck disable=SC2034  # Used by log() function in device-support.sh
+HOOK_NAME="qm-wayland-client-devices"
 
 input="-"
 CONTAINER_CONFIG=$(cat "$input")
@@ -28,11 +35,11 @@ GPU_ENABLED=$(echo "$CONTAINER_CONFIG" | jq -r '.annotations["org.containers.qm.
 
 DEVNAME_LIST=()
 
-if [ -n "$GPU_ENABLED" ]; then
-    log "INFO" "Processing Wayland client GPU annotation: $GPU_ENABLED"
+if [[ "$GPU_ENABLED" =~ ^(true|1|yes|True|TRUE|YES)$ ]]; then
+    log "INFO" "Processing Wayland client GPU annotation: $GPU_ENABLED (enabled)"
 
     # Find all the render devices available
-    RENDER_DEVICES=$(find /dev/dri -type c \( -regex ".*/render.*" \))
+    RENDER_DEVICES=$(discover_gpu_devices)
     log "INFO" "Scanning for GPU render devices"
 
     for RENDER_DEVICE in $RENDER_DEVICES; do
@@ -41,6 +48,8 @@ if [ -n "$GPU_ENABLED" ]; then
     done
 
     log "INFO" "Found ${#DEVNAME_LIST[@]} GPU render devices"
+elif [ -n "$GPU_ENABLED" ]; then
+    log "INFO" "Wayland client GPU annotation present but disabled: $GPU_ENABLED"
 else
     log "INFO" "No Wayland client GPU annotation found"
 fi
@@ -50,16 +59,24 @@ if [ ${#DEVNAME_LIST[@]} -gt 0 ]; then
     log "INFO" "Processing ${#DEVNAME_LIST[@]} GPU devices for Wayland client"
 
     for DEVICE in "${DEVNAME_LIST[@]}"; do
-        if ! jq -e ".linux.devices[] | select(.path == \"$DEVICE\")" <<< "$CONTAINER_CONFIG" > /dev/null 2>&1; then
-            # shellcheck disable=SC2012
-            NEW_DEVICE=$(jq -n --arg path "$DEVICE"                                      \
-                               --arg dev_type "$(ls -l "$DEVICE" | head -c 1)"           \
-                               --arg major "$(printf "%d" "$(stat -c "%#t" "$DEVICE")")"      \
-                               --arg minor "$(printf "%d" "$(stat -c "%#T" "$DEVICE")")"      \
-                               --arg filemode "$(printf "%d" "$(stat -c '02%#a' "$DEVICE")")" \
-                               --arg uid "$(stat -c "%u" "$DEVICE")"                       \
-                               --arg gid "$(stat -c "%g" "$DEVICE")"                       \
-                            '{
+        if ! jq -e ".linux.devices[] | select(.path == \"$DEVICE\")" <<<"$CONTAINER_CONFIG" >/dev/null 2>&1; then
+            # Get device info using device support library
+            if ! device_info=$(get_device_info "$DEVICE"); then
+                log "WARNING" "Failed to get device info for $DEVICE, skipping"
+                continue
+            fi
+
+            # Parse device info: type:major:minor:file_mode:uid:gid
+            IFS=':' read -r dev_type major minor filemode uid gid <<<"$device_info"
+
+            NEW_DEVICE=$(jq -n --arg path "$DEVICE" \
+                --arg dev_type "$dev_type" \
+                --arg major "$major" \
+                --arg minor "$minor" \
+                --arg filemode "$filemode" \
+                --arg uid "$uid" \
+                --arg gid "$gid" \
+                '{
                                 "path": $path,
                                 "type": $dev_type,
                                 "major": $major|tonumber,
@@ -69,12 +86,11 @@ if [ ${#DEVNAME_LIST[@]} -gt 0 ]; then
                                 "gid": $gid|tonumber,
                             }')
 
-            # shellcheck disable=SC2012
-            NEW_DEV_RESOURCE=$(jq -n                                                \
-                               --arg dev_type "$(ls -l "$DEVICE" | head -c 1)"      \
-                               --arg major "$(printf "%d" "$(stat -c "%#t" "$DEVICE")")" \
-                               --arg minor "$(printf "%d" "$(stat -c "%#T" "$DEVICE")")" \
-                            '{
+            NEW_DEV_RESOURCE=$(jq -n \
+                --arg dev_type "$dev_type" \
+                --arg major "$major" \
+                --arg minor "$minor" \
+                '{
                                 "allow": true,
                                 "type": $dev_type,
                                 "major": $major|tonumber,
@@ -82,8 +98,8 @@ if [ ${#DEVNAME_LIST[@]} -gt 0 ]; then
                                 "access": "rwm"
                             }')
 
-            CONTAINER_CONFIG=$(jq ".linux.devices += [$NEW_DEVICE]" <<< "$CONTAINER_CONFIG")
-            CONTAINER_CONFIG=$(jq ".linux.resources.devices += [$NEW_DEV_RESOURCE]" <<< "$CONTAINER_CONFIG")
+            CONTAINER_CONFIG=$(jq ".linux.devices += [$NEW_DEVICE]" <<<"$CONTAINER_CONFIG")
+            CONTAINER_CONFIG=$(jq ".linux.resources.devices += [$NEW_DEV_RESOURCE]" <<<"$CONTAINER_CONFIG")
             log "INFO" "Added GPU device: $DEVICE"
         else
             log "INFO" "GPU device already exists in spec: $DEVICE"
@@ -105,4 +121,3 @@ log "INFO" "Total devices in final spec: $total_devices"
 log "INFO" "QM Wayland Client Devices hook completed successfully"
 
 echo "$CONTAINER_CONFIG" | jq .
-

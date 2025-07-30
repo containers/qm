@@ -4,9 +4,11 @@ The QM Device Manager OCI Hook provides dynamic device access management for QM 
 
 ## Overview
 
-The device manager hook allows containers to request specific device access through annotations. The hook dynamically discovers and mounts the requested devices at container creation time.
+The device manager hook allows containers to request specific device access through annotations. The hook dynamically discovers and mounts the requested devices at container creation time. It supports both device categories and Wayland seat-based device access.
 
-## Supported Devices
+## Supported Device Types
+
+### Traditional Device Categories
 
 | Device Type | Annotation | Devices Mounted | Description |
 |-------------|------------|-----------------|-------------|
@@ -17,6 +19,14 @@ The device manager hook allows containers to request specific device access thro
 | ttyUSB | `org.containers.qm.device.ttyUSB=true` | `/dev/ttyUSB*` | USB TTY devices for serial communication |
 | dvb | `org.containers.qm.device.dvb=true` | `/dev/dvb/*` | DVB digital TV devices |
 | radio | `org.containers.qm.device.radio=true` | `/dev/radio*` | Radio devices |
+
+### Wayland Seat Support
+
+| Annotation | Purpose | Description |
+|------------|---------|-------------|
+| `org.containers.qm.wayland.seat=<seat_name>` | Multi-seat support | Mounts devices associated with a specific Wayland seat (e.g., `seat0`) |
+
+The Wayland seat functionality dynamically discovers and mounts devices associated with the specified seat using `loginctl seat-status`. This enables proper multi-seat support for Wayland environments where different users may be logged into different seats.
 
 ## Usage Examples
 
@@ -34,9 +44,13 @@ The device manager hook allows containers to request specific device access thro
    [Container]
    Annotation=org.containers.qm.device.audio=true
    Annotation=org.containers.qm.device.ttys=true
+   # Wayland seat support
+   Annotation=org.containers.qm.wayland.seat=seat0
    ```
 
 ### Podman Command Line
+
+#### Device Access
 
 ```bash
 # Run container with audio device access
@@ -55,6 +69,19 @@ podman run \
   qm
 ```
 
+#### Wayland Seat Access
+
+```bash
+# Run container with devices from seat0
+podman run --annotation org.containers.qm.wayland.seat=seat0 qm
+
+# Combine traditional and seat-based device access
+podman run \
+  --annotation org.containers.qm.device.audio=true \
+  --annotation org.containers.qm.wayland.seat=seat0 \
+  qm
+```
+
 ## Logging
 
 The hook logs activity to `/var/log/qm-device-manager.log` for debugging and monitoring:
@@ -65,6 +92,9 @@ tail -f /var/log/qm-device-manager.log
 
 # Check device discovery for a specific container
 grep "audio" /var/log/qm-device-manager.log
+
+# Check Wayland seat processing
+grep "Wayland seat" /var/log/qm-device-manager.log
 ```
 
 ## Security Considerations
@@ -73,6 +103,7 @@ grep "audio" /var/log/qm-device-manager.log
 - Device permissions are preserved from the host
 - Hook validates device accessibility before mounting
 - Annotation-based activation prevents accidental device exposure
+- Wayland seat integration respects systemd-logind seat assignments
 
 ## Troubleshooting
 
@@ -84,6 +115,15 @@ If a requested device is not mounted:
 2. Verify the annotation syntax: `org.containers.qm.device.audio=true`
 3. Check hook logs: `grep ERROR /var/log/qm-device-manager.log`
 4. Ensure the device is accessible: `test -c /dev/snd/controlC0`
+
+### Wayland Seat Issues
+
+If Wayland seat devices are not mounted:
+
+1. Check seat status: `loginctl seat-status seat0`
+2. Verify seat annotation: `org.containers.qm.wayland.seat=seat0`
+3. Check systemd-logind service: `systemctl status systemd-logind`
+4. Review seat logs: `grep "seat0" /var/log/qm-device-manager.log`
 
 ### Hook Not Triggering
 

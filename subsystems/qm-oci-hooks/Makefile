@@ -23,12 +23,11 @@ dist: ##             - Creates the QM OCI hooks package
 		../qm/oci-hooks/qm-device-manager/oci-qm-device-manager \
 		../qm/oci-hooks/qm-device-manager/oci-qm-device-manager.json \
 		../qm/oci-hooks/qm-device-manager/README.md \
-		../qm/oci-hooks/wayland-session-devices/oci-qm-wayland-session-devices \
-		../qm/oci-hooks/wayland-session-devices/oci-qm-wayland-session-devices.json \
-		../qm/oci-hooks/wayland-session-devices/README.md \
 		../qm/oci-hooks/wayland-client-devices/oci-qm-wayland-client-devices \
 		../qm/oci-hooks/wayland-client-devices/oci-qm-wayland-client-devices.json \
-		../qm/oci-hooks/wayland-client-devices/README.md
+		../qm/oci-hooks/wayland-client-devices/README.md \
+		../qm/oci-hooks/lib/common.sh \
+		../qm/oci-hooks/lib/device-support.sh
 	cd $(ROOTDIR) && mv /tmp/qm-oci-hooks-${VERSION}.tar.gz ./rpm
 
 .PHONY: qm-oci-hooks
