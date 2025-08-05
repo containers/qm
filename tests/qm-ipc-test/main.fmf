@@ -1,0 +1,6 @@
+summary: Test for IPC over unix socket
+test: ./test.sh
+duration: 10m
+tag: qm-ipc-test
+tier: 0
+framework: shell
