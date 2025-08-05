@@ -40,7 +40,6 @@ jobs:
         message: "QM build failed for merged commit {commit_sha}. Please check logs {logs_url}"
 
   - <<: *copr
-    project: qm
     targets:
       - fedora-stable-aarch64
       - fedora-stable-ppc64le
