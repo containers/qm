@@ -64,7 +64,6 @@ BuildRequires: selinux-policy >= %_selinux_policy_version
 BuildRequires: selinux-policy-devel >= %_selinux_policy_version
 BuildRequires: bluechi-selinux
 
-Requires: iptables
 Requires: parted
 Requires: containers-common
 Requires: selinux-policy >= %_selinux_policy_version
