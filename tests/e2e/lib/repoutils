@@ -45,7 +45,7 @@ install_qm_rpms() {
   ###########################################################################
 
   if [[ -n "${USE_QM_COPR}" ]]; then
-     USE_QM_COPR="${PACKIT_COPR_PROJECT:-rhcontainerbot/qm}"
+     USE_QM_COPR="${PACKIT_COPR_PROJECT:-@centos-automotive-sig/qm-next}"
   fi
   info_message "Installing qm setup rpm"
   info_message "Installing qm using ${USE_QM_COPR} repo"

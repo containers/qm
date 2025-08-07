@@ -12,6 +12,7 @@ Source0: %{url}/archive/qm-windowmanager-%{version}.tar.gz
 BuildArch: noarch
 
 Requires: qm >= %{version}
+Requires: qm-oci-hooks
 
 %description
 This sub-package installs an experimental window manager for the QM environment.

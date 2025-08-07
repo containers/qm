@@ -60,7 +60,7 @@ export BUILD_BLUECHI_FROM_GH_URL=""
 export QM_GH_URL=""
 export BRANCH_QM=""
 export SET_QM_PART=""
-export USE_QM_COPR="${PACKIT_COPR_PROJECT:-rhcontainerbot/qm}"
+export USE_QM_COPR="${PACKIT_COPR_PROJECT:-@centos-automotive-sig/qm-next}"
 
 RED='\033[91m'
 GRN='\033[92m'
@@ -91,7 +91,7 @@ Usage: ./set-ffi-env-e2e [OPTIONS]
         Specify if disk partition neede for /var/qm needed
 
 --use-qm-copr
-        Specify to install rpms from rhcontainerbot/qm copr
+        Specify to install rpms from @centos-automotive-sig/qm-next copr
 
 Examples:
 

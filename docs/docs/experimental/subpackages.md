@@ -33,7 +33,7 @@ Choose one of the following sub-packages and build using make.
 ```bash
 git clone git@github.com:containers/qm.git && cd qm
 
-Example of subpackages: input, kvm, sound, tty7, ttyUSB0, video, windowmanager
+Example of subpackages: kvm, qm-oci-hooks, ros2, text2speech, windowmanager
 
 make TARGETS=input subpackages
 ls rpmbuild/RPMS/noarch/
@@ -79,125 +79,6 @@ Example changing the spec and triggering the build via make (feel free to automa
 # Use make file to run specific subpackage
 make TARGETS=windowmanager subpackages
 ```
-
-## QM sub-package Input
-
-The `input` sub-package exposes `/dev/input/*` devices (such as keyboards, mice, touchpads, etc.) from the host system to the QM container.
-
-Follow the steps below to verify that the input sub-package properly mounts and exposes input devices inside the QM container.
-
-### Step 1: Verify input devices are NOT visible inside QM
-
-```bash
-host> sudo podman exec -it qm ls /dev/input
-ls: cannot access '/dev/input': No such file or directory
-```
-
-### Step 2: Build and install the input sub-package
-
-```bash
-host> make TARGETS=input subpackages
-host> sudo dnf install ./rpmbuild/RPMS/noarch/qm_mount_bind_input-0.7.4-1.fc41.noarch.rpm
-```
-
-### Step 3: Confirm input devices exist on the host
-
-```bash
-host> ls /dev/input
-by-id    event0  event2  event4  js0   mouse0  mouse2
-by-path  event1  event3  event5  mice  mouse1
-```
-
-### Step 4: Restart QM to apply the mount bind configuration
-
-```bash
-host> sudo systemctl daemon-reload
-host> sudo podman restart qm
-```
-
-### Step 5: Re-check input devices inside QM
-
-```bash
-host> sudo podman exec -it qm ls /dev/input
-event0  event2  event4  js0   mouse0  mouse2
-event1  event3  event5  mice  mouse1
-```
-
-## QM sub-package tty7
-
-The tty7 sub-package exposes `/dev/tty7` to the container. `/dev/tty7` is typically the virtual terminal associated with the graphical user interface (GUI) on Linux systems.
-
-Follow the steps below to verify that the input sub-package properly mounts and exposes input devices inside the QM container.
-
-### Step 1: Verify tty7 is NOT visible inside QM
-
-```bash
-host> sudo podman exec -it qm ls -l /dev/tty7
-ls: cannot access '/dev/tty7': No such file or directory
-```
-
-### Step 2: Build and install the tty7 sub-package
-
-```bash
-host> make TARGETS=tty7 subpackages
-host> sudo dnf install ./rpmbuild/RPMS/noarch/qm-mount-bind-tty7-0.7.4-1.fc41.noarch.rpm
-```
-
-### Step 3: Restart QM to apply the mount bind configuration
-
-```bash
-host> sudo systemctl daemon-reload
-host> sudo podman restart qm
-```
-
-### Step 4: Re-check tty7 inside QM
-
-```bash
-host> sudo podman exec -it qm ls -l /dev/tty7
-crw--w----. 1 root tty 4, 7 Apr 15 13:34 /dev/tty7
-```
-
-## QM sub-package ttyUSB0
-
-The ttyUSB0 sub-package exposes /dev/ttyUSB0 to the QM container. This device node is commonly used for USB-to-serial adapters, which are widely used to connect embedded systems, IoT devices, or other serial-based equipment.
-
-### Step 1: Verify ttyUSB0 is NOT visible inside QM
-
-```bash
-host> sudo podman exec -it qm ls -l /dev/ttyUSB0
-ls: cannot access '/dev/ttyUSB0': No such file or directory
-```
-
-### Step 2: Build and install the ttyUSB0 sub-package
-
-```bash
-host> make TARGETS=ttyUSB0 subpackages
-host> sudo dnf install ./rpmbuild/RPMS/noarch/qm-mount-bind-ttyUSB0-0.7.4-1.fc41.noarch.rpm
-```
-
-### Step 3: Restart QM to apply the configuration
-
-```bash
-host> sudo systemctl daemon-reload
-host> sudo podman restart qm
-```
-
-### Step 4: Re-check ttyUSB0 inside QM
-
-```bash
-host> sudo podman exec -it qm ls -l /dev/ttyUSB0
-crw-rw-rw-. 1 root root 4, 64 Apr 24 08:50 /dev/ttyUSB0
-```
-
-### Additional Notes
-
-- Make sure the USB-to-serial device is connected to the host machine before restarting QM.
-- You can fake ttyUSB0 connection on host machine for testing reasons with:
-
-    ```bash
-    sudo mknod /dev/ttyUSB0 c 4 64
-    sudo chmod 666 /dev/ttyUSB0
-    ```
 
 ## QM sub-package Video
 
@@ -330,6 +211,179 @@ Params:
 hw:1,0: sound card 1, device 0
 -c 2: two channels (stereo)
 -r 48000: sample rate of 48 kHz
+```
+
+## QM sub-package OCI Hooks
+
+The QM sub-package OCI Hooks provides dynamic device access management for containers through OCI runtime hooks. This subpackage includes three essential hooks that enable secure and flexible device sharing between the host system and containers.
+
+### Components
+
+The `qm-oci-hooks` subpackage includes:
+
+- **qm-device-manager**: Dynamic device mounting hook that provides access to various hardware devices based on container annotations
+- **wayland-session-devices**: Hook for Wayland display server device management in multi-seat environments, providing access to systemd-logind seat devices (input devices, render devices, display devices)
+- **wayland-client-devices**: Hook for GPU hardware acceleration access for Wayland client applications running as nested containers
+
+### Supported Device Types
+
+#### QM Device Manager
+
+The `qm-device-manager` hook supports the following device types through container annotations:
+
+| Device Type | Annotation | Devices Provided |
+|-------------|------------|------------------|
+| Audio | `org.containers.qm.device.audio=true` | `/dev/snd/*` (audio devices) |
+| Video | `org.containers.qm.device.video=true` | `/dev/video*` (cameras, video devices) |
+| Input | `org.containers.qm.device.input=true` | `/dev/input/*` (keyboards, mice, touchpads) |
+| TTYs | `org.containers.qm.device.ttys=true` | `/dev/tty0-7` (virtual terminals) |
+| TTY USB | `org.containers.qm.device.ttyUSB=true` | `/dev/ttyUSB*` (USB TTY devices) |
+| DVB | `org.containers.qm.device.dvb=true` | `/dev/dvb/*` (digital TV devices) |
+| Radio | `org.containers.qm.device.radio=true` | `/dev/radio*` (radio devices) |
+
+#### Wayland Session Devices
+
+The `wayland-session-devices` hook supports:
+
+| Functionality | Annotation | Devices Provided |
+|---------------|------------|------------------|
+| Multi-seat Support | `org.containers.qm.wayland.seat=seat0` | Input devices, render devices, and display devices associated with the specified systemd-logind seat |
+
+#### Wayland Client Devices
+
+The `wayland-client-devices` hook supports:
+
+| Functionality | Annotation | Devices Provided |
+|---------------|------------|------------------|
+| GPU Acceleration | `org.containers.qm.wayland-client.gpu=true` | GPU render devices (`/dev/dri/*`) for hardware acceleration |
+
+### Features
+
+- **Dynamic Device Discovery**: Automatically discovers and mounts available devices at container startup
+- **Annotation-Based Security**: Devices are only mounted when explicitly requested via annotations
+- **Multi-seat Support**: Enables proper device access in systemd-logind multi-seat environments
+- **GPU Acceleration**: Provides hardware acceleration for Wayland client applications
+- **Comprehensive Logging**: All hooks provide detailed logging for monitoring and debugging:
+  - Device Manager: `/var/log/qm-device-manager.log`
+  - Wayland Session: `/var/log/qm-wayland-session-devices.log`
+  - Wayland Client: `/var/log/qm-wayland-client-devices.log`
+- **Runtime Flexibility**: No system restart required when adding device access to new containers
+- **Lightweight Implementation**: Shell script-based hooks with minimal dependencies
+
+### Building and Installing
+
+```bash
+git clone https://github.com/containers/qm.git && cd qm
+make TARGETS=qm-oci-hooks subpackages
+sudo dnf install rpmbuild/RPMS/noarch/qm-oci-hooks-*.noarch.rpm
+```
+
+### Usage Examples
+
+#### Example 1: Audio application with device access
+
+```bash
+# Create a container file that needs audio access
+cat > /etc/containers/systemd/my-audio-app.container << EOF
+[Unit]
+Description=Audio Application Container
+
+[Container]
+Image=quay.io/qm-images/audio:latest
+Annotation=org.containers.qm.device.audio=true
+
+[Install]
+WantedBy=default.target
+EOF
+
+# Enable and start the container
+sudo systemctl daemon-reload
+sudo systemctl enable --now my-audio-app
+```
+
+#### Example 2: Serial communication with USB TTY devices
+
+```bash
+# Create a container with access to all USB TTY devices
+cat > /etc/containers/systemd/serial-app.container << EOF
+[Unit]
+Description=Serial Communication Application
+
+[Container]
+Image=my-serial-app:latest
+Annotation=org.containers.qm.device.ttyUSB=true
+
+[Install]
+WantedBy=default.target
+EOF
+```
+
+#### Example 3: Multi-seat Wayland compositor with session devices
+
+```bash
+# Create a dropin for QM container to enable multi-seat support
+mkdir -p /etc/containers/systemd/qm.container.d/
+cat > /etc/containers/systemd/qm.container.d/wayland-seat.conf << EOF
+[Container]
+Annotation=org.containers.qm.wayland.seat=seat0
+EOF
+
+# Create a Wayland compositor container that runs inside QM
+cat > /etc/qm/containers/systemd/wayland-compositor.container << EOF
+[Unit]
+Description=Wayland Compositor with Multi-seat Support
+
+[Container]
+Image=wayland-compositor:latest
+Annotation=org.containers.qm.wayland.seat=seat0
+
+[Install]
+WantedBy=default.target
+EOF
+```
+
+#### Example 4: Wayland client application with GPU acceleration
+
+```bash
+# Create a Wayland client container with GPU hardware acceleration
+cat > /etc/qm/containers/systemd/gpu-app.container << EOF
+[Unit]
+Description=GPU-accelerated Application
+
+[Container]
+Image=my-gpu-app:latest
+Annotation=org.containers.qm.wayland-client.gpu=true
+
+[Install]
+WantedBy=default.target
+EOF
+```
+
+### Verification
+
+To verify the hooks are installed and working:
+
+```bash
+# Check all OCI hook installations
+ls -la /usr/share/containers/oci/hooks.d/
+
+# Check hook executables
+ls -la /usr/libexec/oci/hooks.d/
+
+# View hook logs (all hooks provide comprehensive logging)
+tail -f /var/log/qm-device-manager.log
+tail -f /var/log/qm-wayland-session-devices.log
+tail -f /var/log/qm-wayland-client-devices.log
+
+# Test device access with qm-device-manager
+podman exec -it my-audio-app ls -la /dev/snd/
+
+# Test GPU access with wayland-client-devices (if applicable)
+podman exec -it gpu-app ls -la /dev/dri/
+
+# Check systemd-logind seat devices (for wayland-session-devices)
+loginctl list-seats
+loginctl seat-status seat0
 ```
 
 ## QM sub-package ROS2

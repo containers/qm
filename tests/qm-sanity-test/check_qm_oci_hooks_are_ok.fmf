@@ -1,0 +1,7 @@
+summary: Test QM OCI hooks are installed and working
+test: /bin/bash ./check_qm_oci_hooks_are_ok.sh
+duration: 10m
+tier: 0
+tag: kvm
+framework: shell
+id: 7f8e9a0b-1c2d-3e4f-5a6b-7c8d9e0f1a2b

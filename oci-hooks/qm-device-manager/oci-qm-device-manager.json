@@ -1,0 +1,12 @@
+{
+  "version": "1.0.0",
+  "hook": {
+    "path": "/usr/libexec/oci/hooks.d/oci-qm-device-manager"
+  },
+  "when": {
+    "annotations": {
+      "^org\\.containers\\.qm\\.device\\..*$": "^(true|1|yes)$"
+    }
+  },
+  "stages": ["precreate"]
+}

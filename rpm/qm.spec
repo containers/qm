@@ -64,7 +64,6 @@ BuildRequires: selinux-policy >= %_selinux_policy_version
 BuildRequires: selinux-policy-devel >= %_selinux_policy_version
 BuildRequires: bluechi-selinux
 
-Requires: iptables
 Requires: parted
 Requires: containers-common
 Requires: selinux-policy >= %_selinux_policy_version
@@ -89,6 +88,20 @@ Software install into the QM environment under `/usr/lib/qm/rootfs` is
 automatically isolated from the host. If developers need to further
 isolate there applications from other processes in the QM they should
 use container tools like Podman.
+
+###################
+### qmctl ###
+###################
+
+%package ctl
+Summary:	QM service controller command line tool
+Requires:	%{name} = %{version}-%{release}
+Requires:	python3 >= 3.9
+
+%description ctl
+QM is a containerized environment for running Quality Management software.
+This package contains the service controller command line tool for managing
+and interacting with QM containers and services.
 
 %prep
 %autosetup -Sgit -n %{name}-%{version}
@@ -162,6 +175,12 @@ fi
 %ghost %dir %{_installscriptdir}
 %ghost %dir %{_installscriptdir}/rootfs
 %ghost %{_installscriptdir}/rootfs/*
+
+%files ctl
+%doc README.md
+%license LICENSE
+%{_bindir}/qmctl
+%{_mandir}/man1/qmctl.*
 
 %changelog
 %if %{defined autochangelog}

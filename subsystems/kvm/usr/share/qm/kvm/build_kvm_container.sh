@@ -7,7 +7,7 @@ ARCHS=("amd64" "aarch64")
 IMAGE_NAME="kvm"
 TAG="latest"
 MANIFEST_NAME="${IMAGE_NAME}-manifest:${TAG}"
-FEDORA_USER_PASSWORD=${FEDORA_USER_PASSWORD:-$(openssl rand -base64 12)}
+FEDORA_USER_PASSWORD=${FEDORA_USER_PASSWORD:-fedora}
 
 #IMG_REG=quay.io
 #IMG_ORG=qm-images
