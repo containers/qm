@@ -58,7 +58,15 @@ dist: ##             - Creates the QM distribution package
 		--exclude='.git' \
 		--dereference \
 		--exclude='.gitignore' \
+		--exclude='.fmf' \
+		--exclude='.packit.*' \
+		--exclude='.pre-commit*' \
+		--exclude='.readthedocs.yaml' \
 		--exclude='demos' \
+		--exclude='docs' \
+		--exclude='plans' \
+		--exclude='subsystems' \
+		--exclude='tests' \
 		--exclude='.github' \
 		--transform s/qm/qm-${VERSION}/ \
 		-f /tmp/v${VERSION}.tar.gz ../qm
