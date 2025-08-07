@@ -51,6 +51,13 @@ disk_cleanup() {
 reload_config() {
    exec_cmd "systemctl daemon-reload"
    exec_cmd "systemctl restart qm"
+   # Add verification loop for qm status
+   if timeout 30 bash -c "until systemctl is-active qm; do sleep 1; done"; then
+       info_message "PASS: Service QM is Active."
+   else
+       info_message "FAIL: Service QM is not Active"
+       exit 1
+   fi
 }
 
 running_container_in_qm() {

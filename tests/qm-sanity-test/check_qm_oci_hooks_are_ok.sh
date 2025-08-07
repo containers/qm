@@ -19,15 +19,15 @@ setup_qm_oci_hooks_from_source() {
     exec_cmd "cp ${TMT_TREE}/oci-hooks/qm-device-manager/oci-qm-device-manager $hooks_exec_dir/"
     exec_cmd "chmod +x $hooks_exec_dir/oci-qm-device-manager"
 
-    # Copy Wayland Session Devices hook
-    exec_cmd "cp ${TMT_TREE}/oci-hooks/wayland-session-devices/oci-qm-wayland-session-devices.json $hooks_config_dir/"
-    exec_cmd "cp ${TMT_TREE}/oci-hooks/wayland-session-devices/oci-qm-wayland-session-devices $hooks_exec_dir/"
-    exec_cmd "chmod +x $hooks_exec_dir/oci-qm-wayland-session-devices"
-
     # Copy Wayland Client Devices hook
     exec_cmd "cp ${TMT_TREE}/oci-hooks/wayland-client-devices/oci-qm-wayland-client-devices.json $hooks_config_dir/"
     exec_cmd "cp ${TMT_TREE}/oci-hooks/wayland-client-devices/oci-qm-wayland-client-devices $hooks_exec_dir/"
     exec_cmd "chmod +x $hooks_exec_dir/oci-qm-wayland-client-devices"
+
+    # Copy essential library files (excluding mock support)
+    exec_cmd "mkdir -p $hooks_exec_dir/../lib"
+    exec_cmd "cp ${TMT_TREE}/oci-hooks/lib/common.sh $hooks_exec_dir/../lib/"
+    exec_cmd "cp ${TMT_TREE}/oci-hooks/lib/device-support.sh $hooks_exec_dir/../lib/"
 
     info_message "setup_qm_oci_hooks_from_source(): All OCI hooks copied successfully from TMT_TREE"
 }
@@ -41,17 +41,20 @@ cleanup_oci_hooks() {
 
     # Remove test hooks
     rm -f "$hooks_config_dir/oci-qm-device-manager.json" || true
-    rm -f "$hooks_config_dir/oci-qm-wayland-session-devices.json" || true
     rm -f "$hooks_config_dir/oci-qm-wayland-client-devices.json" || true
 
     rm -f "$hooks_exec_dir/oci-qm-device-manager" || true
-    rm -f "$hooks_exec_dir/oci-qm-wayland-session-devices" || true
     rm -f "$hooks_exec_dir/oci-qm-wayland-client-devices" || true
 
-    # Clean up test container
-    local test_container="qm-oci-hooks-sanity-test"
-    systemctl stop "$test_container" 2>/dev/null || true
-    rm -f "/etc/containers/systemd/${test_container}.container" || true
+    # Clean up library files
+    rm -rf "$hooks_exec_dir/../lib" || true
+
+    # Clean up test containers
+    local test_containers=("qm-oci-hooks-device-test")
+    for test_container in "${test_containers[@]}"; do
+        systemctl stop "$test_container" 2>/dev/null || true
+        rm -f "/etc/containers/systemd/${test_container}.container" || true
+    done
     systemctl daemon-reload 2>/dev/null || true
 }
 
@@ -65,10 +68,29 @@ check_qm_oci_hooks_are_ok(){
     # Setup hooks directly from source tree
     setup_qm_oci_hooks_from_source
 
-    # Test OCI hook functionality with a container using device annotation
-    local test_container="qm-oci-hooks-sanity-test"
+    # Validate hook JSON configurations
+    info_message "check_qm_oci_hooks_are_ok(): Validating hook JSON configurations"
 
-    # Create a test container with ttys annotation (simple device test)
+    local hooks_config_dir="/usr/share/containers/oci/hooks.d"
+
+    if command -v jq > /dev/null 2>&1; then
+        for hook_json in "$hooks_config_dir"/*.json; do
+            if [[ -f "$hook_json" ]]; then
+                if jq . "$hook_json" > /dev/null 2>&1; then
+                    info_message "check_qm_oci_hooks_are_ok(): Valid JSON: $(basename "$hook_json")"
+                else
+                    info_message "FAIL: check_qm_oci_hooks_are_ok(): Invalid JSON: $(basename "$hook_json")"
+                    exit 1
+                fi
+            fi
+        done
+    else
+        info_message "check_qm_oci_hooks_are_ok(): jq not available, skipping JSON validation"
+    fi
+
+    # Test QM Device Manager hook with TTY devices
+    local test_container="qm-oci-hooks-device-test"
+
     cat > "/tmp/${test_container}.container" << EOF
 [Unit]
 Description=OCI Hooks Sanity Test Container
@@ -100,6 +122,11 @@ EOF
                     info_message "check_qm_oci_hooks_are_ok(): OCI hook processing detected in logs"
                 fi
             fi
+
+            # Clean up test container
+            systemctl stop "$test_container" 2>/dev/null || true
+            rm -f "/etc/containers/systemd/${test_container}.container" || true
+
         else
             info_message "FAIL: check_qm_oci_hooks_are_ok(): Quadlet container with OCI hook annotation is not active"
             exit 1
@@ -109,7 +136,8 @@ EOF
         exit 1
     fi
 
-    info_message "PASS: check_qm_oci_hooks_are_ok()"
+    exec_cmd "systemctl daemon-reload"
+    info_message "PASS: check_qm_oci_hooks_are_ok(): QM Device Manager hook tested successfully"
 }
 
 check_qm_oci_hooks_are_ok

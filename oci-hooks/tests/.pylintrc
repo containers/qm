@@ -1,0 +1,50 @@
+[MAIN]
+# Specify a score threshold to be exceeded before program exits with error
+fail-under=10.0
+
+# Use multiple processes to speed up Pylint
+jobs=1
+
+# Allow loading of arbitrary C extensions
+unsafe-load-any-extension=no
+
+[MESSAGES CONTROL]
+# Disable specific warnings that are common/acceptable in test files
+disable=
+    # Import related (pytest/test dependencies are OK)
+    import-error,
+    # Test-specific patterns
+    unused-argument,          # Fixtures often have unused parameters
+    redefined-outer-name,     # Fixture names often match test parameters
+    unused-variable,          # Test outputs not always used
+    inconsistent-return-statements,  # pytest.fail() is intentional pattern
+    # Less critical for tests
+    too-few-public-methods,
+    too-many-arguments,
+    too-many-locals,
+    duplicate-code,           # Some duplication in tests is acceptable
+    # File organization
+    wrong-import-order,       # Less critical in test files
+    # Naming
+    invalid-name,             # Test method names can be long and descriptive
+
+[DESIGN]
+# Maximum number of arguments for function / method
+max-args=8
+
+# Maximum number of locals for function / method body
+max-locals=20
+
+[SIMILARITIES]
+# Minimum lines number of a similarity
+min-similarity-lines=10
+
+[BASIC]
+# Naming style matching correct function names (relaxed for tests)
+function-rgx=[a-z_][a-z0-9_]{2,50}$
+
+# Naming style matching correct method names (relaxed for tests)
+method-rgx=[a-z_][a-z0-9_]{2,50}$
+
+# Naming style matching correct class names
+class-rgx=[A-Z_][a-zA-Z0-9]+$
