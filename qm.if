@@ -577,37 +577,14 @@ template(`qm_domain_template',`
 	userdom_rw_inherited_user_pipes($1_container_domain)
 	userdom_use_user_ptys($1_container_domain)
 
-	optional_policy(`
-		vsomeip_use($1_t)
-		vsomeip_use($1_container_domain)
-	')
-')
-
-########################################
-## <summary>
-##	Creates types and rules for a basic
-##	container runtime process domain.
-## </summary>
-## <param name="prefix">
-##	<summary>
-##	Prefix for the domain.
-##	</summary>
-## </param>
-#
-interface(`vsomeip_use',`
-        gen_require(`
-		type vsomeip_t;
-                type vsomeip_var_run_t;
-                type router_vsomeip_var_run_t;
+        optional_policy(`
+                gen_require(`
+                        type var_run_t;
+                ')
+		allow qm_container_ipc_t var_run_t:dir { add_name write };
+		allow qm_container_ipc_t var_run_t:sock_file { create setattr write };
+		allow qm_t var_run_t:dir mounton;
         ')
-        # create and use vsomeip sockets:
-        allow $1 vsomeip_var_run_t:dir { add_name remove_name write };
-        allow $1 vsomeip_var_run_t:sock_file { create setattr write unlink };
-
-        # Talk to routing manager (and back)
-        allow $1 vsomeip_t:unix_stream_socket connectto;
-        allow vsomeip_t $1:unix_stream_socket connectto;
-        allow $1 router_vsomeip_var_run_t:sock_file write;
 ')
 
 ########################################
