@@ -106,9 +106,11 @@ systemctl restart ipc_server
 info_message "restarting qm..."
 systemctl restart qm
 
-if timeout 30 bash -c "until systemctl is-active qm; do sleep 1; done"; then
-    info_message "PASS: Service QM is Active."
-fi
+sleep 15
+
+#if timeout 30 bash -c "until systemctl is-active qm; do sleep 1; done"; then
+#    info_message "PASS: Service QM is Active."
+#fi
 
 check_container_exists
 
