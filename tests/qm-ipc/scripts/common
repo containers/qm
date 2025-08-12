@@ -1,25 +1,28 @@
 #!/bin/bash
 
+# shellcheck disable=SC1091
+source ../../e2e/lib/utils
+
 daemon_reload_in_qm() {
-    echo "qm: systemctl daemon-reload inside qm..."
+    info_message "qm: systemctl daemon-reload inside qm..."
     podman exec -it qm bash -c "systemctl daemon-reload"
 }
 
 restart_ipc_client_in_qm() {
-    echo "qm: restart ipc_client inside qm..."
+    info_message "qm: restart ipc_client inside qm..."
     podman exec -it qm bash -c "podman restart systemd-ipc_client"
     sleep 15
 }
 
 show_qm_podman_ps() {
-    echo "qm: podman ps inside qm..."
+    info_message "qm: podman ps inside qm..."
     podman exec -it qm bash -c "podman ps"
 }
 
 check_ipc_client_logs() {
-    echo "qm: podman logs systemd-ipc_client"
+    info_message "qm: podman logs systemd-ipc_client"
     if podman exec -it qm bash -c "podman logs systemd-ipc_client" | grep -Eiq "permission denied|no such file or directory"; then
-        echo "systemd-ipc_client has failed"
+        info_message "systemd-ipc_client has failed"
         exit 1
     fi
 }
@@ -27,30 +30,30 @@ check_ipc_client_logs() {
 check_nested_container_exists() {
   local container_name="$1"
 
-  echo "Checking for '$container_name' inside 'qm'..."
+  info_message "Checking for '$container_name' inside 'qm'..."
 
   # Capture output of nested podman ps inside qm
   local output
   output=$(podman exec qm podman ps --format "{{.Names}}" 2>/dev/null)
 
-  if echo "$output" | grep -wq "$container_name"; then
-    echo "Container '$container_name' exists inside 'qm'."
+  if info_message "$output" | grep -wq "$container_name"; then
+    info_message "Container '$container_name' exists inside 'qm'."
   else
-    echo "Container '$container_name' does NOT exist inside 'qm'."
-    echo "Output from qm's podman:"
-    echo "$output"
+    info_message "Container '$container_name' does NOT exist inside 'qm'."
+    info_message "Output from qm's podman:"
+    info_message "$output"
     exit 1
   fi
 }
 
 check_container_exists() {
     local container_name="systemd-ipc_server"
-    echo "Checking if container '$container_name' exists and is running..."
+    info_message "Checking if container '$container_name' exists and is running..."
 
     if podman ps --format "{{.Names}}" | grep -q "^${container_name}$"; then
-        echo "Container '$container_name' is running."
+        info_message "Container '$container_name' is running."
     else
-        echo "Container '$container_name' is NOT running."
+        info_message "Container '$container_name' is NOT running."
         exit 1
     fi
 }
@@ -59,7 +62,7 @@ check_nested_ipc_containers_exist() {
   local nested_containers=("systemd-ipc_client" "systemd-ipc_server")
   local missing=0
 
-  echo "Checking nested containers inside 'qm'..."
+  info_message "Checking nested containers inside 'qm'..."
 
   # Capture the list of nested container names inside 'qm'
   local container_list
@@ -67,7 +70,7 @@ check_nested_ipc_containers_exist() {
 
   for name in "${nested_containers[@]}"; do
     if ! grep -q "^${name}$" <<< "$container_list"; then
-      echo "Error: Nested container '$name' does not exist inside 'qm'."
+      info_message "Error: Nested container '$name' does not exist inside 'qm'."
       missing=1
     fi
   done
@@ -75,6 +78,6 @@ check_nested_ipc_containers_exist() {
   if [[ $missing -eq 1 ]]; then
     exit 1
   else
-    echo "Both nested containers exist inside 'qm'."
+    info_message "Both nested containers exist inside 'qm'."
   fi
 }

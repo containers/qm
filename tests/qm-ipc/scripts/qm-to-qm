@@ -1,19 +1,19 @@
 #!/bin/bash
 
-echo "==============="
-pwd
+# shellcheck disable=SC1091
+source ../../e2e/lib/utils
+
 SCRIPT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
 # shellcheck source=tests/qm-ipc/scripts/common
 source "$SCRIPT_DIR/common"
-echo "==============="
 
-echo "Creating IPC files for mode: qm to qm"
+info_message "Creating IPC files for mode: qm to qm"
 
 # Define file paths for both modes
 QMQM_SERVER="/etc/qm/containers/systemd/ipc_server.container"
 QMQM_CLIENT="/etc/qm/containers/systemd/ipc_client.container"
 
-echo "Cleaning up asil-to-qm files..."
+info_message "Cleaning up asil-to-qm files..."
 rm -f "$ASIL_SOCKET" "$ASIL_SERVER" "$ASIL_CLIENT" "$ASIL_EXTRA_VOLUME"
 
 VOLUME_PATH=/run/:/run/
@@ -23,7 +23,7 @@ SERVER=$QMQM_SERVER
 CLIENT=$QMQM_CLIENT
 
 # Create ipc_server.socket
-echo "Creating $SERVER"
+info_message "Creating $SERVER"
 # Create ipc_server.container
 cat <<EOF > "$SERVER"
 [Unit]
@@ -34,7 +34,6 @@ Network=none
 $ENVIRONMENT
 Volume=$VOLUME_PATH
 SecurityLabelLevel=s0:c1,c2
-#SecurityLabelType=ipc_t
 [Service]
 Restart=always
 Type=notify
@@ -42,7 +41,7 @@ Type=notify
 WantedBy=multi-user.target
 EOF
 
-echo "Creating $CLIENT"
+info_message "Creating $CLIENT"
 # Create ipc_client.container
 cat <<EOF > "$CLIENT"
 [Unit]
@@ -62,16 +61,18 @@ Restart=always
 WantedBy=multi-user.target
 EOF
 
-echo "Reloading systemd and restarting containers (qm-to-qm)..."
+info_message "Reloading systemd and restarting containers (qm-to-qm)..."
 systemctl daemon-reload
 systemctl restart qm
-sleep 15
+if timeout 30 bash -c "until systemctl is-active qm; do sleep 1; done"; then
+    info_message "PASS: Service QM is Active."
+fi
 
 check_nested_ipc_containers_exist
 
 if podman exec -it qm podman logs systemd-ipc_server | grep -q "Current time received from client is"; then
-    echo "[PASS] Log entry found"
+    info_message "[PASS] Log entry found"
 else
-    echo "[FAIL] Log entry not found"
+    info_message "[FAIL] Log entry not found"
     exit 1
 fi

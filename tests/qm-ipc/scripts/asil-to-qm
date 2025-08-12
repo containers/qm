@@ -1,13 +1,13 @@
 #!/bin/bash
 
-echo "==============="
-pwd
+# shellcheck disable=SC1091
+source ../../e2e/lib/utils
+
 SCRIPT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
 # shellcheck source=tests/qm-ipc/scripts/common
 source "$SCRIPT_DIR/common"
-echo "==============="
 
-echo "Creating IPC files for mode: ASIL to QM"
+info_message "Creating IPC files for mode: ASIL to QM"
 
 # Define file paths for both modes
 QMQM_SOCKET=""
@@ -21,7 +21,7 @@ ASIL_CLIENT="/etc/qm/containers/systemd/ipc_client.container"
 ASIL_EXTRA_VOLUME="/etc/containers/systemd/qm.container.d/10-extra-volume.conf"
 
 # asil to qm
-echo "Cleaning up qm-to-qm files..."
+info_message "Cleaning up qm-to-qm files..."
 rm -f "$QMQM_SOCKET $QMQM_SERVER $QMQM_CLIENT $QMQM_EXTRA_VOLUME"
 
 SOCKET=$ASIL_SOCKET
@@ -34,7 +34,7 @@ LISTEN_PATH="%t/ipc/ipc.socket"
 VOLUME_PATH="/run/ipc/:/run/ipc/"
 
 # Create ipc_server.socket
-echo "Creating $SOCKET"
+info_message "Creating $SOCKET"
 cat <<EOF > "$SOCKET"
 [Unit]
 Description=IPC Server Socket for asil to qm
@@ -48,7 +48,7 @@ EOF
 
 ASIL_VOLUME_DIR="${ASIL_EXTRA_VOLUME%/*}"
 mkdir -p "$ASIL_VOLUME_DIR"
-echo "Creating $EXTRA_VOLUME"
+info_message "Creating $EXTRA_VOLUME"
 cat <<EOF > "$EXTRA_VOLUME"
 [Unit]
 Requires=ipc_server
@@ -57,7 +57,7 @@ Requires=ipc_server
 Volume=$VOLUME_PATH
 EOF
 
-echo "Creating $SERVER"
+info_message "Creating $SERVER"
 # Create ipc_server.container
 cat <<EOF > "$SERVER"
 [Unit]
@@ -77,7 +77,7 @@ Type=notify
 WantedBy=multi-user.target
 EOF
 
-echo "Creating $CLIENT"
+info_message "Creating $CLIENT"
 # Create ipc_client.container
 cat <<EOF > "$CLIENT"
 [Unit]
@@ -94,24 +94,27 @@ Restart=always
 WantedBy=multi-user.target
 EOF
 
-echo "systemctl daemon reload..."
+info_message "systemctl daemon reload..."
 systemctl daemon-reload
 
-echo "restart ipc_server.socket"
+info_message "restart ipc_server.socket"
 systemctl restart ipc_server.socket
 
-echo "restart ipc_server"
+info_message "restart ipc_server"
 systemctl restart ipc_server
 
-echo "restarting qm..."
+info_message "restarting qm..."
 systemctl restart qm
-sleep 15
+
+if timeout 30 bash -c "until systemctl is-active qm; do sleep 1; done"; then
+    info_message "PASS: Service QM is Active."
+fi
 
 check_container_exists
 
 if podman logs systemd-ipc_server | grep -q "Current time received from client is"; then
-    echo "[PASS] Log entry found"
+    info_message "[PASS] Log entry found"
 else
-    echo "[FAIL] Log entry not found"
+    info_message "[FAIL] Log entry not found"
     exit 1
 fi
