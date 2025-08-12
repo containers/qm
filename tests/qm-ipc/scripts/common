@@ -1,7 +1,7 @@
 #!/bin/bash
 
 # shellcheck disable=SC1091
-source ../../e2e/lib/utils
+source ../e2e/lib/utils
 
 daemon_reload_in_qm() {
     info_message "qm: systemctl daemon-reload inside qm..."
