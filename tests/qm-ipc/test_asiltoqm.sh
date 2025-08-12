@@ -6,8 +6,8 @@
 info_message "Running QM IPC tests..."
 
 if ./scripts/asil-to-qm; then
-    echo "PASS: ASIL to QM IPC tests passed."
+    info_message "PASS: ASIL to QM IPC tests passed."
 else
-    echo "FAIL: ASIL to QM IPC tests failed."
+    info_message "FAIL: ASIL to QM IPC tests failed."
     exit 1
 fi

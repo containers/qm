@@ -6,8 +6,8 @@
 info_message "Running QM IPC tests..."
 
 if ./scripts/qm-to-qm; then
-    echo "PASS: QM to QM IPC tests passed."
+    info_message "PASS: QM to QM IPC tests passed."
 else
-    echo "FAIL: QM to QM IPC tests failed."
+    info_message "FAIL: QM to QM IPC tests failed."
     exit 1
 fi
