@@ -21,7 +21,7 @@ adjust:
            podman run --replace -d --name autosd \
                   --privileged \
                   quay.io/centos-sig-automotive/autosd:latest
-   when: distro == centos-stream-9 or distro == fedora
+   when: distro == centos-stream ,fedora
 
 execute:
     how: tmt

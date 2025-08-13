@@ -12,7 +12,7 @@ check_run_systemd_journal_socket_inode_number(){
 
     # Get inode number of /run/systemd/journal/socket inside and outside of the QM partition.
     inode_number_in_host=$(stat --printf='%i' /run/systemd/journal/socket)
-    inode_number_in_qm=$(podman exec qm stat --printf='%i' /run/systemd/journal/socket)
+    inode_number_in_qm=$(podman exec qm sh -c "stat --printf='%i' /run/systemd/journal/socket")
 
     # Check if the inode numbers inside and outside of the QM partition are different.
     if [ "$inode_number_in_host" -eq "$inode_number_in_qm" ]; then

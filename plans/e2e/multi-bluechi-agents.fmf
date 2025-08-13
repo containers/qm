@@ -8,7 +8,7 @@ provision:
    how: local
 
 adjust:
- - when: distro == centos-stream-9 or distro == fedora
+ - when: distro == centos-stream or distro == fedora
    prepare+:
      - name: Prepare Repos
        how: shell
