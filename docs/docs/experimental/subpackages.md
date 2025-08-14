@@ -215,14 +215,13 @@ hw:1,0: sound card 1, device 0
 
 ## QM sub-package OCI Hooks
 
-The QM sub-package OCI Hooks provides dynamic device access management for containers through OCI runtime hooks. This subpackage includes three essential hooks that enable secure and flexible device sharing between the host system and containers.
+The QM sub-package OCI Hooks provides dynamic device access management for containers through OCI runtime hooks. This subpackage includes essential hooks that enable secure and flexible device sharing between the host system and containers with robust error handling and comprehensive testing.
 
 ### Components
 
 The `qm-oci-hooks` subpackage includes:
 
 - **qm-device-manager**: Dynamic device mounting hook that provides access to various hardware devices based on container annotations
-- **wayland-session-devices**: Hook for Wayland display server device management in multi-seat environments, providing access to systemd-logind seat devices (input devices, render devices, display devices)
 - **wayland-client-devices**: Hook for GPU hardware acceleration access for Wayland client applications running as nested containers
 
 ### Supported Device Types
@@ -234,19 +233,12 @@ The `qm-device-manager` hook supports the following device types through contain
 | Device Type | Annotation | Devices Provided |
 |-------------|------------|------------------|
 | Audio | `org.containers.qm.device.audio=true` | `/dev/snd/*` (audio devices) |
-| Video | `org.containers.qm.device.video=true` | `/dev/video*` (cameras, video devices) |
+| Video | `org.containers.qm.device.video=true` | `/dev/video*`, `/dev/media*` (cameras, video devices) |
 | Input | `org.containers.qm.device.input=true` | `/dev/input/*` (keyboards, mice, touchpads) |
 | TTYs | `org.containers.qm.device.ttys=true` | `/dev/tty0-7` (virtual terminals) |
 | TTY USB | `org.containers.qm.device.ttyUSB=true` | `/dev/ttyUSB*` (USB TTY devices) |
 | DVB | `org.containers.qm.device.dvb=true` | `/dev/dvb/*` (digital TV devices) |
 | Radio | `org.containers.qm.device.radio=true` | `/dev/radio*` (radio devices) |
-
-#### Wayland Session Devices
-
-The `wayland-session-devices` hook supports:
-
-| Functionality | Annotation | Devices Provided |
-|---------------|------------|------------------|
 | Multi-seat Support | `org.containers.qm.wayland.seat=seat0` | Input devices, render devices, and display devices associated with the specified systemd-logind seat |
 
 #### Wayland Client Devices
@@ -255,17 +247,17 @@ The `wayland-client-devices` hook supports:
 
 | Functionality | Annotation | Devices Provided |
 |---------------|------------|------------------|
-| GPU Acceleration | `org.containers.qm.wayland-client.gpu=true` | GPU render devices (`/dev/dri/*`) for hardware acceleration |
+| GPU Acceleration | `org.containers.qm.wayland-client.gpu=true` | GPU render devices (`/dev/dri/render*`) for hardware acceleration |
 
 ### Features
 
 - **Dynamic Device Discovery**: Automatically discovers and mounts available devices at container startup
 - **Annotation-Based Security**: Devices are only mounted when explicitly requested via annotations
 - **Multi-seat Support**: Enables proper device access in systemd-logind multi-seat environments
+- **Comprehensive Mock Device Support**: Full testing infrastructure with mock devices for all device types
 - **GPU Acceleration**: Provides hardware acceleration for Wayland client applications
 - **Comprehensive Logging**: All hooks provide detailed logging for monitoring and debugging:
   - Device Manager: `/var/log/qm-device-manager.log`
-  - Wayland Session: `/var/log/qm-wayland-session-devices.log`
   - Wayland Client: `/var/log/qm-wayland-client-devices.log`
 - **Runtime Flexibility**: No system restart required when adding device access to new containers
 - **Lightweight Implementation**: Shell script-based hooks with minimal dependencies
@@ -280,28 +272,7 @@ sudo dnf install rpmbuild/RPMS/noarch/qm-oci-hooks-*.noarch.rpm
 
 ### Usage Examples
 
-#### Example 1: Audio application with device access
-
-```bash
-# Create a container file that needs audio access
-cat > /etc/containers/systemd/my-audio-app.container << EOF
-[Unit]
-Description=Audio Application Container
-
-[Container]
-Image=quay.io/qm-images/audio:latest
-Annotation=org.containers.qm.device.audio=true
-
-[Install]
-WantedBy=default.target
-EOF
-
-# Enable and start the container
-sudo systemctl daemon-reload
-sudo systemctl enable --now my-audio-app
-```
-
-#### Example 2: Serial communication with USB TTY devices
+#### Example 1: Serial communication with USB TTY devices
 
 ```bash
 # Create a container with access to all USB TTY devices
@@ -318,7 +289,7 @@ WantedBy=default.target
 EOF
 ```
 
-#### Example 3: Multi-seat Wayland compositor with session devices
+#### Example 2: Multi-seat Wayland compositor with session devices
 
 ```bash
 # Create a dropin for QM container to enable multi-seat support
@@ -342,7 +313,7 @@ WantedBy=default.target
 EOF
 ```
 
-#### Example 4: Wayland client application with GPU acceleration
+#### Example 3: Wayland client application with GPU acceleration
 
 ```bash
 # Create a Wayland client container with GPU hardware acceleration
@@ -370,9 +341,11 @@ ls -la /usr/share/containers/oci/hooks.d/
 # Check hook executables
 ls -la /usr/libexec/oci/hooks.d/
 
+# Verify hook JSON configurations are valid
+find /usr/share/containers/oci/hooks.d/ -name "*.json" -exec jq . {} \;
+
 # View hook logs (all hooks provide comprehensive logging)
 tail -f /var/log/qm-device-manager.log
-tail -f /var/log/qm-wayland-session-devices.log
 tail -f /var/log/qm-wayland-client-devices.log
 
 # Test device access with qm-device-manager
@@ -381,10 +354,100 @@ podman exec -it my-audio-app ls -la /dev/snd/
 # Test GPU access with wayland-client-devices (if applicable)
 podman exec -it gpu-app ls -la /dev/dri/
 
-# Check systemd-logind seat devices (for wayland-session-devices)
-loginctl list-seats
-loginctl seat-status seat0
+# Run hook tests (if source available)
+cd oci-hooks && tox -e all
 ```
+
+### Testing and Development
+
+The OCI hooks include a comprehensive test suite for development and validation:
+
+```bash
+# Run all tests
+cd oci-hooks && tox -e all
+
+# Run specific test categories
+tox -e unit          # Unit tests only
+tox -e integration   # Integration tests only
+tox -e performance   # Performance tests only
+
+# Run linting and formatting
+tox -e lint          # Code linting
+tox -e format        # Code formatting
+
+# Test with mock devices (useful for CI environments)
+FORCE_MOCK_DEVICES=true tox -e unit -- -k "mock_devices"
+```
+
+### OCI Hooks Specification and Documentation
+
+The QM OCI hooks are implemented according to the [Open Container Initiative (OCI) Runtime Specification](https://github.com/opencontainers/runtime-spec).
+
+#### OCI Hook Configuration Format
+
+OCI hooks are configured using JSON files that define when and how the hooks should be executed. Each hook configuration follows the structure defined in the [OCI config schema](https://github.com/opencontainers/runtime-spec/blob/main/schema/config-schema.json).
+
+**Key components of hook configuration:**
+
+- **version**: OCI specification version (e.g., `"1.0.0"`)
+- **hook**: Object defining the hook executable and arguments
+- **when**: Object defining trigger conditions for the hook
+- **stages**: Array of lifecycle stages when the hook should run
+
+#### Hook Lifecycle Stages
+
+According to the [OCI POSIX Platform Hooks specification](https://github.com/opencontainers/runtime-spec/blob/main/config.md#posix-platform-hooks), hooks can be executed at three stages:
+
+1. **prestart**: Hooks called after the container process is spawned, but before the user-supplied command is executed
+2. **poststart**: Hooks called after the user-supplied command is executed
+3. **poststop**: Hooks called after the container process is terminated
+
+QM hooks execution stages:
+
+- `qm-device-manager`: Runs during **prestart** to mount devices before the container starts
+- `wayland-client-devices`: Runs during **prestart** to provide GPU access before the container starts
+
+#### Hook Input/Output Specification
+
+OCI hooks receive container state information via **stdin** and communicate results via **stdout/stderr** and **exit codes**:
+
+**Input (stdin)**: JSON object containing container state according to OCI spec:
+
+```json
+{
+  "ociVersion": "1.0.0",
+  "id": "container-id",
+  "status": "creating",
+  "pid": 1234,
+  "bundle": "/path/to/bundle",
+  "annotations": {
+    "org.containers.qm.device.audio": "true"
+  }
+}
+```
+
+**Output**:
+
+- **Exit code 0**: Success
+- **Exit code non-zero**: Failure (container creation aborted)
+- **stderr**: Error messages and diagnostics
+- **stdout**: Hook output (typically empty for QM hooks)
+
+#### Annotation Pattern Matching
+
+QM hooks use regular expressions in their `when.annotations` configuration to match container annotations:
+
+- `org\\.containers\\.qm\\.device\\.(audio|video|input|ttys|ttyUSB|dvb|radio)`: Matches device-specific annotations
+- `org\\.containers\\.qm\\.wayland\\.seat`: Matches Wayland seat annotations with any value
+- `org\\.containers\\.qm\\.wayland-client\\.gpu`: Matches GPU acceleration requests
+
+#### Hook Installation Locations
+
+QM hooks are installed in standard OCI locations:
+
+- Hook executables: `/usr/libexec/oci/hooks.d/`
+- Hook configurations: `/usr/share/containers/oci/hooks.d/`
+- Hook libraries: `/usr/libexec/oci/lib/`
 
 ## QM sub-package ROS2
 

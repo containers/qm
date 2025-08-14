@@ -1,0 +1,5 @@
+# Basic testing framework
+pytest>=7.0.0
+
+# Test fixtures and utilities
+jsonschema>=4.0.0

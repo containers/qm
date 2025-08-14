@@ -28,74 +28,94 @@
 # - dvb: /dev/dvb/* (DVB digital TV devices)
 # - radio: /dev/radio* (radio devices)
 #
-# Usage via annotations:
-# - org.containers.qm.device.audio=true
-# - org.containers.qm.device.video=true
-# - org.containers.qm.device.input=true
-# - org.containers.qm.device.ttys=true          # Mount all TTY devices (tty0-7)
-# - org.containers.qm.device.ttyUSB=true        # Mount all USB TTY devices (ttyUSB*)
-# - org.containers.qm.device.dvb=true
-# - org.containers.qm.device.radio=true
+# Supported device annotations:
+# - org.containers.qm.device.audio=true         # /dev/snd/* (ALSA sound devices)
+# - org.containers.qm.device.video=true         # /dev/video*, /dev/media* (V4L2 video devices)
+# - org.containers.qm.device.input=true         # /dev/input/* (input devices)
+# - org.containers.qm.device.ttys=true          # /dev/tty0-7 (virtual TTY devices)
+# - org.containers.qm.device.ttyUSB=true        # /dev/ttyUSB* (USB TTY devices)
+# - org.containers.qm.device.dvb=true           # /dev/dvb/* (DVB digital TV devices)
+# - org.containers.qm.device.radio=true         # /dev/radio* (radio devices)
+#
+# Supported Wayland annotations:
+# - org.containers.qm.wayland.seat=<seat_name>  # Devices for specific systemd-logind seat
 
 set -euo pipefail
 
+# Source common utilities and appropriate device support library
+SCRIPT_DIR="$(dirname "${BASH_SOURCE[0]}")"
+
+# shellcheck source=../lib/common.sh disable=SC1091
+source "${SCRIPT_DIR}/../lib/common.sh"
+
+if [[ -n "${TEST_LOGFILE:-}" ]]; then
+    # Test mode - use mock device support
+    # shellcheck source=../lib/mock-device-support.sh disable=SC1091
+    source "${SCRIPT_DIR}/../lib/mock-device-support.sh"
+else
+    # Normal mode - use standard device support
+    # shellcheck source=../lib/device-support.sh disable=SC1091
+    source "${SCRIPT_DIR}/../lib/device-support.sh"
+fi
+
 # Configuration
-LOGFILE="/var/log/qm-device-manager.log"
+LOGFILE="${TEST_LOGFILE:-/var/log/qm-device-manager.log}"
+# shellcheck disable=SC2034  # Used by log() function in device-support.sh
 HOOK_NAME="qm-device-manager"
 
-# Logging function
-log() {
-    local level="$1"
-    shift
-    echo "$(date '+%Y-%m-%d %H:%M:%S') - $HOOK_NAME - $level - $*" >> "$LOGFILE"
-    if [[ "$level" == "ERROR" ]]; then
-        echo "$(date '+%Y-%m-%d %H:%M:%S') - $HOOK_NAME - $level - $*" >&2
-    fi
-}
+# Process input devices with optional filtering and different output modes
+process_input_devices() {
+    local mode="$1"                # "direct" or "collect"
+    local spec_json="$2"           # current spec (for direct mode)
+    local devname_list_var="$3"    # variable name for device list (for collect mode)
+    local filter_pattern="${4:-}"  # optional regex filter
+    local log_prefix="${5:-input}" # log message prefix
 
-# Check if device exists and is a character/block device
-is_device_accessible() {
-    local device_path="$1"
-    [[ -c "$device_path" || -b "$device_path" ]]
-}
+    local device_count=0
 
-# Get device information for OCI spec
-get_device_info() {
-    local device_path="$1"
-    local stat_output
-
-    if ! stat_output=$(stat -c "%f %t %T %a %u %g" "$device_path" 2>/dev/null); then
-        return 1
+    if [[ ! -d "/dev/input" && -z "${TEST_LOGFILE:-}" ]]; then
+        if [[ "$mode" == "direct" ]]; then
+            log "INFO" "Added $device_count $log_prefix devices (no /dev/input directory)"
+            echo "$spec_json"
+        fi
+        return 0
     fi
 
-    read -r mode_hex major_hex minor_hex perms uid gid <<< "$stat_output"
-
-    # Convert hex to decimal
-    local mode_dec=$((0x$mode_hex))
-    local major_dec=$((0x$major_hex))
-    local minor_dec=$((0x$minor_hex))
-
-    # Determine device type (character or block)
-    local device_type
-    if [[ $((mode_dec & 0x2000)) -ne 0 ]]; then
-        device_type="c"  # Character device
-    elif [[ $((mode_dec & 0x6000)) -ne 0 ]]; then
-        device_type="b"  # Block device
-    else
-        return 1  # Not a device
+    if [[ "$mode" == "collect" ]]; then
+        # For collect mode, we need to use nameref to modify the array
+        local -n devname_list_ref="$devname_list_var"
     fi
 
-    # Convert permissions to decimal
-    local file_mode=$((0$perms))
+    while IFS= read -r -d '' device_path; do
+        # Apply filter if provided
+        if [[ -n "$filter_pattern" ]] && [[ ! "$device_path" =~ $filter_pattern ]]; then
+            continue
+        fi
 
-    echo "$device_type $major_dec $minor_dec $file_mode $uid $gid"
+        if [[ "$mode" == "direct" ]]; then
+            # Add device directly to spec
+            spec_json=$(add_device_to_spec "$spec_json" "$device_path")
+            ((device_count++))
+        elif [[ "$mode" == "collect" ]]; then
+            # Add device to collection list
+            devname_list_ref+=("$device_path")
+            log "INFO" "Adding $log_prefix device: $device_path"
+            ((device_count++))
+        fi
+    done < <(discover_devices "find /dev/input -type c -print0" "input")
+
+    if [[ "$mode" == "direct" ]]; then
+        log "INFO" "Added $device_count $log_prefix devices"
+        echo "$spec_json"
+    fi
 }
 
 # Add device to OCI spec using jq
 add_device_to_spec() {
     local spec_json="$1"
     local device_path="$2"
-    local device_info
+    local add_resources="${3:-false}"
+    local device_info major minor file_mode uid gid device_type
 
     if ! device_info=$(get_device_info "$device_path"); then
         log "WARNING" "Failed to get device info for $device_path"
@@ -103,8 +123,7 @@ add_device_to_spec() {
         return
     fi
 
-    read -r device_type major minor file_mode uid gid <<< "$device_info"
-
+    IFS=':' read -r device_type major minor file_mode uid gid <<<"$device_info"
     log "INFO" "Adding device: $device_path (type=$device_type, major=$major, minor=$minor)"
 
     # Ensure .linux.devices array exists
@@ -118,105 +137,171 @@ add_device_to_spec() {
     # Add device if it doesn't already exist
     local result
     if ! result=$(echo "$temp_spec" | jq --compact-output \
-                            --arg path "$device_path" \
-                            --arg type "$device_type" \
-                            --argjson major "$major" \
-                            --argjson minor "$minor" \
-                            --argjson fileMode "$file_mode" \
-                            --argjson uid "$uid" \
-                            --argjson gid "$gid" \
-                            'if (.linux.devices | map(.path) | index($path)) == null then .linux.devices += [{"path": $path, "type": $type, "major": $major, "minor": $minor, "fileMode": $fileMode, "uid": $uid, "gid": $gid}] else . end' 2>/dev/null); then
+        --arg path "$device_path" \
+        --arg type "$device_type" \
+        --argjson major "$major" \
+        --argjson minor "$minor" \
+        --argjson fileMode "$file_mode" \
+        --argjson uid "$uid" \
+        --argjson gid "$gid" \
+        'if (.linux.devices | map(.path) | index($path)) == null then .linux.devices += [{"path": $path, "type": $type, "major": $major, "minor": $minor, "fileMode": $fileMode, "uid": $uid, "gid": $gid}] else . end' 2>/dev/null); then
         log "ERROR" "Failed to add device $device_path to spec"
-        echo "$temp_spec"  # Return the spec with array at least initialized
+        echo "$temp_spec" # Return the spec with array at least initialized
         return
+    fi
+
+    # Add device resources if requested (for Wayland devices)
+    if [[ "$add_resources" == "true" ]]; then
+        if ! result=$(echo "$result" | jq --compact-output \
+            --arg type "$device_type" \
+            --argjson major "$major" \
+            --argjson minor "$minor" \
+            'if .linux.resources == null then .linux.resources = {} else . end |
+                                 if .linux.resources.devices == null then .linux.resources.devices = [] else . end |
+                                 if (.linux.resources.devices | map(select(.type == $type and .major == $major and .minor == $minor)) | length) == 0 then
+                                   .linux.resources.devices += [{"allow": true, "type": $type, "major": $major, "minor": $minor, "access": "rwm"}]
+                                 else . end' 2>/dev/null); then
+            log "WARNING" "Failed to add device resources for $device_path, continuing with device only"
+        else
+            log "INFO" "Added device resources for: $device_path"
+        fi
     fi
 
     echo "$result"
 }
 
-# Expand device patterns to actual device paths
-expand_device_patterns() {
-    local patterns=("$@")
-    local devices=()
-
-    for pattern in "${patterns[@]}"; do
-        if [[ "$pattern" == *"*"* ]]; then
-            # Pattern with wildcards - use shell globbing
-            # Disable nomatch option temporarily to handle no matches gracefully
-            set +o nomatch 2>/dev/null || true
-            for match in $pattern; do
-                if [[ -e "$match" ]]; then
-                    devices+=("$match")
-                fi
-            done
-            set -o nomatch 2>/dev/null || true
-        else
-            # Exact path
-            if [[ -e "$pattern" ]]; then
-                devices+=("$pattern")
-            fi
-        fi
-    done
-
-    printf '%s\n' "${devices[@]}"
-}
-
-# Process device annotations and add devices to spec
+# Process device annotations (org.containers.qm.device.*)
 process_device_annotation() {
     local spec_json="$1"
     local device_type="$2"
-    local device_value="${3:-true}"
-    local patterns
-    local devices
-    local device_count=0
+
+    log "INFO" "Processing device type: $device_type"
 
     case "$device_type" in
-        audio)
-            patterns=("/dev/snd/"*)
-            ;;
-        video)
-            patterns=("/dev/video"* "/dev/media"*)
-            ;;
-        input)
-            patterns=("/dev/input/"*)
-            ;;
-        ttys)
-            # Mount all virtual TTY devices (tty0-7)
-            patterns=("/dev/tty0" "/dev/tty1" "/dev/tty2" "/dev/tty3" "/dev/tty4" "/dev/tty5" "/dev/tty6" "/dev/tty7")
-            log "INFO" "Mounting all virtual TTY devices (tty0-7)"
-            ;;
-        ttyUSB)
-            # Mount all USB TTY devices (ttyUSB*)
-            patterns=("/dev/ttyUSB"*)
-            log "INFO" "Mounting all USB TTY devices (ttyUSB*)"
-            ;;
-        dvb)
-            patterns=("/dev/dvb/"*)
-            ;;
-        radio)
-            patterns=("/dev/radio"*)
-            ;;
-        *)
-            log "WARNING" "Unknown device type: $device_type"
-            echo "$spec_json"
-            return
-            ;;
+    "audio")
+        # ALSA sound devices
+        local device_count=0
+        if should_process_device_type "audio" "/dev/snd"; then
+            while IFS= read -r -d '' device_path; do
+                spec_json=$(add_device_to_spec "$spec_json" "$device_path")
+                ((device_count++))
+            done < <(discover_devices "find /dev/snd -type c -print0" "audio")
+        fi
+        log "INFO" "Added $device_count audio devices"
+        ;;
+    "video")
+        # V4L2 video devices
+        local device_count=0
+        while IFS= read -r -d '' device_path; do
+            spec_json=$(add_device_to_spec "$spec_json" "$device_path")
+            ((device_count++))
+        done < <(discover_devices "find /dev -maxdepth 1 \\( -name \"video*\" -o -name \"media*\" \\) -type c -print0" "video")
+        log "INFO" "Added $device_count video devices"
+        ;;
+    "input")
+        # Input devices
+        spec_json=$(process_input_devices "direct" "$spec_json" "" "" "input")
+        ;;
+    "ttys")
+        # Virtual TTY devices (tty0-7)
+        local device_count=0
+        while IFS= read -r -d '' device_path; do
+            spec_json=$(add_device_to_spec "$spec_json" "$device_path")
+            ((device_count++))
+        done < <(discover_devices "find /dev -maxdepth 1 -name 'tty[0-7]' -type c -print0" "ttys")
+        log "INFO" "Added $device_count TTY devices"
+        ;;
+    "ttyUSB")
+        # USB TTY devices
+        local device_count=0
+        while IFS= read -r -d '' device_path; do
+            spec_json=$(add_device_to_spec "$spec_json" "$device_path")
+            ((device_count++))
+        done < <(discover_devices "find /dev -maxdepth 1 -name \"ttyUSB*\" -type c -print0" "ttyUSB")
+        log "INFO" "Added $device_count USB TTY devices"
+        ;;
+    "dvb")
+        # DVB digital TV devices
+        local device_count=0
+        if should_process_device_type "dvb" "/dev/dvb"; then
+            while IFS= read -r -d '' device_path; do
+                spec_json=$(add_device_to_spec "$spec_json" "$device_path")
+                ((device_count++))
+            done < <(discover_devices "find /dev/dvb -type c -print0" "dvb")
+        fi
+        log "INFO" "Added $device_count DVB devices"
+        ;;
+    "radio")
+        # Radio devices
+        local device_count=0
+        while IFS= read -r -d '' device_path; do
+            spec_json=$(add_device_to_spec "$spec_json" "$device_path")
+            ((device_count++))
+        done < <(discover_devices "find /dev -maxdepth 1 -name \"radio*\" -type c -print0" "radio")
+        log "INFO" "Added $device_count radio devices"
+        ;;
+    *)
+        log "WARNING" "Unknown device type: $device_type"
+        ;;
     esac
 
-    log "INFO" "Enabling $device_type devices"
+    echo "$spec_json"
+}
 
-    # Get devices matching patterns
-    mapfile -t devices < <(expand_device_patterns "${patterns[@]}")
+# Process Wayland seat annotation (org.containers.qm.wayland.seat)
+process_wayland_seat() {
+    local spec_json="$1"
+    local seat_name="$2"
 
-    # Add each accessible device
-    for device in "${devices[@]}"; do
-        if is_device_accessible "$device"; then
-            spec_json=$(add_device_to_spec "$spec_json" "$device")
-            ((device_count++))
+    log "INFO" "Processing Wayland seat: $seat_name"
+
+    local device_count=0
+    local devname_list=()
+
+    # Get devices associated with the systemd-logind seat
+    if command -v loginctl >/dev/null 2>&1; then
+        local seat_devices
+        if seat_devices=$(loginctl seat-status "$seat_name" 2>/dev/null | grep -oP '/sys\S+'); then
+            log "INFO" "Found seat system devices for $seat_name"
+
+            while IFS= read -r device; do
+                if [[ -n "$device" ]]; then
+                    local devname
+                    if devname=$(udevadm info -x "$device" 2>/dev/null | grep -oP '^E: DEVNAME=\K.*'); then
+                        if [[ -n "$devname" && -e "$devname" ]]; then
+                            devname_list+=("$devname")
+                            log "INFO" "Found seat device: $devname"
+                        fi
+                    fi
+                fi
+            done <<<"$seat_devices"
+        else
+            log "WARNING" "No devices found for seat $seat_name or seat does not exist"
         fi
+    else
+        log "WARNING" "loginctl not available, cannot query seat devices"
+    fi
+
+    # Add common input devices
+    process_input_devices "collect" "" "devname_list" "/dev/input/(event[0-9]+|mice[0-9]*|mouse[0-9]+)$" "input"
+
+    # Add GPU render devices
+    if [[ -d "/dev/dri" ]]; then
+        while IFS= read -r -d '' device_path; do
+            if [[ "$device_path" =~ /dev/dri/render.* ]]; then
+                devname_list+=("$device_path")
+                log "INFO" "Adding render device: $device_path"
+            fi
+        done < <(discover_devices "find /dev/dri -type c -name \"render*\" -print0" "gpu")
+    fi
+
+    # Add all devices to spec with resources
+    for device_path in "${devname_list[@]}"; do
+        spec_json=$(add_device_to_spec "$spec_json" "$device_path" "true")
+        ((device_count++))
     done
 
-    log "INFO" "Found $device_count devices for $device_type"
+    log "INFO" "Added $device_count Wayland seat devices for $seat_name"
     echo "$spec_json"
 }
 
@@ -237,8 +322,8 @@ main() {
         spec_json=$(echo "$spec_json" | jq '.linux = {}')
     fi
 
-    # Get annotations (both boolean and string values)
-    annotations=$(echo "$spec_json" | jq -r '.annotations // {} | to_entries[] | select(.key | startswith("org.containers.qm.device.")) | "\(.key)=\(.value)"' 2>/dev/null || true)
+    # Get all QM-related annotations
+    annotations=$(echo "$spec_json" | jq -r '.annotations // {} | to_entries[] | select(.key | startswith("org.containers.qm.")) | "\(.key)=\(.value)"' 2>/dev/null || true)
 
     if [[ -z "$annotations" ]]; then
         log "INFO" "No QM device annotations found"
@@ -254,23 +339,39 @@ main() {
             continue
         fi
 
-        # Extract device key and value
-        device_key="${annotation%%=*}"
-        device_value="${annotation#*=}"
-        device_type="${device_key#org.containers.qm.device.}"
+        # Extract annotation key and value
+        annotation_key="${annotation%%=*}"
+        annotation_value="${annotation#*=}"
 
-        # Skip if value is not true/1/yes
-        if [[ ! "$device_value" =~ ^(true|1|yes)$ ]]; then
-            log "INFO" "Skipping annotation with invalid value: $annotation"
-            continue
-        fi
+        log "INFO" "Processing annotation: $annotation"
 
-        log "INFO" "Processing annotation: $annotation (device_type: $device_type, value: $device_value)"
+        case "$annotation_key" in
+        "org.containers.qm.device."*)
+            # Traditional device annotation
+            device_type="${annotation_key#org.containers.qm.device.}"
 
-        # Process the device type
-        spec_json=$(process_device_annotation "$spec_json" "$device_type" "$device_value")
+            # Skip if value is not true/1/yes
+            if [[ ! "$annotation_value" =~ ^(true|1|yes)$ ]]; then
+                log "INFO" "Skipping device annotation with invalid value: $annotation"
+                continue
+            fi
 
-    done <<< "$annotations"
+            spec_json=$(process_device_annotation "$spec_json" "$device_type" "$annotation_value")
+            ;;
+        "org.containers.qm.wayland.seat")
+            # Wayland seat annotation
+            if [[ -n "$annotation_value" && "$annotation_value" != "null" ]]; then
+                spec_json=$(process_wayland_seat "$spec_json" "$annotation_value")
+            else
+                log "INFO" "Skipping Wayland seat annotation with empty value"
+            fi
+            ;;
+        *)
+            log "INFO" "Skipping unknown QM annotation: $annotation_key"
+            ;;
+        esac
+
+    done <<<"$annotations"
 
     # Count total devices added
     total_devices=$(echo "$spec_json" | jq '.linux.devices // [] | length' 2>/dev/null || echo "0")
