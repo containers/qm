@@ -30,6 +30,8 @@ unconfined_domain(ipc_t)
 
 qm_domain_template(qm)
 
+allow qm_container_ipc_t ipc_var_run_t:dir { add_name remove_name write };
+allow qm_container_ipc_t ipc_var_run_t:sock_file { create setattr unlink };
 
 
 #########################################
