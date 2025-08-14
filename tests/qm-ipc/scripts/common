@@ -1,0 +1,83 @@
+#!/bin/bash
+
+# shellcheck disable=SC1091
+source ../e2e/lib/utils
+
+daemon_reload_in_qm() {
+    info_message "qm: systemctl daemon-reload inside qm..."
+    podman exec -it qm bash -c "systemctl daemon-reload"
+}
+
+restart_ipc_client_in_qm() {
+    info_message "qm: restart ipc_client inside qm..."
+    podman exec -it qm bash -c "podman restart systemd-ipc_client"
+    sleep 15
+}
+
+show_qm_podman_ps() {
+    info_message "qm: podman ps inside qm..."
+    podman exec -it qm bash -c "podman ps"
+}
+
+check_ipc_client_logs() {
+    info_message "qm: podman logs systemd-ipc_client"
+    if podman exec -it qm bash -c "podman logs systemd-ipc_client" | grep -Eiq "permission denied|no such file or directory"; then
+        info_message "systemd-ipc_client has failed"
+        exit 1
+    fi
+}
+
+check_nested_container_exists() {
+  local container_name="$1"
+
+  info_message "Checking for '$container_name' inside 'qm'..."
+
+  # Capture output of nested podman ps inside qm
+  local output
+  output=$(podman exec qm podman ps --format "{{.Names}}" 2>/dev/null)
+
+  if info_message "$output" | grep -wq "$container_name"; then
+    info_message "Container '$container_name' exists inside 'qm'."
+  else
+    info_message "Container '$container_name' does NOT exist inside 'qm'."
+    info_message "Output from qm's podman:"
+    info_message "$output"
+    exit 1
+  fi
+}
+
+check_container_exists() {
+    local container_name="systemd-ipc_server"
+    info_message "Checking if container '$container_name' exists and is running..."
+
+    if podman ps --format "{{.Names}}" | grep -q "^${container_name}$"; then
+        info_message "Container '$container_name' is running."
+    else
+        info_message "Container '$container_name' is NOT running."
+        exit 1
+    fi
+}
+
+check_nested_ipc_containers_exist() {
+  local nested_containers=("systemd-ipc_client" "systemd-ipc_server")
+  local missing=0
+
+  info_message "Checking nested containers inside 'qm'..."
+
+  # Capture the list of nested container names inside 'qm'
+  local container_list
+  container_list=$(podman exec -it qm podman ps --all --format '{{.Names}}' | tr -d '\r')
+
+  for name in "${nested_containers[@]}"; do
+    if ! grep -q "^${name}$" <<< "$container_list"; then
+      info_message "Error: Nested container '$name' does not exist inside 'qm'."
+      missing=1
+    fi
+  done
+
+  if [[ $missing -eq 1 ]]; then
+    exit 1
+  else
+    info_message "Both nested containers exist inside 'qm'."
+  fi
+}

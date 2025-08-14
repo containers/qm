@@ -1,0 +1,11 @@
+ARG FEDORA_VERSION=41
+
+FROM fedora:${FEDORA_VERSION}
+
+RUN dnf install -y dnf-plugins-core \
+    && dnf -y update \
+    && dnf install -y python3-devel \
+    && dnf clean all
+
+COPY client.py /usr/bin/ipc-client
+CMD [ "ipc-client" ]

@@ -1,0 +1,76 @@
+#!/bin/bash
+
+# shellcheck disable=SC1091
+source ../e2e/lib/utils
+
+SCRIPT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
+# shellcheck source=tests/qm-ipc/scripts/common
+source "$SCRIPT_DIR/common"
+
+info_message "Creating IPC files for mode: qm to qm"
+
+# Define file paths for both modes
+QMQM_SERVER="/etc/qm/containers/systemd/ipc_server.container"
+QMQM_CLIENT="/etc/qm/containers/systemd/ipc_client.container"
+
+info_message "Cleaning up asil-to-qm files..."
+rm -f "$ASIL_SOCKET" "$ASIL_SERVER" "$ASIL_CLIENT" "$ASIL_EXTRA_VOLUME"
+
+VOLUME_PATH=/run/:/run/
+ENVIRONMENT="Environment=SOCKET_PATH=/run/ipc.sock"
+
+SERVER=$QMQM_SERVER
+CLIENT=$QMQM_CLIENT
+
+# Create ipc_server.socket
+info_message "Creating $SERVER"
+# Create ipc_server.container
+cat <<EOF > "$SERVER"
+[Unit]
+Description=Demo server service container (qm to qm)
+[Container]
+Image=quay.io/qm-images/ipc/server
+Network=none
+$ENVIRONMENT
+Volume=$VOLUME_PATH
+SecurityLabelLevel=s0:c1,c2
+[Service]
+Restart=always
+Type=notify
+[Install]
+WantedBy=multi-user.target
+EOF
+
+info_message "Creating $CLIENT"
+# Create ipc_client.container
+cat <<EOF > "$CLIENT"
+[Unit]
+Description=Demo client service container (qm to qm)
+Requires=ipc_server.service
+After=ipc_server.service
+
+[Container]
+Image=quay.io/qm-images/ipc/client
+Network=none
+$ENVIRONMENT
+Volume=$VOLUME_PATH
+SecurityLabelLevel=s0:c1,c2
+[Service]
+Restart=always
+[Install]
+WantedBy=multi-user.target
+EOF
+
+info_message "Reloading systemd and restarting containers (qm-to-qm)..."
+systemctl daemon-reload
+systemctl restart qm
+sleep 15
+
+check_nested_ipc_containers_exist
+
+if podman exec -it qm podman logs systemd-ipc_server | grep -q "Current time received from client is"; then
+    info_message "[PASS] Log entry found"
+else
+    info_message "[FAIL] Log entry not found"
+    exit 1
+fi
