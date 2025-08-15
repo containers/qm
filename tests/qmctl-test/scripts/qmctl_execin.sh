@@ -39,4 +39,3 @@ fi
 python3 $QMCTL_SCRIPT execin "$CONTAINER_NAME" rm -f "$TMP_FILE" > /dev/null 2>&1 || true
 
 pass_message "qmctl execin command executed successfully"
-exit 0
