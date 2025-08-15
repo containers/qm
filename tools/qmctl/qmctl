@@ -208,9 +208,6 @@ class QmController:
                 f"stderr: {result.stderr.strip()}"
             )
 
-        if not result.stdout.strip():
-            raise QmError(f"{context} No output returned.")
-
     def _extract_devices_from_config(self) -> list[str]:
         """Extract device paths from config file."""
         devices = []
@@ -542,9 +539,10 @@ class QmController:
                 f"Failed to execute command in container '{self.container}'"
             )
 
-            self._print_output(
-                {"output": result.stdout.strip()}
-            )
+            if output := result.stdout.strip():
+                self._print_output(
+                    {"output": output}
+                )
 
         except Exception as e:
             self._print_error_and_exit(QmError(str(e)))
