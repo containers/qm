@@ -119,6 +119,95 @@ $ cat /usr/share/qm/containers.conf | grep oom_score_adj
 oom_score_adj = 750
 ```
 
+### Adjusting OOM Score for Nested Containers
+
+You can customize the OOM score adjustment for nested containers running inside QM. This requires both nested container configurations and QM capability adjustments.
+
+#### Step 1: Create Nested Container Configurations
+
+Create nested container configurations in `/etc/qm/containers/systemd/`:
+
+**Create:** `/etc/qm/containers/systemd/nested.container`
+
+```ini
+[Container]
+ContainerName=nested
+Image=alpine:latest
+Exec=sleep 1d
+Network=none
+
+[Service]
+OOMScoreAdjust=1000
+```
+
+**Create:** `/etc/qm/containers/systemd/nested2.container`
+
+```ini
+[Container]
+ContainerName=nested2
+Image=alpine:latest
+Exec=sleep 1d
+Network=none
+
+[Service]
+OOMScoreAdjust=100
+```
+
+#### Step 2: Add Required Capabilities to QM
+
+Create a QM drop-in file to add the necessary capability:
+
+**Create:** `/etc/containers/systemd/qm.container.d/AddCAPA.conf`
+
+```ini
+[Container]
+DropCapability=
+DropCapability=sys_boot
+AddCapability=sys_resource
+```
+
+#### Step 3: Verify and Apply the Configuration
+
+1. **Check the generated systemd configuration:**
+
+   ```bash
+   sudo /usr/lib/systemd/system-generators/podman-system-generator --dryrun
+   ```
+
+   Look for the ExecStart line and verify it contains:
+
+   ```text
+   --cap-drop sys_boot --cap-add all --cap-add sys_resource
+   ```
+
+2. **Apply the changes:**
+
+   ```bash
+   sudo systemctl daemon-reload
+   sudo systemctl restart qm
+   ```
+
+3. **Test the nested containers inside QM:**
+
+   ```bash
+   # Enter the QM container
+   sudo podman exec -it qm /bin/bash
+
+   # Start first nested container and check its OOM score
+   systemctl start nested
+   PID=$(podman inspect -f '{{.State.Pid}}' nested)
+   cat /proc/$PID/oom_score_adj
+   # Should output: 1000
+
+   # Start second nested container and check its OOM score
+   systemctl start nested2
+   PID=$(podman inspect -f '{{.State.Pid}}' nested2)
+   cat /proc/$PID/oom_score_adj
+   # Should output: 100
+   ```
+
+This allows fine-grained control over OOM killer priority for different nested containers based on their importance.
+
 ### Priority process of OOM killer in the QM context
 
 ```txt
