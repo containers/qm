@@ -18,8 +18,7 @@ jobs:
     # x86_64 is assumed by default
     # qm is noarch so we only need to test on one arch
     targets:
-      fedora-development: {}
-      fedora-latest: {}
+      fedora-stable: {}
       epel-9:
         additional_repos:
           - copr://@centos-automotive-sig/bluechi-snapshot
@@ -116,7 +115,7 @@ jobs:
     identifier: kvm-tier-0
     tmt_plan: /plans/e2e/kvm-tier-0
     targets:
-      - fedora-42
+      - fedora-42-x86_64
       - epel-9-x86_64
     tf_extra_params:
       environments:
