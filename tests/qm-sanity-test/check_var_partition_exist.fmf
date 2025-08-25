@@ -1,4 +1,4 @@
-summary: Test /var partition exist
+summary: Test /var and /var/tmp partitions exist and are not tmpfs
 test: /bin/bash ./check_var_partition_exist.sh
 duration: 10m
 tier: 0
