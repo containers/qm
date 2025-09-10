@@ -164,15 +164,26 @@ setup_qm_services() {
       curl "${QM_GH_URL}"  > /usr/share/qm/setup
       chmod +x /usr/share/qm/setup
   fi
+
   # Curl files into here,
   # Fix: default setup:main should be removed on next qm release
   /usr/share/qm/setup --hostname localrootfs
   # Update QM relimits
   set_qm_rlimits
+
+  # Create BlueChi socket volume mount drop-in file
+  info_message "Creating BlueChi socket volume mount drop-in file..."
+  mkdir -p /etc/containers/systemd/qm.container.d/
+  cat > /etc/containers/systemd/qm.container.d/bluechi-socket.conf << 'EOF'
+[Container]
+Volume=/run/bluechi/bluechi.sock:/run/bluechi.sock
+EOF
+  info_message "BlueChi socket volume mount drop-in file created successfully"
+
   cat > /etc/bluechi/controller.conf << 'EOF'
 [bluechi-controller]
 AllowedNodeNames=qm.localrootfs,localrootfs
-ControllerPort=842
+UseTCP=false
 LogLevel=INFO
 LogTarget=journald
 LogIsQuiet=false
@@ -180,13 +191,13 @@ EOF
 cat > /etc/bluechi/agent.conf.d/00-default.conf << 'EOF'
 [bluechi-agent]
 NodeName=localrootfs
+ControllerAddress=unix:path=/run/bluechi/bluechi.sock
 EOF
 
-controller_host_ip=$(hostname -I | awk '{print $1}')
 qm_bluechi_agent_config_file="/etc/qm/bluechi/agent.conf.d/agent.conf"
 if [[ -f "${qm_bluechi_agent_config_file}" ]]; then
-    if ! grep "ControllerHost=${controller_host_ip}" "${qm_bluechi_agent_config_file}" >/dev/null; then
-        sed -i '$a \ControllerHost='"${controller_host_ip}"'' ${qm_bluechi_agent_config_file}
+    if ! grep "ControllerAddress=unix:path=/run/bluechi/bluechi.sock" "${qm_bluechi_agent_config_file}" >/dev/null; then
+        sed -i '$a \ControllerAddress=unix:path=/run/bluechi.sock' ${qm_bluechi_agent_config_file}
     fi
 else
     echo "Configuration file not found: ${qm_bluechi_agent_config_file}"
