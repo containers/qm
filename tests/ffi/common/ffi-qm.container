@@ -4,7 +4,7 @@ After=local-fs.target
 
 [Container]
 ContainerName=ffi-qm
-Image=quay.io/centos-sig-automotive/ffi-tools:latest
+Image=quay.io/centos-sig-automotive/ffi-tools:qm-0.7.4.z
 Exec=sleep infinity
 StopTimeout=1
 
