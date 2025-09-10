@@ -25,10 +25,7 @@ After=local-fs.target
 
 [Container]
 Image=quay.io/centos-sig-automotive/ffi-tools:latest
-Exec=/root/tests/FFI/bin/bluechi-tester --url="tcp:host=${controller_host_ip},port=842" \
-     --nodename=bluechi-tester-X \
-     --numbersignals=11111111 \
-     --signal="JobDone"
+Exec=/bin/sh -c "sleep 2 && /root/tests/FFI/bin/bluechi-tester --url=\"unix:path=/run/bluechi.sock\" --nodename=bluechi-tester-X --numbersignals=11111111 --signal=\"JobDone\""
 Network=host
 StopTimeout=1
 EOF
@@ -63,6 +60,16 @@ run_test_containers(){
     done
 }
 
+create_bluechi_socket_volume_mount_drop_in_file(){
+    info_message "Creating BlueChi socket volume mount drop-in file..."
+  mkdir -p /etc/containers/systemd/qm.container.d/
+  cat > /etc/containers/systemd/qm.container.d/bluechi-socket.conf << 'EOF'
+[Container]
+Volume=/run/bluechi/bluechi.sock:/run/bluechi.sock
+EOF
+  info_message "BlueChi socket volume mount drop-in file created successfully"
+}
+
 # Extract the Network mode from qm.service
 get_qm_network_mode(){
     qm_config_file="/run/systemd/generator/qm.service"
@@ -80,15 +87,8 @@ get_qm_network_mode(){
 
 trap disk_cleanup EXIT
 prepare_test
+create_bluechi_socket_volume_mount_drop_in_file
 reload_config
-
-# Assign value to ${controller_host_ip} according to qm network mode
-if [ "$(get_qm_network_mode)" == "private" ]; then
-    controller_host_ip=$(hostname -I | awk '{print $1}')
-else
-    info_message "qm network mode should be private, not: $(get_qm_network_mode)"
-    exit 1
-fi
 
 #Stop QM bluechi-agent once bluechi-agent is up
 qm_node=$(bluechictl status | grep qm | cut -d'|' -f1)
