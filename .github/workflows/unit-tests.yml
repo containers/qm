@@ -1,0 +1,37 @@
+name: Tools Tests
+
+on:
+  push:
+    branches:
+      - main
+    paths:
+      - 'tools/**'
+
+  pull_request:
+    branches:
+      - main
+    paths:
+      - 'tools/**'
+
+jobs:
+  test:
+    runs-on: ubuntu-latest
+    container: python:3.11-slim
+
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v4
+
+      - name: Install dependencies
+        run: |
+          python -m pip install --upgrade pip
+          pip install pytest pytest-cov flake8 pydocstyle
+
+      - name: Run pytest
+        run: |
+          pytest --cov=qmctl --cov-report=term-missing tools/tests
+
+      - name: Lint code
+        run: |
+          flake8 tools/
+          pydocstyle tools/
