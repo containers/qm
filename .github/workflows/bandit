@@ -1,1 +1,1 @@
-exclude_dirs: ['oci-hooks/tests']
+exclude_dirs: ['oci-hooks/tests','tools/tests']
