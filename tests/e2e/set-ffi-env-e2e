@@ -196,7 +196,7 @@ EOF
 
 qm_bluechi_agent_config_file="/etc/qm/bluechi/agent.conf.d/agent.conf"
 if [[ -f "${qm_bluechi_agent_config_file}" ]]; then
-    if ! grep "ControllerAddress=unix:path=/run/bluechi/bluechi.sock" "${qm_bluechi_agent_config_file}" >/dev/null; then
+    if ! grep "ControllerAddress=unix:path=/run/bluechi.sock" "${qm_bluechi_agent_config_file}" >/dev/null; then
         sed -i '$a \ControllerAddress=unix:path=/run/bluechi.sock' ${qm_bluechi_agent_config_file}
     fi
 else
