@@ -157,6 +157,7 @@ fi
 %license LICENSE
 %doc CODE-OF-CONDUCT.md NOTICE README.md SECURITY.md
 %dir %{_datadir}/selinux
+%dir %{_sysconfdir}/containers/systemd/qm.container.d
 %{_datadir}/selinux/*
 %dir %{_datadir}/qm
 %{_datadir}/qm/containers.conf
