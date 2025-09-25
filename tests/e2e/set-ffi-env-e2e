@@ -37,6 +37,19 @@ source "${SCRIPT_DIR}"/lib/diskutils
 source "${SCRIPT_DIR}"/lib/repoutils
 
 # GLOBALS
+# Configuration Constants
+readonly BLUECHI_CONTROLLER_CONF="/etc/bluechi/controller.conf"
+readonly BLUECHI_AGENT_CONF="/etc/bluechi/agent.conf.d/agent.conf"
+readonly QM_BLUECHI_AGENT_CONF="/etc/qm/bluechi/agent.conf.d/agent.conf"
+readonly QM_CONTAINER_DROPIN_DIR="/etc/containers/systemd/qm.container.d"
+readonly BLUECHI_SOCKET_DROPIN="${QM_CONTAINER_DROPIN_DIR}/bluechi-socket.conf"
+readonly BLUECHI_SOCKET_HOST="/run/bluechi/bluechi.sock"
+readonly BLUECHI_SOCKET_CONTAINER="/run/bluechi.sock"
+readonly DEFAULT_NODE_NAME="localrootfs"
+readonly DEFAULT_HOSTNAME="localrootfs"
+readonly QM_SETUP_SCRIPT="/usr/share/qm/setup"
+
+# GLOBALS
 export CONFIG_NODE_AGENT_PATH="/etc/bluechi/agent.conf.d/agent.conf"
 export REGISTRY_UBI8_MINIMAL="registry.access.redhat.com/ubi8/ubi-minimal"
 export WAIT_BLUECHI_SERVER_BE_READY_IN_SEC=5
@@ -55,8 +68,6 @@ export QM_CTR_CFG="${QM_CNTR_CONFIG:-/etc/qm/containers/containers.conf}"
 export U_NOFILE_PRCTG=${NOFILE_RATIO:-50}
 export U_NPROC_PRCTG=${NPROC_RATIO:-75}
 
-
-export BUILD_BLUECHI_FROM_GH_URL=""
 export QM_GH_URL=""
 export BRANCH_QM=""
 export SET_QM_PART=""
@@ -154,140 +165,230 @@ while [ $# -gt 0 ]; do
     esac
 done
 
-setup_qm_services() {
 
-  info_message "Setup qm services"
-  info_message "=============================="
 
-  #Update setup script from QM repos, in case rpm not updates yet
-  if [ -n "${QM_GH_URL}" ]; then
-      curl "${QM_GH_URL}"  > /usr/share/qm/setup
-      chmod +x /usr/share/qm/setup
-  fi
 
-  # Curl files into here,
-  # Fix: default setup:main should be removed on next qm release
-  /usr/share/qm/setup --hostname localrootfs
-  # Update QM relimits
-  set_qm_rlimits
-
-  # Create BlueChi socket volume mount drop-in file
-  info_message "Creating BlueChi socket volume mount drop-in file..."
-  mkdir -p /etc/containers/systemd/qm.container.d/
-  cat > /etc/containers/systemd/qm.container.d/bluechi-socket.conf << 'EOF'
-[Container]
-Volume=/run/bluechi/bluechi.sock:/run/bluechi.sock
-EOF
-  info_message "BlueChi socket volume mount drop-in file created successfully"
-
-  cat > /etc/bluechi/controller.conf << 'EOF'
-[bluechi-controller]
-AllowedNodeNames=qm.localrootfs,localrootfs
-UseTCP=false
-LogLevel=INFO
-LogTarget=journald
-LogIsQuiet=false
-EOF
-cat > /etc/bluechi/agent.conf.d/00-default.conf << 'EOF'
-[bluechi-agent]
-NodeName=localrootfs
-ControllerAddress=unix:path=/run/bluechi/bluechi.sock
-EOF
-
-qm_bluechi_agent_config_file="/etc/qm/bluechi/agent.conf.d/agent.conf"
-if [[ -f "${qm_bluechi_agent_config_file}" ]]; then
-    if ! grep "ControllerAddress=unix:path=/run/bluechi.sock" "${qm_bluechi_agent_config_file}" >/dev/null; then
-        sed -i '$a \ControllerAddress=unix:path=/run/bluechi.sock' ${qm_bluechi_agent_config_file}
+# Validate environment prerequisites
+validate_environment() {
+    # Check root privileges
+    if [ "$EUID" -ne 0 ]; then
+        echo -e "[${RED} ERROR ${CLR}] Please run as root this script. It requires to set limits inside a container which is not allowed by root."
+        exit 1
     fi
-else
-    echo "Configuration file not found: ${qm_bluechi_agent_config_file}"
-fi
 
-  # Enable services
-  info_message "Setup qm services, enable bluechi services"
-  info_message "=============================="
-  systemctl enable bluechi-controller
-  systemctl enable bluechi-agent
-  # Start services
-  info_message "Setup qm services, start bluechi services"
-  info_message "=============================="
-  systemctl start bluechi-controller
-  systemctl start bluechi-agent
-  # Restart qm to read lates bluechi-agent.conf
-  systemctl restart qm
+    # Check for ostree system
+    if stat /run/ostree-booted > /dev/null 2>&1; then
+        section_header "Warning: script can not run on ostree image"
+        exit 0
+    fi
 }
 
-info_message "Starting setup"
-info_message "=============================="
-if [ "$EUID" -ne 0 ]
-then
-    echo -e "[${RED} ERROR ${CLR}] Please run as root this script. It requires to set limits inside a container which is not allowed by root."
-    exit
-fi
+# Error handling wrapper for commands
+execute_with_logging() {
+    local description="$1"
+    shift
+    local command=("$@")
 
-if stat /run/ostree-booted > /dev/null 2>&1; then
-   info_message "Warning: script can not run on ostree image"
-   info_message "=============================="
-   exit 0
-fi
+    info_message "Executing: $description"
+    if "${command[@]}"; then
+        info_message "Success: $description"
+    else
+        local exit_code=$?
+        info_message "Error: $description failed with exit code $exit_code"
+        return $exit_code
+    fi
+}
 
-# Creates  partitions for QM env on VM
-echo
-info_message "Check if qm requires additional partition"
-info_message "=============================="
-if [ -n "${SET_QM_PART}" ]; then
-    create_qm_var_part
-fi
+# Utility function to report script execution time
+report_execution_time() {
+    local start_time="$1"
+    local title="${2:-Running time for this script}"
 
-echo
-info_message "Checking if QM already installed"
-info_message "=============================="
-if rpm -q qm &>/dev/null; then
-	QM_STATUS="$(systemctl is-enabled qm 2>&1)"
-        if test /etc/os-release; then
-             OS_DISTRO=$(grep -oP '(?<=^ID=)\w+' <<< "$(tr -d '"' < /etc/os-release)")
+    # Capture the end time
+    local end_time
+    end_time=$(date +%s)
+
+    # Calculate the duration in seconds
+    local duration=$((end_time - start_time))
+
+    # Calculate days, hours, minutes and seconds
+    local days=$((duration / 86400))
+    local hours=$(( (duration % 86400) / 3600 ))
+    local minutes=$(( (duration % 3600) / 60 ))
+    local seconds=$((duration % 60))
+
+    info_message "${GRN}${title}${CLR}"
+    info_message "\t- ${days} days, ${hours} hours, ${minutes} minutes and ${seconds} seconds"
+}
+
+# Check if QM is already installed and active
+check_qm_installation_status() {
+    if ! rpm -q qm &>/dev/null; then
+        warning_message "QM package not found, proceeding with installation"
+        return  # QM not installed, continue with installation
+    fi
+
+    local qm_status
+    qm_status="$(systemctl is-enabled qm 2>&1)"
+    local os_distro=""
+
+      if [ -f /etc/os-release ]; then
+        os_distro=$(grep -oP '(?<=^ID=)\w+' <<< "$(tr -d '"' < /etc/os-release)")
+    fi
+
+    if [ "$qm_status" == "generated" ]; then
+        if [ "$(systemctl is-active qm)" == "active" ]; then
+            section_header "QM Enabled and Active"
+            exit 0
         fi
-	if [ "$QM_STATUS" == "generated" ]; then
-		if [ "$(systemctl is-active qm)" == "active" ]; then
-			info_message "QM Enabled and Active"
-			info_message "=============================="
-			exit 0
-   		fi
-		if test -d /var/qm -a -d /etc/qm -a -z "$OS_DISTRO" ; then
-			info_message "QM Enabled and not Active"
-			info_message "=============================="
-			exit 1
-   		fi
-	fi
-fi
+        if test -d /var/qm -a -d /etc/qm -a -z "$os_distro"; then
+            section_header "QM Enabled and not Active"
+            exit 1
+        fi
+    fi
 
-info_message "Cleaning any previous e2e files"
-info_message "=============================="
-cleanup
+    warning_message "QM package found but not in expected state - status: ${qm_status}, proceeding with setup"
+    # QM installed but not in expected state, continue with setup
+}
 
-echo
-info_message "Preparing QM environment"
-info_message "=============================="
+# Configuration templates with parameter support
+gen_bluechi_socket_dropin_config() {
+    local host_socket="${1:-${BLUECHI_SOCKET_HOST}}"
+    local container_socket="${2:-${BLUECHI_SOCKET_CONTAINER}}"
 
-install_qm_rpms
-setup_qm_services
+    cat << EOF
+[Container]
+Volume=${host_socket}:${container_socket}
+EOF
+}
 
-info_message "${GRN}QM environment${CLR}"
-info_message "=============================="
+gen_bluechi_controller_config() {
+    local node_name="${1:-${DEFAULT_NODE_NAME}}"
+    local use_tcp="${2:-false}"
+    local log_level="${3:-INFO}"
+    local log_target="${4:-journald}"
+    local log_quiet="${5:-false}"
 
-# Capture the end time
-END_TIME=$(date +%s)
+    cat << EOF
+[bluechi-controller]
+AllowedNodeNames=qm.${node_name},${node_name}
+UseTCP=${use_tcp}
+LogLevel=${log_level}
+LogTarget=${log_target}
+LogIsQuiet=${log_quiet}
+EOF
+}
 
-# Calculate the duration in seconds
-DURATION=$((END_TIME - START_TIME))
+gen_bluechi_agent_config() {
+    local node_name="${1:-${DEFAULT_NODE_NAME}}"
+    local controller_address="${2:-unix:path=${BLUECHI_SOCKET_HOST}}"
 
-# Calculate minutes and seconds
-DAYS=$((DURATION / 86400))
-HOURS=$(( (DURATION % 86400) / 3600 ))
-MINUTES=$(( (DURATION % 3600) / 60 ))
-SECONDS=$((DURATION % 60))
+    cat << EOF
+[bluechi-agent]
+NodeName=${node_name}
+ControllerAddress=${controller_address}
+EOF
+}
 
-info_message "${GRN}Running time for this script${CLR}"
-info_message "\t- ${DAYS} days, ${HOURS} hours, ${MINUTES} minutes and ${SECONDS} seconds"
-info_message "All set!"
-info_message "=============================="
+# Setup QM binary and basic configuration
+setup_qm_binary() {
+    local hostname="${1:-${DEFAULT_HOSTNAME}}"
+    local setup_script="${2:-${QM_SETUP_SCRIPT}}"
+    local gh_url="${3:-${QM_GH_URL}}"
+
+    #Update setup script from QM repos, in case rpm not updates yet
+    if [[ -n "${gh_url}" ]]; then
+        info_message "Downloading QM setup script from ${gh_url}"
+        execute_with_logging "Download QM setup script" curl "${gh_url}" -o "${setup_script}"
+        execute_with_logging "Make QM setup script executable" chmod +x "${setup_script}"
+    fi
+
+    # Run QM setup script
+    execute_with_logging "Run QM setup with hostname ${hostname}" "${setup_script}" --hostname "${hostname}"
+
+    # Update QM resource limits
+    execute_with_logging "Set QM resource limits" set_qm_rlimits
+}
+
+# Setup BlueChi configuration files
+setup_bluechi_configuration() {
+    local node_name="${1:-${DEFAULT_NODE_NAME}}"
+    local controller_address="${2:-unix:path=${BLUECHI_SOCKET_HOST}}"
+
+    create_config_file "${BLUECHI_SOCKET_DROPIN}" \
+                       "$(gen_bluechi_socket_dropin_config "${BLUECHI_SOCKET_HOST}" "${BLUECHI_SOCKET_CONTAINER}")" \
+                       "BlueChi socket volume mount drop-in file"
+
+    create_config_file "${BLUECHI_CONTROLLER_CONF}" \
+                       "$(gen_bluechi_controller_config "${node_name}")" \
+                       "BlueChi controller configuration"
+
+    create_config_file "${BLUECHI_AGENT_CONF}" \
+                       "$(gen_bluechi_agent_config "${node_name}" "${controller_address}")" \
+                       "BlueChi agent configuration"
+}
+
+# Setup and start BlueChi services
+setup_bluechi_services() {
+    section_header "Setup qm services, enable bluechi services"
+    enable_services bluechi-controller bluechi-agent
+
+    section_header "Setup qm services, start bluechi services"
+    start_services bluechi-controller bluechi-agent
+
+    restart_services qm
+}
+
+# Configure QM container's BlueChi agent
+configure_qm_bluechi_agent() {
+    local controller_address="${1:-unix:path=${BLUECHI_SOCKET_CONTAINER}}"
+    local config_file="${2:-${QM_BLUECHI_AGENT_CONF}}"
+
+    append_to_config_file "${config_file}" \
+                         "ControllerAddress=${controller_address}" \
+                         "QM BlueChi agent controller address"
+}
+
+setup_qm_services() {
+  section_header "Setup qm services"
+
+  setup_qm_binary "${DEFAULT_HOSTNAME}" "${QM_SETUP_SCRIPT}" "${QM_GH_URL}"
+  setup_bluechi_configuration "${DEFAULT_NODE_NAME}" "unix:path=${BLUECHI_SOCKET_HOST}"
+  setup_bluechi_services
+  configure_qm_bluechi_agent "unix:path=${BLUECHI_SOCKET_CONTAINER}" "${QM_BLUECHI_AGENT_CONF}"
+}
+
+# Main function to orchestrate the setup process
+main() {
+    section_header "Starting setup"
+    validate_environment
+
+    # Check existing installation
+    section_header "Checking if QM already installed"
+    check_qm_installation_status
+
+    # Partition setup if needed
+    if [[ -n "${SET_QM_PART}" ]]; then
+        echo
+        section_header "Check if qm requires additional partition"
+        execute_with_logging "Create QM partition" create_qm_var_part
+    fi
+
+    # Clean and install
+    echo
+    section_header "Cleaning any previous e2e files"
+    execute_with_logging "Cleanup previous files" cleanup
+
+    echo
+    section_header "Preparing QM environment"
+    execute_with_logging "Install QM RPMs" install_qm_rpms
+    setup_qm_services
+
+    # Completion
+    section_header "${GRN}QM environment${CLR}"
+    report_execution_time "$START_TIME"
+    section_header "All set!"
+}
+
+# Execute main function
+main "$@"

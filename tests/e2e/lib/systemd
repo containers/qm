@@ -106,3 +106,28 @@ ${container_target}:/etc/containers/systemd/container-${srv}.container"
         fi
     done
 }
+
+# Utility functions for systemctl operations
+enable_services() {
+    local services=("$@")
+    for service in "${services[@]}"; do
+        info_message "Enabling service: $service"
+        systemctl enable "$service"
+    done
+}
+
+start_services() {
+    local services=("$@")
+    for service in "${services[@]}"; do
+        info_message "Starting service: $service"
+        systemctl start "$service"
+    done
+}
+
+restart_services() {
+    local services=("$@")
+    for service in "${services[@]}"; do
+        info_message "Restarting service: $service"
+        systemctl restart "$service"
+    done
+}

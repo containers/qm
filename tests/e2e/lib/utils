@@ -49,6 +49,23 @@ info_message() {
     echo -e "[ ${BLUE}INFO${ENDCOLOR}  ] ${1}"
 }
 
+warning_message() {
+    ###########################################################################
+    # Description:                                                            #
+    # show [WARN] in yellow and a message as a warning.                      #
+    #                                                                         #
+    # Arguments:                                                              #
+    #   $1 - message to output                                                #
+    ###########################################################################
+    if [ -z "${1}" ]; then
+        echo "warning_message() requires a message"
+        exit 1
+    fi
+    YELLOW="\033[93m"
+    ENDCOLOR="\033[0m"
+    echo -e "[ ${YELLOW}WARN${ENDCOLOR}  ] ${1}"
+}
+
 pass_message() {
     ###########################################################################
     # Description:                                                            #
@@ -280,4 +297,63 @@ cleanup() {
     info_message " "
     podman network rm podmanDualStack -f 1> /dev/null
 
+}
+
+# Utility function to create configuration files
+create_config_file() {
+    local file_path="$1"
+    local content="$2"
+    local description="$3"
+
+    if [[ -n "$description" ]]; then
+        info_message "Creating $description..."
+    fi
+
+    # Create directory if it doesn't exist
+    local dir_path
+    dir_path=$(dirname "$file_path")
+    mkdir -p "$dir_path"
+
+    # Create the file with content
+    printf "%s\n" "$content" > "$file_path"
+    if [[ -n "$description" ]]; then
+        info_message "$description created successfully at $file_path"
+    fi
+}
+
+# Utility function to append content to existing files
+append_to_config_file() {
+    local file_path="$1"
+    local content="$2"
+    local description="$3"
+
+    if [[ ! -f "$file_path" ]]; then
+        warning_message "Configuration file not found: $file_path"
+        return 1
+    fi
+
+    # Check if content already exists to avoid duplicates
+    if grep -Fq "$content" "$file_path"; then
+        info_message "$description already exists in $file_path"
+        return 0
+    fi
+
+    if [[ -n "$description" ]]; then
+        info_message "Appending $description to $file_path..."
+    fi
+
+    echo "$content" >> "$file_path"
+
+    if [[ -n "$description" ]]; then
+        info_message "$description appended successfully"
+    fi
+}
+
+# Utility function to display section headers
+section_header() {
+    local title="$1"
+    local separator="${2:-==============================}"
+
+    info_message "$title"
+    info_message "$separator"
 }
