@@ -28,7 +28,10 @@ jobs:
 
     - name: Run Python Security Check script
       run: |
-        ./.github/workflows/check-python-bandit .
+        bandit -c .github/workflows/bandit \
+               -r . \
+               -f txt -o \
+               ./bandit-output.txt
 
     - name: Upload Bandit report
       if: always()
