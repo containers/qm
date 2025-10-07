@@ -60,7 +60,6 @@ sed -i "s/Version: ${PREV_VERSION}$/Version: ${VERSION}/g" "${BASEDIR}/rpm/kvm/q
 sed -i "s/Version: ${PREV_VERSION}$/Version: ${VERSION}/g" "${BASEDIR}/rpm/ros2/ros2_rolling.spec"
 sed -i "s/Version: ${PREV_VERSION}$/Version: ${VERSION}/g" "${BASEDIR}/rpm/sound/sound.spec"
 sed -i "s/Version: ${PREV_VERSION}$/Version: ${VERSION}/g" "${BASEDIR}/rpm/video/video.spec"
-sed -i "s/Version: ${PREV_VERSION}$/Version: ${VERSION}/g" "${BASEDIR}/rpm/windowmanager/windowmanager.spec"
 sed -i "s/Version: ${PREV_VERSION}$/Version: ${VERSION}/g" "${BASEDIR}/rpm/text2speech/text2speech.spec"
 sed -i "s/Version: ${PREV_VERSION}$/Version: ${VERSION}/g" "${BASEDIR}/rpm/oci-hooks/qm-oci-hooks.spec"
 # Otherwise, set the new version.
@@ -69,7 +68,6 @@ sed -i "s/Version: 0$/Version: ${VERSION}/g" "${BASEDIR}/rpm/kvm/qm-kvm.spec"
 sed -i "s/Version: 0$/Version: ${VERSION}/g" "${BASEDIR}/rpm/ros2/ros2_rolling.spec"
 sed -i "s/Version: 0$/Version: ${VERSION}/g" "${BASEDIR}/rpm/sound/sound.spec"
 sed -i "s/Version: 0$/Version: ${VERSION}/g" "${BASEDIR}/rpm/video/video.spec"
-sed -i "s/Version: 0$/Version: ${VERSION}/g" "${BASEDIR}/rpm/windowmanager/windowmanager.spec"
 sed -i "s/Version: 0$/Version: ${VERSION}/g" "${BASEDIR}/rpm/text2speech/text2speech.spec"
 sed -i "s/Version: 0$/Version: ${VERSION}/g" "${BASEDIR}/rpm/oci-hooks/qm-oci-hooks.spec"
 # Execute the changes on the rest of the files.
