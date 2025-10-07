@@ -1,0 +1,39 @@
+# QM D-Bus Broker Container - Session bus for containerized applications
+# Uses dbus-broker for improved performance over traditional dbus-daemon
+
+[Unit]
+Description=qm-dbus-broker container
+After=qm-dbus.socket
+Requires=qm-dbus.socket
+BindsTo=graphical.target
+After=graphical.target
+
+[Container]
+ContainerName=qm-dbus-broker
+Image=quay.io/qm-images/qm-dbus-broker
+
+# Launch dbus-broker in user session scope
+Exec=/usr/bin/dbus-broker-launch --scope user
+
+# D-Bus infrastructure mounts
+Volume=/run/user/0/bus:/run/user/0/bus
+Volume=/run/systemd:/run/systemd:ro
+Volume=/run/user/0:/run/user/0
+# Machine identity for D-Bus
+Volume=/etc/machine-id:/etc/machine-id:ro
+
+# D-Bus environment configuration
+Environment=XDG_RUNTIME_DIR=/run/user/0
+Environment=DBUS_SESSION_BUS_ADDRESS=unix:path=/run/user/0/bus
+
+# Shares SELinux context with wayland compositor for IPC
+SecurityLabelType=qm_container_wayland_t
+
+[Service]
+# Socket activation
+Sockets=qm-dbus.socket
+Restart=always
+
+[Install]
+Alias=qm-dbus.service
+

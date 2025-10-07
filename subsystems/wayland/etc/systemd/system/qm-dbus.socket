@@ -1,0 +1,24 @@
+# QM D-Bus Socket - User session message bus for containerized D-Bus broker
+# Creates socket for dbus-broker container to provide session bus functionality
+
+[Unit]
+Description=QM D-Bus User Message Bus Socket
+After=dbus.socket
+After=wayland-session.service
+Requires=wayland-session.service
+RequiresMountsFor=/run
+
+[Socket]
+# D-Bus session bus socket location
+ListenStream=/run/user/0/bus
+# Group writable for container access
+SocketMode=0775
+# Secure parent directory
+DirectoryMode=0700
+SocketUser=root
+SocketGroup=root
+# Clean up socket on service stop
+RemoveOnStop=yes
+
+[Install]
+WantedBy=sockets.target
