@@ -1,0 +1,42 @@
+# Wayland Compositor Container
+# Dependencies: qm-dbus.socket, wayland.socket for IPC
+
+[Unit]
+Description=wayland container
+After=qm-dbus.socket
+After=wayland.socket
+Requires=qm-dbus.socket
+Requires=wayland.socket
+
+[Service]
+Restart=always
+
+[Install]
+Alias=wayland.service
+WantedBy=multi-user.target
+WantedBy=graphical.target
+
+[Container]
+ContainerName=wayland
+Image=quay.io/qm-images/wayland-compositor
+Exec=/usr/bin/weston -c /etc/weston/weston.ini --socket=/run/user/0/wayland-0
+Volume=/run/systemd:/run/systemd:ro
+Volume=/run/udev:/run/udev:ro
+Volume=/run/dbus/system_bus_socket:/run/dbus/system_bus_socket
+Volume=/etc/weston/weston.ini:/etc/weston/weston.ini
+Volume=/run/user/0:/run/user/0
+Volume=/run/user/0/bus:/run/user/0/bus
+
+Notify=True
+SecurityLabelType=qm_container_wayland_t
+Environment=XDG_RUNTIME_DIR=/run/user/0
+Environment=DBUS_SESSION_BUS_ADDRESS=unix:path=/run/user/0/bus
+
+# Display terminals
+# Current console
+AddDevice=/dev/tty0
+# Traditional display terminal
+AddDevice=/dev/tty7
+
+# TODO: OCI hook triggers device injection for seat0
+# Annotation=org.autosd.qm.wayland.seat=seat0

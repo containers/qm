@@ -1,0 +1,17 @@
+# Wayland Display Socket - Communication endpoint for Wayland compositor
+# Provides the socket that Wayland clients use to connect to the display server
+
+[Unit]
+Description=Wayland socket
+ConditionPathIsMountPoint=/run/user/0
+
+[Socket]
+ListenStream=/run/user/0/wayland-0
+SocketMode=0775
+DirectoryMode=0700
+SocketUser=root
+SocketGroup=root
+RemoveOnStop=yes
+
+[Install]
+WantedBy=sockets.target
