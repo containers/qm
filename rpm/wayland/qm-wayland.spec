@@ -85,7 +85,7 @@ install -m 644 subsystems/wayland/50-qm-wayland.preset %{buildroot}%{_presetdir}
 
 %files
 %license LICENSE
-%doc README.md
+%doc subsystems/wayland/README.md
 # Wayland directories
 %dir %{_sysconfdir}/containers/systemd
 %dir %{_sysconfdir}/containers/systemd/qm-dbus-broker.container.d

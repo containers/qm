@@ -10,7 +10,6 @@ dist: ##             - Creates the QM wayland package
 		--dereference \
 		--transform 's|subsystems/wayland/Makefile|Makefile|' \
 		--transform 's|rpm/wayland/qm-wayland.spec|qm-wayland.spec|' \
-		--transform 's|subsystems/wayland/README.md|README.md|' \
 		--transform 's|^qm/|qm-wayland-${VERSION}/|' \
 		-f /tmp/qm-wayland-${VERSION}.tar.gz \
 		../qm/rpm/wayland/qm-wayland.spec \
