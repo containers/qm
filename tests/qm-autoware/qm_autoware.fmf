@@ -1,0 +1,7 @@
+summary: Test plan for qm autoware
+test: ./test_autoware.sh
+duration: 15m
+tag: qm-autoware
+tier: 0
+framework: shell
+id: 9b7e61c3-48af-4c1f-9546-2b93f2cb8b1b

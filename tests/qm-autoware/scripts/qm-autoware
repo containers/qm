@@ -1,0 +1,35 @@
+#!/bin/bash -x
+
+# shellcheck disable=SC1091
+source ../e2e/lib/utils
+
+info_message "Cloning gitlab.com/CentOS/automotive/demos/autoware.git"
+
+exec_cmd "dnf install -y git"
+
+if ! git clone https://gitlab.com/CentOS/automotive/demos/autoware.git; then
+    fail_message "git clone failed"
+    exit 1
+fi
+
+pushd autoware/simulation-runner || exit
+OUTPUT=$(./autoware-simulation-runner.py 2>&1)
+
+# Basic run (Planning + Simulator)
+
+# Flatten newlines to spaces
+FLAT_OUTPUT=$(echo "$OUTPUT" | tr '\n' ' ')
+
+SEARCH_STRING="--- Simulation Complete --- Container 'openadkit_simulator' has finished. Shutting down gracefully."
+
+exit_code=0
+if echo "$FLAT_OUTPUT" | grep -Fq -- "$SEARCH_STRING"; then
+    pass_message "Simulation completed successfully."
+else
+    fail_message "Simulation did not complete successfully."
+    exit_code=1
+fi
+
+popd || exit
+rm -rf autoware
+exit $exit_code
