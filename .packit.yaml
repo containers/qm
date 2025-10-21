@@ -200,3 +200,43 @@ jobs:
     identifier: qm-wayland-bodhi
     specfile_path: rpm/wayland/qm-wayland.spec
     dist_git_branches: *bodhi_branches
+
+  # qm-oci-hooks jobs
+  - job: copr_build
+    trigger: pull_request
+    identifier: qm-oci-hooks
+    specfile_path: rpm/oci-hooks/qm-oci-hooks.spec
+    actions:
+      fix-spec-file:
+        - bash .packit-oci-hooks.sh
+    targets: *pr_targets
+
+  - <<: *copr
+    identifier: qm-oci-hooks-main
+    specfile_path: rpm/oci-hooks/qm-oci-hooks.spec
+    actions:
+      fix-spec-file:
+        - bash .packit-oci-hooks.sh
+    targets: *multiarch_targets
+    notifications:
+      failure_comment:
+        message: "QM OCI hooks build failed for merged commit {commit_sha}. Please check logs {logs_url}"
+
+  # Downstream jobs for qm-oci-hooks
+  - job: propose_downstream
+    trigger: release
+    identifier: qm-oci-hooks-downstream
+    specfile_path: rpm/oci-hooks/qm-oci-hooks.spec
+    dist_git_branches: *downstream_branches
+
+  - job: koji_build
+    trigger: commit
+    identifier: qm-oci-hooks-koji
+    specfile_path: rpm/oci-hooks/qm-oci-hooks.spec
+    dist_git_branches: *downstream_branches
+
+  - job: bodhi_update
+    trigger: commit
+    identifier: qm-oci-hooks-bodhi
+    specfile_path: rpm/oci-hooks/qm-oci-hooks.spec
+    dist_git_branches: *bodhi_branches
