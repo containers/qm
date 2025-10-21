@@ -38,5 +38,5 @@ AddDevice=/dev/tty0
 # Traditional display terminal
 AddDevice=/dev/tty7
 
-# TODO: OCI hook triggers device injection for seat0
-# Annotation=org.autosd.qm.wayland.seat=seat0
+# OCI hook triggers device injection for seat0
+Annotation=org.containers.qm.wayland.seat=seat0
