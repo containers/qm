@@ -1,5 +1,5 @@
 RPM_TOPDIR ?= $(PWD)/rpmbuild
-VERSION ?= $(shell cat VERSION)
+VERSION ?= $(shell grep '^Version:' ${ROOTDIR}/rpm/oci-hooks/qm-oci-hooks.spec | awk '{print $$2}')
 ROOTDIR ?= $(PWD)
 SPECFILE_SUBPACKAGE_OCI_HOOKS ?= ${ROOTDIR}/rpm/oci-hooks/qm-oci-hooks.spec
 PACKAGE_NAME = qm-oci-hooks
