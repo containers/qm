@@ -242,6 +242,14 @@ class TestHookConfigurations:
             # If absolute path fails, try relative to config file
             hook_path = config_path.parent / hook_path.name
 
+            # Special case: seat manager uses the shared device manager executable
+            if not hook_path.exists() and hook_name == "oci-qm-seat-manager":
+                hook_path = (
+                    config_path.parent.parent
+                    / "qm-device-manager"
+                    / hook_path.name
+                )
+
         assert hook_path.exists(), f"Hook executable not found: {hook_path}"
         assert hook_path.is_file(), f"Hook executable not a file: {hook_path}"
 
@@ -261,12 +269,6 @@ class TestHookConfigurations:
         assert (
             device_patterns
         ), "Device manager should support device annotations"
-
-        # Check that wayland patterns exist
-        wayland_patterns = [p for p in annotations.keys() if "wayland" in p]
-        assert (
-            wayland_patterns
-        ), "Device manager should support Wayland annotations"
 
         # Test that device patterns match expected device types
         test_annotations = [
@@ -401,6 +403,17 @@ class TestHookConfigurations:
         except OSError:
             # If absolute path fails, try relative to config directory
             full_hook_path = config_path.parent / Path(hook_path).name
+
+            # Special case: seat manager uses the shared device manager executable
+            if (
+                not full_hook_path.exists()
+                and hook_name == "oci-qm-seat-manager"
+            ):
+                full_hook_path = (
+                    config_path.parent.parent
+                    / "qm-device-manager"
+                    / Path(hook_path).name
+                )
 
         # Check that executable exists
         assert full_hook_path.exists(), (

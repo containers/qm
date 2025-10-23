@@ -22,6 +22,7 @@ dist: ##             - Creates the QM OCI hooks package
 		../qm/CODE-OF-CONDUCT.md \
 		../qm/oci-hooks/qm-device-manager/oci-qm-device-manager \
 		../qm/oci-hooks/qm-device-manager/oci-qm-device-manager.json \
+		../qm/oci-hooks/qm-seat-manager/oci-qm-seat-manager.json \
 		../qm/oci-hooks/qm-device-manager/README.md \
 		../qm/oci-hooks/wayland-client-devices/oci-qm-wayland-client-devices \
 		../qm/oci-hooks/wayland-client-devices/oci-qm-wayland-client-devices.json \
