@@ -12,6 +12,8 @@ BuildRequires: git-core
 
 # Runtime dependencies
 Requires: jq
+Requires: systemd-udev
+Requires: findutils
 
 %description
 This package provides OCI hooks for QM containers that enable dynamic
@@ -21,6 +23,7 @@ This package is independent and can be installed within the qm container.
 
 Included hooks:
 - qm-device-manager: Dynamic device mounting based on container annotations
+- qm-seat-manager: Wayland seat device management for systemd-logind integration
 - wayland-client-devices: GPU hardware acceleration for Wayland clients
 
 The hooks are installed in standard locations:
@@ -45,6 +48,10 @@ install -m 755 oci-hooks/qm-device-manager/oci-qm-device-manager \
     %{buildroot}%{_libexecdir}/oci/hooks.d/oci-qm-device-manager
 install -m 644 oci-hooks/qm-device-manager/oci-qm-device-manager.json \
     %{buildroot}%{_datadir}/containers/oci/hooks.d/oci-qm-device-manager.json
+
+# Install QM Seat Manager hook
+install -m 644 oci-hooks/qm-seat-manager/oci-qm-seat-manager.json \
+    %{buildroot}%{_datadir}/containers/oci/hooks.d/oci-qm-seat-manager.json
 
 # Install Wayland Client Devices hook
 install -m 755 oci-hooks/wayland-client-devices/oci-qm-wayland-client-devices \
@@ -84,6 +91,7 @@ install -m 644 oci-hooks/wayland-client-devices/README.md \
 %dir %{_datadir}/containers/oci
 %dir %{_datadir}/containers/oci/hooks.d
 %{_datadir}/containers/oci/hooks.d/oci-qm-device-manager.json
+%{_datadir}/containers/oci/hooks.d/oci-qm-seat-manager.json
 %{_datadir}/containers/oci/hooks.d/oci-qm-wayland-client-devices.json
 
 
