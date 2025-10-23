@@ -1,4 +1,7 @@
 TARGETS ?= qm
+# Exclude subpackages that have their own Packit pipelines
+PACKIT_SUBPACKAGES := wayland qm-oci-hooks
+FILTERED_TARGETS := $(filter-out $(PACKIT_SUBPACKAGES),$(TARGETS))
 MODULES ?= ${TARGETS:=.pp.bz2}
 DESTDIR ?=
 PREFIX ?= /usr
@@ -83,8 +86,8 @@ rpm: clean dist ##             - Creates a local RPM package, useful for develop
 		${SPECFILE}
 
 .PHONY: subpackages
-subpackages: $(TARGETS)
-$(TARGETS):
+subpackages: $(FILTERED_TARGETS)
+$(FILTERED_TARGETS):
 	@echo "Entering directory: subsystem/$@"
 	make -f subsystems/$@/Makefile $@
 
