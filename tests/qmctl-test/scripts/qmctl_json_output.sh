@@ -114,7 +114,7 @@ rm -f "$copy_test_file_1" "$copy_test_file_2" 2>/dev/null || true
 python3 "$QMCTL_SCRIPT" exec bash -c "rm -f /tmp/json_copy_test.txt && echo 'cleaned up copy test file'" >/dev/null 2>&1 || true
 
 # Test 4: Error cases that should produce JSON error responses
-run_test "JSON error: exec without command" 1 "none" "" \
+run_test "JSON error: exec without command" 22 "none" "" \
     python3 "$QMCTL_SCRIPT" exec --json
 
 run_test "JSON error: invalid show subcommand" 2 "error_pattern" "invalid choice" \
