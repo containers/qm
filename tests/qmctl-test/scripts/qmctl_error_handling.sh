@@ -19,7 +19,7 @@ run_test "Invalid subcommand" 2 "error_pattern" "invalid choice" \
     python3 "$QMCTL_SCRIPT" invalid_command
 
 # Test 3: Exec without command
-run_test "Exec without command" 1 "error_pattern" "No command provided" \
+run_test "Exec without command" 22 "error_pattern" "No command provided" \
     python3 "$QMCTL_SCRIPT" exec
 
 # Test 4: Execin without container name
@@ -55,11 +55,11 @@ run_test "Help command" 0 "output_pattern" "usage" \
     python3 "$QMCTL_SCRIPT" --help
 
 # Test 12: JSON flag with exec but no command
-run_test "JSON exec without command" 1 "none" "" \
+run_test "JSON exec without command" 22 "none" "" \
     python3 "$QMCTL_SCRIPT" exec --json
 
 # Test 13: Verbose mode with error
-run_test "Verbose mode with error" 1 "error_pattern" "No command provided" \
+run_test "Verbose mode with error" 22 "error_pattern" "No command provided" \
     python3 "$QMCTL_SCRIPT" -v exec
 
 # Test 14: Empty string as command
