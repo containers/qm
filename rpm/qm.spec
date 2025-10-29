@@ -22,8 +22,7 @@
 %endif
 
 # copr_username is only set on copr environments, not on others like koji
-# Check if copr is owned by rhcontainerbot
-%if "%{?copr_username}" != "rhcontainerbot"
+%if "%{?copr_username}" != "centos-automotive-sig" && "%{?copr_projectname}" != "qm-next"
 %bcond_with copr
 %else
 %bcond_without copr
