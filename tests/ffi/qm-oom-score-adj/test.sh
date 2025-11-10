@@ -20,6 +20,26 @@ trap disk_cleanup EXIT
 prepare_test
 reload_config
 
+# Function to inspect a container with optional exec into another container
+podman_inspect() {
+    local outer_container=$1
+    local container_name=$2
+    local format_string=$3
+
+    if [[ -n "$outer_container" ]]; then
+        podman exec -it "$outer_container" /bin/bash -c "podman inspect $container_name --format '$format_string'" | tr -d '\r'
+    else
+        podman inspect "$container_name" --format "$format_string" | tr -d '\r'
+    fi
+
+    # Handle errors
+    exit_code=${PIPESTATUS[0]}
+    if [[ $exit_code -ne 0 ]]; then
+        info_message "Error: Failed to inspect container '$container_name'. Exit code: $exit_code" >&2
+        return "$exit_code"
+    fi
+}
+
 # Function to retrieve the PID with retries for a container
 get_pid_with_retries() {
     local container_name=$1
@@ -27,7 +47,7 @@ get_pid_with_retries() {
     local pid=""
 
     while [[ $retries -gt 0 ]]; do
-        pid=$(podman inspect "$container_name" --format '{{.State.Pid}}' | tr -d '\r')
+        pid=$(podman_inspect "" "$container_name" '{{.State.Pid}}')
         if [[ -n "$pid" && "$pid" =~ ^[0-9]+$ ]]; then
             echo "$pid"
             return
@@ -36,7 +56,7 @@ get_pid_with_retries() {
         sleep 1
     done
 
-    echo "Error: Failed to retrieve a valid PID for the container '$container_name' after multiple attempts." >&2
+    info_message "Error: Failed to retrieve a valid PID for the container '$container_name' after multiple attempts." >&2
     exit 1
 }
 
@@ -45,9 +65,9 @@ get_oom_score_adj() {
     local pid=$1
 
     if [[ -f "/proc/$pid/oom_score_adj" ]]; then
-        tr -d '\r\n' < "/proc/$pid/oom_score_adj"
+        tail -1 < "/proc/$pid/oom_score_adj" | tr -d '\r\n'
     else
-        echo "Error: /proc/$pid/oom_score_adj does not exist" >&2
+        info_message "Error: /proc/$pid/oom_score_adj does not exist" >&2
         exit 1
     fi
 }
@@ -56,9 +76,9 @@ get_oom_score_adj() {
 running_container_in_qm
 
 # Check if ffi-qm container started successfully
-QM_FFI_STATUS=$(podman exec -it qm /bin/bash -c "podman inspect ffi-qm --format '{{.State.Status}}'" | tr -d '\r')
+QM_FFI_STATUS=$(podman_inspect "qm" "ffi-qm" '{{.State.Status}}')
 if [[ "$QM_FFI_STATUS" != "running" ]]; then
-    echo "Error: ffi-qm container failed to start. Status: $QM_FFI_STATUS" >&2
+    info_message "Error: ffi-qm container failed to start. Status: $QM_FFI_STATUS" >&2
     exit 1
 fi
 
@@ -66,21 +86,21 @@ fi
 QM_PID=$(get_pid_with_retries "qm")
 
 # Retrieve the PID of the inner container (ffi-qm) directly within the qm container
-QM_FFI_PID=$(podman exec -it qm /bin/bash -c "podman inspect ffi-qm --format '{{.State.Pid}}'" | tr -d '\r')
+QM_FFI_PID=$(podman_inspect "qm" "ffi-qm" '{{.State.Pid}}')
 
 # Debugging: Output the retrieved PIDs
-echo "Retrieved QM_PID: $QM_PID"
-echo "Retrieved QM_FFI_PID: $QM_FFI_PID"
+info_message "Retrieved QM_PID: $QM_PID"
+info_message "Retrieved QM_FFI_PID: $QM_FFI_PID"
 
 # Ensure that PIDs are valid before proceeding
 if [[ -z "$QM_PID" || ! "$QM_PID" =~ ^[0-9]+$ ]]; then
-    echo "Error: Invalid QM_PID: $QM_PID" >&2
+    info_message "Error: Invalid QM_PID: $QM_PID" >&2
     exit 1
 fi
 
 if [[ -z "$QM_FFI_PID" || ! "$QM_FFI_PID" =~ ^[0-9]+$ ]]; then
-    echo "Error: Invalid QM_FFI_PID: $QM_FFI_PID" >&2
-    echo "Check if the ffi-qm container was successfully started."
+    info_message "Error: Invalid QM_FFI_PID: $QM_FFI_PID" >&2
+    info_message "Check if the ffi-qm container was successfully started."
     exit 1
 fi
 
@@ -89,8 +109,8 @@ QM_OOM_SCORE_ADJ=$(get_oom_score_adj "$QM_PID")
 QM_FFI_OOM_SCORE_ADJ=$(podman exec -it qm /bin/bash -c "cat /proc/$QM_FFI_PID/oom_score_adj" | tr -d '\r\n')
 
 # Debugging: Output the retrieved oom_score_adj values
-echo "Retrieved QM_OOM_SCORE_ADJ: '$QM_OOM_SCORE_ADJ'"
-echo "Retrieved QM_FFI_OOM_SCORE_ADJ: '$QM_FFI_OOM_SCORE_ADJ'"
+info_message "Retrieved QM_OOM_SCORE_ADJ: '$QM_OOM_SCORE_ADJ'"
+info_message "Retrieved QM_FFI_OOM_SCORE_ADJ: '$QM_FFI_OOM_SCORE_ADJ'"
 
 # Define the expected oom_score_adj values
 OOM_SCORE_ADJ_EXPECTED=500
@@ -98,17 +118,17 @@ FFI_OOM_SCORE_ADJ_EXPECTED=750
 
 # Check the oom_score_adj for the outer container
 if [[ "$QM_OOM_SCORE_ADJ" -eq "$OOM_SCORE_ADJ_EXPECTED" ]]; then
-    echo "PASS: qm.container oom_score_adj value == $OOM_SCORE_ADJ_EXPECTED"
+    info_message "PASS: qm.container oom_score_adj value == $OOM_SCORE_ADJ_EXPECTED"
 else
-    echo "FAIL: qm.container oom_score_adj value != $OOM_SCORE_ADJ_EXPECTED. Current value is ${QM_OOM_SCORE_ADJ}"
+    info_message "FAIL: qm.container oom_score_adj value != $OOM_SCORE_ADJ_EXPECTED. Current value is ${QM_OOM_SCORE_ADJ}"
     exit 1
 fi
 
 # Check the oom_score_adj for the inner container
 if [[ "$QM_FFI_OOM_SCORE_ADJ" -eq "$FFI_OOM_SCORE_ADJ_EXPECTED" ]]; then
-    echo "PASS: ffi-qm container oom_score_adj == $FFI_OOM_SCORE_ADJ_EXPECTED"
+    info_message "PASS: ffi-qm container oom_score_adj == $FFI_OOM_SCORE_ADJ_EXPECTED"
 else
-    echo "FAIL: ffi-qm container oom_score_adj != $FFI_OOM_SCORE_ADJ_EXPECTED. Current value is '${QM_FFI_OOM_SCORE_ADJ}'"
+    info_message "FAIL: ffi-qm container oom_score_adj != $FFI_OOM_SCORE_ADJ_EXPECTED. Current value is '${QM_FFI_OOM_SCORE_ADJ}'"
     exit 1
 fi
 
