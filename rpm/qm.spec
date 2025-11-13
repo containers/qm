@@ -62,6 +62,7 @@ BuildRequires: pkgconfig(systemd)
 BuildRequires: selinux-policy >= %_selinux_policy_version
 BuildRequires: selinux-policy-devel >= %_selinux_policy_version
 BuildRequires: bluechi-selinux
+BuildRequires: python3-devel
 
 Requires: parted
 Requires: containers-common
@@ -116,6 +117,11 @@ sed -i 's|^/run/|/var/run/|' qm.fc
 %install
 # Create the directory for drop-in configurations
 install -d %{buildroot}%{_sysconfdir}/containers/containers.conf.d
+
+# Install Python module for qmctl
+install -d %{buildroot}%{python3_sitelib}/qmctl
+install -m 0644 tools/qmctl/__init__.py %{buildroot}%{python3_sitelib}/qmctl/
+install -m 0644 tools/qmctl/qmctl.py %{buildroot}%{python3_sitelib}/qmctl/
 
 # install policy modules
 %_format MODULES $x.pp.bz2
@@ -181,6 +187,7 @@ fi
 %license LICENSE
 %{_bindir}/qmctl
 %{_mandir}/man1/qmctl.*
+%{python3_sitelib}/qmctl/
 
 %changelog
 %if %{defined autochangelog}
