@@ -5,10 +5,8 @@
 
 info_message "Running qmctl command..."
 
-QMCTL_SCRIPT="../../tools/qmctl/qmctl"
-
-if [ ! -f "$QMCTL_SCRIPT" ]; then
-  fail_message "qmctl script not found at $QMCTL_SCRIPT"
+if ! command -v qmctl &> /dev/null; then
+  fail_message "qmctl command not found in PATH"
   exit 1
 fi
 

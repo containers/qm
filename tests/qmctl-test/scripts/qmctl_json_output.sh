@@ -9,18 +9,16 @@ set -e
 # Install development tools if needed
 exec_cmd "dnf install --setopt=reposdir=/etc/yum.repos.d  --installroot=/usr/lib/qm/rootfs -y hostname iproute || true"
 
-QMCTL_SCRIPT="../../tools/qmctl/qmctl"
-
 info_message "Starting qmctl JSON output tests..."
 
 # Test 1: Show commands with JSON output
 run_test "JSON Show container" 0 "json_valid" "[Container]" \
-    python3 "$QMCTL_SCRIPT" show container --json
+    qmctl show container --json
 
 # Handle unix-domain-sockets separately (may have missing ss command)
 info_message "Testing: JSON Show unix-domain-sockets"
 unix_json_file=$(mktemp)
-python3 "$QMCTL_SCRIPT" show unix-domain-sockets --json > "$unix_json_file" 2>&1
+qmctl show unix-domain-sockets --json > "$unix_json_file" 2>&1
 unix_json_exit=$?
 
 if [ "$unix_json_exit" -eq 0 ]; then
@@ -47,24 +45,24 @@ fi
 rm -f "$unix_json_file"
 
 run_test "JSON Show shared-memory" 0 "json_valid" "Shared Memory Segments" \
-    python3 "$QMCTL_SCRIPT" show shared-memory --json
+    qmctl show shared-memory --json
 
 run_test "JSON Show available-devices" 0 "json_valid" "/dev/kvm" \
-    python3 "$QMCTL_SCRIPT" show available-devices --json
+    qmctl show available-devices --json
 
 run_test "JSON Show namespaces" 0 "json_valid" "Namespaces" \
-    python3 "$QMCTL_SCRIPT" show namespaces --json
+    qmctl show namespaces --json
 
 # Test 2: Exec commands with JSON output
 info_message "QM container is available - testing exec JSON commands"
 
 run_test "JSON Exec echo" 0 "json_valid" "" \
-    python3 "$QMCTL_SCRIPT" exec --json echo "hello world"
+    qmctl exec --json echo "hello world"
 
 # Handle hostname separately (may not work in container)
 info_message "Testing: JSON Exec hostname"
 hostname_json_file=$(mktemp)
-python3 "$QMCTL_SCRIPT" exec --json hostname > "$hostname_json_file" 2>&1
+qmctl exec --json hostname > "$hostname_json_file" 2>&1
 hostname_json_exit=$?
 
 if [ "$hostname_json_exit" -eq 0 ]; then
@@ -89,7 +87,7 @@ fi
 rm -f "$hostname_json_file"
 
 run_test "JSON Exec ls" 0 "json_valid" "" \
-    python3 "$QMCTL_SCRIPT" exec --json ls /tmp
+    qmctl exec --json ls /tmp
 
 # Test 3: Copy commands with JSON output
 info_message "Testing copy JSON commands"
@@ -100,32 +98,32 @@ copy_test_file_2="/tmp/json_copy_test_result.txt"
 echo "JSON copy test content" > "$copy_test_file_1"
 
 run_test "JSON Copy host to container" 0 "none" "" \
-    python3 "$QMCTL_SCRIPT" cp --json "$copy_test_file_1" "qm:/tmp/json_copy_test.txt"
+    qmctl cp --json "$copy_test_file_1" "qm:/tmp/json_copy_test.txt"
 
 info_message "NOTE: JSON Copy host to container - Silent success (no JSON output expected)"
 
 run_test "JSON Copy container to host" 0 "none" "" \
-    python3 "$QMCTL_SCRIPT" cp --json "qm:/tmp/json_copy_test.txt" "$copy_test_file_2"
+    qmctl cp --json "qm:/tmp/json_copy_test.txt" "$copy_test_file_2"
 
 info_message "NOTE: JSON Copy container to host - Silent success (no JSON output expected)"
 
 # Cleanup copy test files
 rm -f "$copy_test_file_1" "$copy_test_file_2" 2>/dev/null || true
-python3 "$QMCTL_SCRIPT" exec bash -c "rm -f /tmp/json_copy_test.txt && echo 'cleaned up copy test file'" >/dev/null 2>&1 || true
+qmctl exec bash -c "rm -f /tmp/json_copy_test.txt && echo 'cleaned up copy test file'" >/dev/null 2>&1 || true
 
 # Test 4: Error cases that should produce JSON error responses
 run_test "JSON error: exec without command" 22 "none" "" \
-    python3 "$QMCTL_SCRIPT" exec --json
+    qmctl exec --json
 
 run_test "JSON error: invalid show subcommand" 2 "error_pattern" "invalid choice" \
-    python3 "$QMCTL_SCRIPT" show --json nonexistent_subcommand
+    qmctl show --json nonexistent_subcommand
 
 # Test 5: JSON format specifics
 info_message "Testing JSON format specifics..."
 
 # Test JSON formatting with a simple command
 json_format_file=$(mktemp)
-python3 "$QMCTL_SCRIPT" show container --json > "$json_format_file"
+qmctl show container --json > "$json_format_file"
 
 # Test with jq if available
 if command -v jq > /dev/null 2>&1; then
