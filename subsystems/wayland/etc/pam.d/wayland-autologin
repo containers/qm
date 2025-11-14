@@ -1,0 +1,16 @@
+# PAM Configuration for Wayland Autologin
+# Provides automatic authentication for Wayland session without password prompt
+
+# Authentication stack - no password required for autologin
+auth      required  pam_nologin.so
+auth      required  pam_unix.so     try_first_pass nullok
+
+# Account verification
+account   required  pam_nologin.so
+account   required  pam_unix.so
+
+# Session setup with Wayland-specific configuration
+session   required  pam_env.so
+session   required  pam_unix.so
+-session  optional  pam_systemd.so type=wayland class=user desktop=qm-wayland  # Register Wayland session with systemd
+-session  optional  pam_loginuid.so

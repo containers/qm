@@ -1,0 +1,112 @@
+#!/bin/bash
+# Wayland Session Monitor - Continuously monitors and manages Wayland user sessions
+# Filters for specific session criteria and activates/maintains the target session
+
+# Parse command line arguments
+SEAT="seat0"  # Default seat
+TTY="tty7"    # Default TTY
+
+usage() {
+    echo "Usage: $0 [OPTIONS]"
+    echo "Options:"
+    echo "  -s, --seat SEAT    Target seat (default: seat0)"
+    echo "  -t, --tty TTY      Target TTY (default: tty7)"
+    echo "  -h, --help         Show this help message"
+    echo ""
+    echo "Environment variables:"
+    echo "  WAYLAND_SEAT       Target seat (overrides default)"
+    echo "  WAYLAND_TTY        Target TTY (overrides default)"
+}
+
+if ! options=$(getopt -o s:t:h --long seat:,tty:,help -n "$0" -- "$@"); then
+    usage >&2
+    exit 1
+fi
+
+eval set -- "$options"
+
+# Parse command line arguments
+while :; do
+    case "${1}" in
+        -s|--seat)
+            SEAT="$2"
+            shift
+            ;;
+        -t|--tty)
+            TTY="$2"
+            shift
+            ;;
+        -h|--help)
+            usage
+            exit 0
+            ;;
+        --)
+            break
+            ;;
+        *)
+            echo "Unknown option: $1" >&2
+            usage >&2
+            exit 1
+            ;;
+    esac
+    shift
+done
+
+# Override with environment variables if set
+SEAT="${WAYLAND_SEAT:-$SEAT}"
+TTY="${WAYLAND_TTY:-$TTY}"
+
+export PID="$BASHPID"
+
+echo "Wayland Session Monitor starting - monitoring seat: $SEAT, tty: $TTY"
+
+while true; do
+  loginctl list-sessions --no-legend | awk '{ print $1 }' | while read -r session; do
+    session_info=$(loginctl show-session -p Type -p Class -p Remote -p TTY -p Seat -p State "${session}")
+
+    # Extract properties using parameter expansion
+    type=$(echo "$session_info" | grep '^Type=' | cut -d= -f2)
+    class=$(echo "$session_info" | grep '^Class=' | cut -d= -f2)
+    remote=$(echo "$session_info" | grep '^Remote=' | cut -d= -f2)
+    tty=$(echo "$session_info" | grep '^TTY=' | cut -d= -f2)
+    seat=$(echo "$session_info" | grep '^Seat=' | cut -d= -f2)
+    state=$(echo "$session_info" | grep '^State=' | cut -d= -f2)
+
+    if [ "$type" != "wayland" ]; then
+        continue
+    fi
+
+    if [ "$class" != "user" ]; then
+        continue
+    fi
+
+    if [ "$remote" != "no" ]; then
+        continue
+    fi
+
+    if [ "$tty" != "$TTY" ]; then
+        continue
+    fi
+
+    if [ "$seat" != "$SEAT" ]; then
+        continue
+    fi
+
+    if [ "$state" == "closing" ]; then
+        continue
+    fi
+
+    if [ "$state" == "online" ]; then
+        loginctl activate "${session}"
+        continue
+    fi
+
+    if [ "$state" == "active" ]; then
+      systemd-notify --ready --pid="$PID"
+
+      # The wayland session needs to remain active as systemd-logind requirement
+      sleep infinity
+    fi
+  done
+  sleep 1
+done

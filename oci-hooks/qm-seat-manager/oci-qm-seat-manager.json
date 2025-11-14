@@ -5,7 +5,7 @@
     },
     "when": {
         "annotations": {
-            "^org\\.containers\\.qm\\.device\\..*$": "^.*$"
+            "^org\\.containers\\.qm\\.wayland\\.seat": "^.*$"
         }
     },
     "stages": ["precreate"]
