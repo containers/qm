@@ -1,0 +1,44 @@
+# Wayland Session Manager - Manages user session lifecycle for Wayland display
+# Monitors and activates Wayland sessions on tty7, required for compositor startup
+
+[Unit]
+Description=Wayland Session Creation Handling
+After=systemd-user-sessions.service
+Before=wayland.service
+
+[Service]
+Type=notify
+NotifyAccess=main
+Environment=XDG_SESSION_TYPE=wayland
+Environment=WAYLAND_SEAT=seat0
+Environment=WAYLAND_TTY=tty7
+UnsetEnvironment=TERM
+ExecStart=/usr/bin/wayland-session
+Restart=no
+
+# Session management runs as root
+User=root
+Group=root
+
+# PAM configuration for automatic login
+PAMName=wayland-autologin
+
+# TTY control and session setup
+# Fail if no TTY control
+StandardInput=tty-fail
+StandardError=journal
+StandardOutput=journal
+
+# Virtual terminal assignment for Wayland display
+# Dedicated display terminal
+TTYPath=/dev/tty7
+TTYReset=yes
+TTYVHangup=yes
+TTYVTDisallocate=yes
+
+# Log this user with utmp, letting it show up with commands 'w' and 'who'.
+UtmpIdentifier=tty7
+UtmpMode=user
+
+[Install]
+WantedBy=graphical.target

@@ -1,0 +1,13 @@
+# PAM Configuration for systemd User Sessions
+# Provides authentication and session setup for systemd --user instances
+
+# Account management - no password expiry for service accounts
+account  sufficient pam_unix.so no_pass_expiry
+account  include system-auth
+
+# Session initialization for systemd user services
+session  required pam_loginuid.so                 # Set login UID for audit
+session  optional pam_keyinit.so force revoke     # Initialize kernel keyring
+session  optional pam_umask.so silent             # Set default umask
+session  required pam_namespace.so                # Setup namespace isolation
+session  include system-auth
