@@ -22,7 +22,7 @@ check_var_partition_exist(){
     fi
 }
 
-# Check that a mount point is not tmpfs and is writable inside QM container
+# Check that a mount point is not ext4 and is writable inside QM container
 check_mountpoint() {
     local mount_point="$1"
 
@@ -38,8 +38,8 @@ check_mountpoint() {
     info_message "Filesystem type for ${mount_point}: ${fstype}"
 
     # Check that mount point is not tmpfs
-    if [[ "${fstype}" == "tmpfs" ]]; then
-        info_message "FAIL: ${mount_point} mount point is tmpfs but should be persistent storage"
+    if [[ "${fstype}" == "ext4" ]]; then
+        info_message "FAIL: ${mount_point} mount point is ext4 but should be persistent storage"
         info_message "Debug: QM container volume mounts:"
         podman inspect qm --format '{{range .Mounts}}{{.Source}}:{{.Destination}} {{end}}' 2>/dev/null || true
         exit 1

@@ -110,5 +110,3 @@ SecurityLabelType=qm_t
 Timezone=local
 Volume=${RWETCFS}:/etc
 Volume=${RWVARFS}:/var
-Volume=${RWVARFS}/tmp:/var/tmp
-
