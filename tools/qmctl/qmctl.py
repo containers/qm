@@ -259,14 +259,12 @@ class QmController:
             "text": True,
             "check": False,
         }
-
-        options = kwargs if kwargs else defaults
+        options = kwargs if kwargs else defaults  # sourcery skip=or-if-exp-identity
         try:
-            result = subprocess.run(    # nosec B603
+            return subprocess.run(    # nosec B603
                 cmd,
                 **options,
             )
-            return result
         except Exception as e:
             raise RuntimeError(f"subprocess.run failed: {e}") from e
 
@@ -1381,7 +1379,6 @@ def main() -> None:
             argcomplete.autocomplete(parser)
         except Exception as e:
             print(f"[WARNING] argcomplete failed: {e}", file=sys.stderr)
-            pass
 
     run_command_with_error_handling(args, controller, parser)
 
