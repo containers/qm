@@ -40,3 +40,10 @@ repos:
     rev: v1.2.0
     hooks:
     -   id: validate-config
+
+-   repo: https://github.com/sourcery-ai/sourcery
+    rev: "v1.40.0"
+    hooks:
+    -   id: sourcery
+        args: ["--check"]
+        exclude: ^(demos/|tests/|oci-hooks/tests/)
