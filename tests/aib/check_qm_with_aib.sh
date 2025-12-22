@@ -15,4 +15,4 @@ EXTRA_REPOS="extra_repos=[{id: qm_build, baseurl: $COPR_URL}]"
 # Run AIB in container
 exec_cmd "curl -o auto-image-builder.sh https://gitlab.com/CentOS/automotive/src/automotive-image-builder/-/raw/main/auto-image-builder.sh?ref_type=heads"
 #shellcheck disable=SC2027,SC2090,SC2086
-exec_cmd "/bin/bash auto-image-builder.sh build --export qcow2 --define \\\"$EXTRA_REPOS\\\" qm.aib.yml qm.qcow2"
+exec_cmd "/bin/bash auto-image-builder.sh build --target qemu --define \\\"$EXTRA_REPOS\\\" qm.aib.yml qm.qcow2"

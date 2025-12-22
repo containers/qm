@@ -93,7 +93,16 @@ curl -Lo qm.aib.yml "https://gitlab.com/CentOS/automotive/src/automotive-image-b
 
 curl -Lo auto-image-builder.sh "https://gitlab.com/CentOS/automotive/src/automotive-image-builder/-/raw/main/auto-image-builder.sh?ref_type=heads"
 
-sudo ./auto-image-builder.sh build --distro cs9 --mode package --define \"ssh_permit_root_login=true\" --define \"ssh_permit_password_auth=true\" --define \"extra_repos=[{id: local,baseurl: file:///root/rpmbuild/RPMS/noarch}]\" --define \"extra_rpms=[qm-1.0, vim-enhanced, openssh-server, openssh-clients, python3, polkit, rsync, strace, dnf, gdb]\" --target qemu --export qcow2 qm.aib.yml cs9-qemu-qm-container.x86_64.qcow2
+sudo ./auto-image-builder.sh build \
+    --distro cs9 \
+    --mode package \
+    --define "ssh_permit_root_login=true" \
+    --define "ssh_permit_password_auth=true" \
+    --define "extra_repos=[{id: local,baseurl: file:///root/rpmbuild/RPMS/noarch}]" \
+    --define "extra_rpms=[qm-1.0, vim-enhanced, openssh-server, openssh-clients, python3, polkit, rsync, strace, dnf, gdb]" \
+    --target qemu \
+    qm.aib.yml \
+    cs9-qemu-qm-container.x86_64.qcow2
 ```
 
 If you would like more information on building automotive images with automotive-image-builder, please see the
