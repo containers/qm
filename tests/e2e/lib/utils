@@ -245,10 +245,12 @@ run_test() {
 }
 
 exec_cmd() {
-    local cmd="$1"
-    eval "$cmd"
-    if_error_exit "Error: Command $cmd failed"
-    info_message "PASS: Command $cmd successful"
+    local cmd_string="$1"
+
+    # Use bash -c to interpret the string as a command
+    bash -c "$cmd_string"
+    if_error_exit "Error executing command '$cmd_string'"
+    info_message "PASS: Command '$cmd_string' successful"
 }
 
 cleanup_node_services() {
