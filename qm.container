@@ -31,7 +31,7 @@ MemoryMax=infinity
 MemoryHigh=infinity
 MemorySwapMax=0
 
-# Containers within the qm contain default set OOMScoreAdj to 750
+# Set the OOM score adjustment for the qm container itself.
 OOMScoreAdjust=500
 Restart=always
 # qm.service is a toplevel cgroup, so CPUWeight is relative to all other cgroups in that
