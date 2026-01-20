@@ -268,7 +268,6 @@ template(`qm_domain_template',`
 	kernel_rw_fs_sysctls($1_t)
 	kernel_rw_kernel_sysctl($1_t)
 	kernel_rw_net_sysctls($1_t)
-	kernel_rw_security_state($1_t)
 	kernel_rw_unix_sysctls($1_t)
 	kernel_rw_vm_sysctls($1_t)
 	kernel_rw_usermodehelper_state($1_t)
