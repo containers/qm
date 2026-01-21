@@ -251,7 +251,7 @@ EOF
         fi
     fi
 
-    cmd_dnf_install="dnf -y install --releasever=${VERSION_ID} --setopt=reposdir=${ROOTFS}/etc/yum.repos.d --installroot ${ROOTFS} libkrun crun-krun bluechi-agent ${EXTRA_FLAG}"
+    cmd_dnf_install="dnf -y install --releasever=${VERSION_ID} --setopt=reposdir=${ROOTFS}/etc/yum.repos.d --installroot ${ROOTFS} bluechi-agent ${EXTRA_FLAG}"
     ${cmd_dnf_install}
 
     dnf -y update --installroot "${ROOTFS}"
