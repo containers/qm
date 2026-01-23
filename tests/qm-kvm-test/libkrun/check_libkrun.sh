@@ -16,10 +16,10 @@ install_libkrun() {
 
 check_libkrun() {
     info_message "check_libkrun(): run virtualization-isolated containers."
-    # krun needs privileged access to create memfd for microVM
-    # The nested container needs to bypass seccomp and have full capabilities
-    # Similar to how autoware test uses --privileged for nested containers
-    exec_cmd "podman exec -it qm podman run --runtime=krun --privileged --device /dev/kvm --rm -it alpine echo 'Hello libkrun.'"
+    # krun needs privileged access and SELinux disabled to create memfd for microVM
+   # The nested container needs to bypass seccomp, have full capabilities, and disable SELinux
+   # Error 13 (EACCES) suggests SELinux might be blocking memfd creation
+   exec_cmd "podman exec -it qm podman run --runtime=krun --privileged --security-opt label=disable --device /dev/kvm --rm -it alpine echo 'Hello libkrun.'"
     info_message "PASS: libkrun runs successfully."
 }
 
