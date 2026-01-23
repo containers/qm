@@ -16,7 +16,10 @@ install_libkrun() {
 
 check_libkrun() {
     info_message "check_libkrun(): run virtualization-isolated containers."
-    exec_cmd "podman exec -it qm podman run --runtime=krun --rm -it alpine echo 'Hello libkrun.'"
+    # exec_cmd "podman exec -it qm podman run --runtime=krun --rm -it alpine echo 'Hello libkrun.'"
+    # krun needs SYS_ADMIN capability to create memfd for microVM
+    # Also need to ensure /dev/kvm is available in nested container
+    exec_cmd "podman exec -it qm podman run --runtime=krun --cap-add SYS_ADMIN --device /dev/kvm --rm -it alpine echo 'Hello libkrun.'"
     info_message "PASS: libkrun runs successfully."
 }
 
