@@ -44,6 +44,17 @@ Environment=RWVARFS=/var/qm
 LimitNOFILE=65536
 TasksMax=50%
 
+# IOReadIOPSMax, IOWriteIOPSMax
+# -----------------------------
+# IOReadIOPSMax=device IOPS, IOWriteIOPSMax=device IOPS
+# Set the per-device maximum block I/O operations per second (IOPS) limit for qm.
+# "device" refers to the block device inside the qm partition that backs /var/qm.
+# If "IOPS" is suffixed with K, M, G, or T, the specified IOPS is parsed as KiloIOPS,
+# MegaIOPS, GigaIOPS, or TeraIOPS, respectively, to the base of 1000.
+# Example:
+# IOReadIOPSMax=/dev/sdf 50
+# IOWriteIOPSMax=/dev/sdf 50
+
 [Container]
 # AddCapability
 # -------------
