@@ -62,11 +62,23 @@ install -d %{buildroot}%{_presetdir}
 install -m 644 subsystems/wayland/etc/containers/systemd/qm-dbus-broker.container %{buildroot}%{_sysconfdir}/containers/systemd/
 install -m 644 subsystems/wayland/etc/containers/systemd/wayland-compositor.container %{buildroot}%{_sysconfdir}/containers/systemd/
 install -m 644 subsystems/wayland/etc/systemd/system/* %{buildroot}%{_unitdir}/
-install -m 644 subsystems/wayland/etc/pam.d/* %{buildroot}%{_sysconfdir}/pam.d/
+install -m 644 subsystems/wayland/etc/pam.d/wayland-autologin %{buildroot}%{_sysconfdir}/pam.d/
+# Install custom systemd-user PAM config with .qm-wayland suffix
+install -m 644 subsystems/wayland/etc/pam.d/systemd-user %{buildroot}%{_sysconfdir}/pam.d/systemd-user.qm-wayland
 install -m 644 subsystems/wayland/etc/weston/weston.ini %{buildroot}%{_sysconfdir}/weston/
 install -m 644 subsystems/wayland/50-qm-wayland.preset %{buildroot}%{_presetdir}/
 
 %post
+# Backup original systemd-user PAM config and replace with our version
+if [ "$1" -eq 1 ] || [ "$1" -eq 2 ]; then
+    if [ ! -L "%{_sysconfdir}/pam.d/systemd-user" ]; then
+        # Backup if it's a regular file and no backup exists yet
+        if [ -f "%{_sysconfdir}/pam.d/systemd-user" ] && [ ! -f "%{_sysconfdir}/pam.d/systemd-user.rpmsave" ]; then
+            cp -p "%{_sysconfdir}/pam.d/systemd-user" "%{_sysconfdir}/pam.d/systemd-user.rpmsave"
+        fi
+        cp -f "%{_sysconfdir}/pam.d/systemd-user.qm-wayland" "%{_sysconfdir}/pam.d/systemd-user"
+    fi
+fi
 %systemd_post qm-dbus.socket
 %systemd_post wayland.socket
 %systemd_post wayland-session.service
@@ -77,6 +89,12 @@ install -m 644 subsystems/wayland/50-qm-wayland.preset %{buildroot}%{_presetdir}
 %systemd_preun wayland-session.service
 
 %postun
+# Restore original systemd-user PAM config on uninstall
+if [ "$1" -eq 0 ]; then
+    if [ -f "%{_sysconfdir}/pam.d/systemd-user.rpmsave" ]; then
+        mv -f "%{_sysconfdir}/pam.d/systemd-user.rpmsave" "%{_sysconfdir}/pam.d/systemd-user"
+    fi
+fi
 %systemd_postun qm-dbus.socket
 %systemd_postun wayland.socket
 %systemd_postun wayland-session.service
@@ -103,7 +121,7 @@ install -m 644 subsystems/wayland/50-qm-wayland.preset %{buildroot}%{_presetdir}
 %{_unitdir}/qm-dbus.socket
 %{_unitdir}/wayland-session.service
 %{_unitdir}/wayland.socket
-%{_sysconfdir}/pam.d/systemd-user
+%config(noreplace) %{_sysconfdir}/pam.d/systemd-user.qm-wayland
 %{_sysconfdir}/pam.d/wayland-autologin
 # Weston compositor configuration
 %{_sysconfdir}/weston/weston.ini
