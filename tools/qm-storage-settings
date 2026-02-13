@@ -45,6 +45,7 @@ setup_init() {
 
     STORAGE_CONF_PATHS=(
         "${ROOTFS}/etc/containers/storage.conf"
+        "${ROOTFS}/usr/lib/containers/storage.conf"
         "${ROOTFS}/usr/share/containers/storage.conf"
     )
 
@@ -82,8 +83,9 @@ additional_images_storages() {
 
             # Execute the following if we are inside the specified block
             if (insideBlock == 1) {
-                # Check if the line contains the specific path "/usr/share/containers/storage"
-                if ($0 ~ /"\/usr\/share\/containers\/storage"/) {
+                # Check if the line contains the specific path "/usr/lib/containers/storage" or
+                # /usr/share/containers/storage
+                if ($0 ~ /"\/usr\/(lib|share)\/containers\/storage"/) {
                     if ($0 !~ /,$/) {  # If the line does not end with a comma
                         print $0 ","  # Print the line with a comma appended
                     } else {

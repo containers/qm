@@ -238,9 +238,9 @@ lrwxrwxrwx. 1 root root 0 May  1 04:33 /proc/self/ns/net -> 'net:[4026532287]'
 ## Debugging with podman in QM
 
 ```console
-bash-5.1# podman --root /usr/share/containers/storage pull alpine
-Error: creating runtime static files directory "/usr/share/containers/storage/libpod":
-mkdir /usr/share/containers/storage: read-only file system
+bash-5.1# podman --root /usr/lib/containers/storage pull alpine
+Error: creating runtime static files directory "/usr/lib/containers/storage/libpod":
+mkdir /usr/lib/containers/storage: read-only file system
 ```
 
 ## Debugging with quadlet
