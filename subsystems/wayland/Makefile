@@ -1,8 +1,25 @@
-RPM_TOPDIR ?= $(PWD)/rpmbuild
-VERSION ?= $(shell grep '^Version:' rpm/wayland/qm-wayland.spec | awk '{print $$2}')
 ROOTDIR ?= $(PWD)
+RPM_TOPDIR ?= $(ROOTDIR)/rpmbuild
+VERSION ?= $(shell grep '^Version:' $(ROOTDIR)/rpm/wayland/qm-wayland.spec | awk '{print $$2}')
 SPECFILE_SUBPACKAGE_WAYLAND ?= ${ROOTDIR}/rpm/wayland/qm-wayland.spec
 PACKAGE_NAME = qm-wayland
+
+WAYLAND_FILES = \
+	rpm/wayland/qm-wayland.spec \
+	subsystems/wayland/Makefile \
+	subsystems/wayland/README.md \
+	SECURITY.md \
+	LICENSE \
+	subsystems/wayland/50-qm-wayland.preset \
+	subsystems/wayland/etc/containers/systemd/qm-dbus-broker.container \
+	subsystems/wayland/etc/containers/systemd/wayland-compositor.container \
+	subsystems/wayland/etc/pam.d/systemd-user \
+	subsystems/wayland/etc/pam.d/wayland-autologin \
+	subsystems/wayland/etc/systemd/system/qm-dbus.socket \
+	subsystems/wayland/etc/systemd/system/wayland-session.service \
+	subsystems/wayland/etc/systemd/system/wayland.socket \
+	subsystems/wayland/etc/weston/weston.ini \
+	subsystems/wayland/usr/bin/wayland-session
 
 .PHONY: dist
 dist: ##             - Creates the QM wayland package
@@ -10,35 +27,21 @@ dist: ##             - Creates the QM wayland package
 		--dereference \
 		--transform 's|subsystems/wayland/Makefile|Makefile|' \
 		--transform 's|rpm/wayland/qm-wayland.spec|qm-wayland.spec|' \
-		--transform 's|^qm/|qm-wayland-${VERSION}/|' \
+		--transform 's|^|qm-wayland-${VERSION}/|' \
 		-f /tmp/qm-wayland-${VERSION}.tar.gz \
-		../qm/rpm/wayland/qm-wayland.spec \
-		../qm/subsystems/wayland/Makefile \
-		../qm/subsystems/wayland/README.md \
-		../qm/SECURITY.md \
-		../qm/LICENSE \
-		../qm/subsystems/wayland/50-qm-wayland.preset \
-		../qm/subsystems/wayland/etc/containers/systemd/qm-dbus-broker.container \
-		../qm/subsystems/wayland/etc/containers/systemd/wayland-compositor.container \
-		../qm/subsystems/wayland/etc/pam.d/systemd-user \
-		../qm/subsystems/wayland/etc/pam.d/wayland-autologin \
-		../qm/subsystems/wayland/etc/systemd/system/qm-dbus.socket \
-		../qm/subsystems/wayland/etc/systemd/system/wayland-session.service \
-		../qm/subsystems/wayland/etc/systemd/system/wayland.socket \
-		../qm/subsystems/wayland/etc/weston/weston.ini \
-		../qm/subsystems/wayland/usr/bin/wayland-session
+		${WAYLAND_FILES}
 
-	cd $(ROOTDIR) && mv /tmp/qm-wayland-${VERSION}.tar.gz ./rpm
+	mv /tmp/qm-wayland-${VERSION}.tar.gz $(ROOTDIR)/rpm
 
 .PHONY: wayland
 wayland: dist ##             - Creates a local RPM package, useful for development
-	cd $(ROOTDIR) && mkdir -p ${RPM_TOPDIR}/{RPMS,SRPMS,BUILD,SOURCES}
-	cd $(ROOTDIR) && cp ./rpm/qm-wayland-${VERSION}.tar.gz ${RPM_TOPDIR}/SOURCES
+	mkdir -p ${RPM_TOPDIR}/{RPMS,SRPMS,BUILD,SOURCES}
+	cp $(ROOTDIR)/rpm/qm-wayland-${VERSION}.tar.gz ${RPM_TOPDIR}/SOURCES
 	rpmbuild -ba \
 		--define="_topdir ${RPM_TOPDIR}" \
 		--define="version ${VERSION}" \
 		${SPECFILE_SUBPACKAGE_WAYLAND}
-	if [ ! -f ${RPM_TOPDIR}/RPMS/noarch/${PACKAGE_NAME}-${VERSION}*.noarch.rpm ]; then \
+	if ! compgen -G "${RPM_TOPDIR}/RPMS/noarch/${PACKAGE_NAME}-${VERSION}*.noarch.rpm" > /dev/null; then \
 		echo "rpmbuild failed to build: ${PACKAGE_NAME}"; \
 		exit 1; \
 	fi
