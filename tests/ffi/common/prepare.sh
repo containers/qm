@@ -34,18 +34,33 @@ prepare_test() {
 
 disk_cleanup() {
    # Clean large size files created by tests inside qm part
-   remove_file=$(find /var/qm -size  +2G)
-   exec_cmd "rm -rf $remove_file"
+   remove_file=$(find /var/qm -size +2G)
+   if [ -n "${remove_file}" ]; then
+      exec_cmd "rm -rf ${remove_file}"
+   fi
    # Remove all containers in qm (don't care about stop in clean-up)
-   exec_cmd "podman exec -it qm /usr/bin/podman rm -af"
+   exec_cmd "podman exec qm /usr/bin/podman rm -af"
    if test -d "${DROP_IN_DIR}"; then
       exec_cmd "rm -rf ${DROP_IN_DIR}"
    fi
    exec_cmd "systemctl daemon-reload"
    exec_cmd "systemctl restart qm"
    # Clean large size files created by tests inside host part
-   remove_file=$(find /root -size  +1G)
-   exec_cmd "rm -f $remove_file"
+   remove_file=$(find /root -size +1G)
+   if [ -n "${remove_file}" ]; then
+      exec_cmd "rm -f ${remove_file}"
+   fi
+}
+
+# Remove all containers in host, then disk_cleanup.
+# e.g. trap 'cleanup_host_then_qm ffi-asil' EXIT
+cleanup_host_then_qm() {
+   local container_name
+   for container_name in "$@"; do
+      [ -n "${container_name}" ] || continue
+      podman rm -f "${container_name}" >/dev/null 2>&1 || true
+   done
+   disk_cleanup
 }
 
 reload_config() {
