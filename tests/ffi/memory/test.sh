@@ -4,7 +4,9 @@
 
 . ../common/prepare.sh
 
-trap disk_cleanup EXIT
+# Remove ffi-asil to free host RAM, then do disk_cleanup
+trap 'cleanup_host_then_qm ffi-asil' EXIT
+
 prepare_test
 
 exec_cmd "podman run -d --rm --replace -d --name ffi-asil \
