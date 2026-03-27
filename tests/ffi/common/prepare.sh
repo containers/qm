@@ -14,13 +14,13 @@ OSTREE_PATH="/run/ostree"
 # 1 (failure) if the OSTREE_PATH directory does not exist, indicating the
 # system is not running under OSTree.
 is_ostree() {
-    if [ -d "${OSTREE_PATH}" ]; then
-        echo "The system is running under OSTree."
-        return 0
-    else
-        echo "The system is not running under OSTree."
-        return 1
-    fi
+   if [ -d "${OSTREE_PATH}" ]; then
+      echo "The system is running under OSTree."
+      return 0
+   else
+      echo "The system is not running under OSTree."
+      return 1
+   fi
 }
 
 prepare_test() {
@@ -39,7 +39,11 @@ disk_cleanup() {
       exec_cmd "rm -rf ${remove_file}"
    fi
    # Remove all containers in qm (don't care about stop in clean-up)
-   exec_cmd "podman exec qm /usr/bin/podman rm -af"
+   if [ "$(podman inspect qm --format '{{.State.Running}}' 2>/dev/null)" = "true" ]; then
+      exec_cmd "podman exec qm /usr/bin/podman rm -af"
+   else
+      info_message "SKIP: qm is not running, nested 'podman rm -af' not executed."
+   fi
    if test -d "${DROP_IN_DIR}"; then
       exec_cmd "rm -rf ${DROP_IN_DIR}"
    fi
@@ -68,20 +72,31 @@ reload_config() {
    exec_cmd "systemctl restart qm"
    # Add verification loop for qm status
    if timeout 30 bash -c "until systemctl is-active qm; do sleep 1; done"; then
-       info_message "PASS: Service QM is Active."
+      info_message "PASS: Service QM is Active."
    else
-       info_message "FAIL: Service QM is not Active"
-       exit 1
+      info_message "FAIL: Service QM is not Active"
+      exit 1
    fi
 }
 
 running_container_in_qm() {
-     while true; do
-         if podman exec qm /usr/bin/systemctl is-active ffi-qm -q; then
-             info_message "ffi-qm container inside qm is fully started"
-             break
-         fi
-         sleep 1
-     done
-     info_message "qm was started: $(systemctl status qm | grep Active | cut -d ';' -f 2)"
+   while true; do
+      if podman exec qm /usr/bin/systemctl is-active ffi-qm -q; then
+         info_message "ffi-qm container inside qm is fully started"
+         break
+      fi
+      sleep 1
+   done
+   info_message "qm was started: $(systemctl status qm | grep Active | cut -d ';' -f 2)"
+}
+
+# systemd can report ffi-qm Active before nested podman reliably accepts exec.
+ffi_qm_nested_ready() {
+   local wait_sec="${1:-60}"
+   if timeout "${wait_sec}" bash -c "until podman exec qm /usr/bin/podman exec ffi-qm true 2>/dev/null; do sleep 1; done"; then
+      info_message "ffi-qm nested podman exec is ready"
+   else
+      info_message "FAIL: ffi-qm nested exec not ready within ${wait_sec}s"
+      exit 1
+  fi
 }
