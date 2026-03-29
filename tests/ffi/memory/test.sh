@@ -15,10 +15,14 @@ exec_cmd "podman run -d --rm --replace -d --name ffi-asil \
 
 reload_config
 running_container_in_qm
+ffi_qm_nested_ready
 
-podman exec qm podman exec ffi-qm ./QM/90_percent_memory_eat > /dev/null
-
-if [ $? -eq 137 ]; then
+# Temporarily disable -e to capture exit status
+set +e
+podman exec qm podman exec ffi-qm ./QM/90_percent_memory_eat >/dev/null 2>&1
+memory_eat_exit=$?
+set -e
+if [ "${memory_eat_exit}" -eq 137 ]; then
     info_message "ffi-qm was killed by SIGKILL"
 fi
 exec_cmd "systemctl status qm --no-pager | grep \"qm.service: A process of this unit has been killed\""
