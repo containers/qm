@@ -92,7 +92,7 @@ reload_config
 
 #Stop QM bluechi-agent once bluechi-agent is up
 qm_node=$(bluechictl status | grep qm | cut -d'|' -f1)
-if timeout 30 sh -c "until bluechictl status $qm_node bluechi-agent.service >/dev/null; do sleep 5; done"; then
+if timeout 30 sh -c "until bluechictl status $qm_node bluechi-agent.service >/dev/null; do sleep ${WAIT_BLUECHI_AGENT_CONNECT}; done"; then
     info_message "PASS: bluechi-agent.service is online on $qm_node.";
     exec_cmd 'podman exec -it qm sh -c "systemctl stop bluechi-agent"'
 fi
