@@ -1,5 +1,5 @@
 #!/bin/bash -uxv
-# shellcheck disable=SC1090,SC1091,SC2317,SC2155
+# shellcheck disable=SC1090,SC1091,SC2317,SC2155,SC2034
 #
 # Unit tests for userns script functions
 # Tests each function in isolation with mock data to avoid system modifications
@@ -16,6 +16,8 @@ TEST_DIR=""
 MOCK_ROOT_DIR=""
 MOCK_SYSUSERS_DIR=""
 MOCK_DROPIN_DIR=""
+SYSUSERS_CONF="qm-sysusers.conf"
+QM_CONF="qm-user-namespaces.conf"
 TEST_PASSED=0
 TEST_FAILED=0
 
@@ -30,13 +32,18 @@ SYSTEMD_SYSUSERS_CALLED=0
 setup_test_env() {
     info_message "Setting up test environment"
     TEST_DIR=$(mktemp -d -t userns-test.XXXXXX)
-    MOCK_ROOT_DIR="${TEST_DIR}/etc"
-    MOCK_SYSUSERS_DIR="${TEST_DIR}/sysusers.d"
-    MOCK_DROPIN_DIR="${TEST_DIR}/dropin"
+    MOCK_ROOT_DIR="${TEST_DIR}"
+    MOCK_QM_ROOT_DIR="${MOCK_ROOT_DIR}/qm/rootfs"
+    MOCK_SYSUSERS_DIR="${MOCK_ROOT_DIR}/etc/sysusers.d"
+    MOCK_DROPIN_DIR="${TEST_DIR}/etc/containers/systemd/qm.container.d"
 
     mkdir -p "${MOCK_ROOT_DIR}"
+    mkdir -p "${MOCK_QM_ROOT_DIR}"
     mkdir -p "${MOCK_SYSUSERS_DIR}"
     mkdir -p "${MOCK_DROPIN_DIR}"
+
+    mkdir -p "${MOCK_SYSUSERS_DIR}"
+    mkdir -p "${MOCK_QM_ROOT_DIR}/etc"
 
     info_message "Test directory created at ${TEST_DIR}"
 }
@@ -61,8 +68,7 @@ trap cleanup_test_env EXIT
 #   $1 - Path to output file
 #######################################
 create_mock_passwd() {
-    local output_file="$1"
-    cat > "${output_file}" << 'EOF'
+    cat > "${MOCK_QM_ROOT_DIR}/etc/passwd" << 'EOF'
 root:x:0:0:root:/root:/bin/bash
 daemon:x:1:1:daemon:/usr/sbin:/usr/sbin/nologin
 bin:x:2:2:bin:/bin:/usr/sbin/nologin
@@ -79,8 +85,7 @@ EOF
 #   $1 - Path to output file
 #######################################
 create_mock_group() {
-    local output_file="$1"
-    cat > "${output_file}" << 'EOF'
+    cat > "${MOCK_QM_ROOT_DIR}/etc/group" << 'EOF'
 root:x:0:
 daemon:x:1:
 bin:x:2:
@@ -142,7 +147,7 @@ systemd-sysusers() {
 #   0 if valid, 1 if invalid
 #######################################
 verify_sysusers_format() {
-    local config_file="$1"
+    local config_file="${1}"
 
     if [ ! -f "${config_file}" ]; then
         fail_message "Config file ${config_file} does not exist"
@@ -201,21 +206,20 @@ record_test_result() {
 test_generate_sysusers_conf_basic() {
     info_message "TEST: generate_sysusers_conf - basic functionality"
 
-    # Setup
-    local passwd_file="${MOCK_ROOT_DIR}/passwd"
-    local group_file="${MOCK_ROOT_DIR}/group"
-    local output_file="${MOCK_SYSUSERS_DIR}/test-output.conf"
-
-    create_mock_passwd "${passwd_file}"
-    create_mock_group "${group_file}"
-
     # Source the userns script to get the function
     source "${USERNS_SCRIPT}"
+    # overwrite the userns root and qm root dir
+    local ROOT_DIR="${MOCK_ROOT_DIR}"
+    local QM_ROOT_DIR="${MOCK_QM_ROOT_DIR}"
+    create_mock_passwd
+    create_mock_group
 
     # Execute
-    generate_sysusers_conf "${MOCK_ROOT_DIR}" "${output_file}" 1000000000
+    generate_sysusers_conf 1000000000
 
     # Verify
+    local output_file="${MOCK_SYSUSERS_DIR}/${SYSUSERS_CONF}"
+
     local result=0
     if ! verify_sysusers_format "${output_file}"; then
         result=1
@@ -249,22 +253,20 @@ test_generate_sysusers_conf_basic() {
 test_generate_sysusers_conf_custom_offset() {
     info_message "TEST: generate_sysusers_conf - custom offset"
 
-    # Setup
-    local passwd_file="${MOCK_ROOT_DIR}/passwd"
-    local group_file="${MOCK_ROOT_DIR}/group"
-    local output_file="${MOCK_SYSUSERS_DIR}/test-offset.conf"
-
-    create_mock_passwd "${passwd_file}"
-    create_mock_group "${group_file}"
-
-    # Source the userns script
+    # Source the userns script to get the function
     source "${USERNS_SCRIPT}"
+    # overwrite the userns root and qm root dir
+    local ROOT_DIR="${MOCK_ROOT_DIR}"
+    local QM_ROOT_DIR="${MOCK_QM_ROOT_DIR}"
+    create_mock_passwd
+    create_mock_group
 
     # Execute with different offset
     local custom_offset=5000000000
-    generate_sysusers_conf "${MOCK_ROOT_DIR}" "${output_file}" "${custom_offset}"
+    generate_sysusers_conf "${custom_offset}"
 
     # Verify
+    local output_file="${MOCK_SYSUSERS_DIR}/${SYSUSERS_CONF}"
     local result=0
 
     # Check that root user has custom offset applied
@@ -290,21 +292,19 @@ test_generate_sysusers_conf_custom_offset() {
 test_generate_sysusers_conf_gecos() {
     info_message "TEST: generate_sysusers_conf - GECOS preservation"
 
-    # Setup
-    local passwd_file="${MOCK_ROOT_DIR}/passwd"
-    local group_file="${MOCK_ROOT_DIR}/group"
-    local output_file="${MOCK_SYSUSERS_DIR}/test-gecos.conf"
-
-    create_mock_passwd "${passwd_file}"
-    create_mock_group "${group_file}"
-
-    # Source the userns script
+    # Source the userns script to get the function
     source "${USERNS_SCRIPT}"
+    # overwrite the userns root and qm root dir
+    local ROOT_DIR="${MOCK_ROOT_DIR}"
+    local QM_ROOT_DIR="${MOCK_QM_ROOT_DIR}"
+    create_mock_passwd
+    create_mock_group
 
     # Execute
-    generate_sysusers_conf "${MOCK_ROOT_DIR}" "${output_file}" 1000000000
+    generate_sysusers_conf 1000000000
 
     # Verify
+    local output_file="${MOCK_SYSUSERS_DIR}/${SYSUSERS_CONF}"
     local result=0
 
     # Check that GECOS field is preserved with "QM - " prefix
@@ -328,17 +328,17 @@ test_generate_sysusers_conf_gecos() {
 test_generate_qm_dropin_basic() {
     info_message "TEST: generate_qm_dropin - basic functionality"
 
-    # Setup
-    local dropin_file="${MOCK_DROPIN_DIR}/test-dropin.conf"
-    local test_user="qm_root"
-
     # Source the userns script
     source "${USERNS_SCRIPT}"
+    local ROOT_DIR="${MOCK_ROOT_DIR}"
+    local QM_ROOT_DIR="${MOCK_QM_ROOT_DIR}"
+    local test_user="qm_root"
 
     # Execute
-    generate_qm_dropin "${dropin_file}" "${test_user}"
+    generate_qm_dropin "${test_user}"
 
     # Verify
+    local dropin_file="${MOCK_DROPIN_DIR}/${QM_CONF}"
     local result=0
 
     if [ ! -f "${dropin_file}" ]; then
@@ -366,17 +366,17 @@ test_generate_qm_dropin_basic() {
 test_generate_qm_dropin_custom_user() {
     info_message "TEST: generate_qm_dropin - custom username"
 
-    # Setup
-    local dropin_file="${MOCK_DROPIN_DIR}/test-dropin-custom.conf"
-    local test_user="custom_user_123"
-
     # Source the userns script
     source "${USERNS_SCRIPT}"
+    local ROOT_DIR="${MOCK_ROOT_DIR}"
+    local QM_ROOT_DIR="${MOCK_QM_ROOT_DIR}"
+    local test_user="qm_root"
 
     # Execute
-    generate_qm_dropin "${dropin_file}" "${test_user}"
+    generate_qm_dropin "${test_user}"
 
     # Verify
+    local dropin_file="${MOCK_DROPIN_DIR}/${QM_CONF}"
     local result=0
 
     if ! grep -q "^SubUIDMap=${test_user}$" "${dropin_file}"; then

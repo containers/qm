@@ -11,45 +11,59 @@ EOF
 )
 
 # Default values for user namespace settings
-ROOT_DIR="/etc"
+ROOT_DIR="/"
+QM_ROOT_DIR="/usr/lib/qm/rootfs/"
+
 ID_OFFSET=1000000000
 ID_RANGE=1500000000
-SYSUSERS_OUTPUT_DIR="/etc/sysusers.d"
+
+SYSUSERS_OUTPUT_DIR="/etc/sysusers.d/"
 SYSUSERS_CONF_FILE="qm-sysusers.conf"
 QM_DROPIN_DIR="/etc/containers/systemd/qm.container.d"
 QM_DROPIN_FILE="qm-user-namespaces.conf"
 
 
 function generate_sysusers_conf() {
-    local root_dir="${1}"
-    local outfile="${2}"
-    local id_offset=$3
+    local id_offset=$1
 
-    echo "# Type        Name        ID      GECOS       Home directory      Shell" > "${outfile}"
+    # shellcheck disable=SC2155
+    local qm_etc_passwd_file="$(realpath -m "${QM_ROOT_DIR}/etc/passwd")"
+    # shellcheck disable=SC2155
+    local qm_etc_group_file="$(realpath -m "${QM_ROOT_DIR}/etc/group")"
+    # shellcheck disable=SC2155
+    local sysusers_conf_file="$(realpath -m "${ROOT_DIR}/${SYSUSERS_OUTPUT_DIR}/${SYSUSERS_CONF_FILE}")"
+
+    echo "# Type        Name        ID      GECOS       Home directory      Shell" > "${sysusers_conf_file}"
     # shellcheck disable=SC2034
     while IFS=: read -r username password uid gid gecos home shell; do
         new_uid=$((id_offset+uid))
         new_gid=$((id_offset+gid))
         echo "u     qm_${username}      ${new_uid}:${new_gid}       \"QM - ${gecos}\""
-    done < "${root_dir}/passwd" >> "${outfile}"
+    done < "${qm_etc_passwd_file}" >> "${sysusers_conf_file}"
 
     # shellcheck disable=SC2034
     while IFS=: read -r group password gid members; do
         new_gid=$((id_offset+gid))
         echo "g     qm_${group}     ${new_gid}"
-    done < "${root_dir}/group" >> "${outfile}"
+    done < "${qm_etc_group_file}" >> "${sysusers_conf_file}"
+
+    echo "Created '${sysusers_conf_file}'"
 }
 
 function generate_qm_dropin() {
-    local file_path=$1
-    local user=$2
+    # shellcheck disable=SC2155
+    local file_path="$(realpath -m "${ROOT_DIR}/${QM_DROPIN_DIR}/${QM_DROPIN_FILE}")"
+    local user=$1
 
     cat > "${file_path}" <<EOF
+[Container]
 # Run the QM container in the user namespace qm using the map with name in the /etc/subgid file.
 # It also maps to the QM user created via systemd sysusers.
 SubUIDMap=${user}
 SubGIDMap=${user}
 EOF
+
+    echo "Created '${file_path}'"
 }
 
 function add_subid_entries() {
@@ -58,11 +72,16 @@ function add_subid_entries() {
     local id_range_end=$((id_range_start+id_range))
     local user=$3
 
-    if ! grep -q "^${user}:" /etc/subuid 2>/dev/null; then
-        usermod --add-subuids "${id_range_start}-${id_range_end}" "${user}"
+    # shellcheck disable=SC2155
+    local etc_subuid_file="$(realpath -m "${ROOT_DIR}/etc/subuid")"
+    # shellcheck disable=SC2155
+    local etc_subgid_file="$(realpath -m "${ROOT_DIR}/etc/subgid")"
+
+    if ! grep -q "^${user}:" "${etc_subuid_file}" 2>/dev/null; then
+        usermod --root="${ROOT_DIR}" --add-subuids "${id_range_start}-${id_range_end}" "${user}"
     fi
-    if ! grep -q "^${user}:" /etc/subgid 2>/dev/null; then
-        usermod --add-subgids "${id_range_start}-${id_range_end}" "${user}"
+    if ! grep -q "^${user}:" "${etc_subgid_file}" 2>/dev/null; then
+        usermod --root="${ROOT_DIR}" --add-subgids "${id_range_start}-${id_range_end}" "${user}"
     fi
 }
 
@@ -75,8 +94,9 @@ Usage:
     $(basename "${0}") enable [options]
 
 Available options:
-    --root-dir      The root directory where passwd and group are located. Default: '${ROOT_DIR}'.
-    --sysusers-dir  Directory the '${SYSUSERS_CONF_FILE}' is being placed. Default: '${SYSUSERS_OUTPUT_DIR}'.
+    --root-dir      The root filesystem of the host. Default: '${ROOT_DIR}'.
+    --qm-root-dir   The root filesystem of QM. Default: '${QM_ROOT_DIR}'.
+    --sysusers-dir  Directory inside the ${ROOT_DIR} where the '${SYSUSERS_CONF_FILE}' is being placed. Default: '${SYSUSERS_OUTPUT_DIR}'.
     --id-offset     UID/GID offset to be applied. Default: '${ID_OFFSET}'.
     --id-range      Number of UIDs/GIDs reserved for the QM user namespace. Default: '${ID_RANGE}'.
 
@@ -89,6 +109,10 @@ EOF
         case $1 in
             --root-dir)
                 ROOT_DIR="${2}"
+                shift 2
+                ;;
+            --qm-root-dir)
+                QM_ROOT_DIR="${2}"
                 shift 2
                 ;;
             --sysusers-dir)
@@ -124,26 +148,28 @@ EOF
 
     # Generate sysusers configuration and trigger systemd-sysusers so that
     # users are created (required by adding subids)
-    local SYSUSERS_CONF_PATH="${SYSUSERS_OUTPUT_DIR}/${SYSUSERS_CONF_FILE}"
-    generate_sysusers_conf "${ROOT_DIR}" "${SYSUSERS_CONF_PATH}" "${ID_OFFSET}"
-    echo "Created '${SYSUSERS_CONF_PATH}'"
-    systemd-sysusers
+    generate_sysusers_conf "${ID_OFFSET}"
+    systemd-sysusers --root="${ROOT_DIR}"
 
     # Add subuids/subgids
     # A root user is always expected, so the corresponding qm user is qm_root
     add_subid_entries "${ID_OFFSET}" "${ID_RANGE}" "qm_root"
 
     # Add SubUIDMap= and SubGIDMap= to QM via drop-in
-    local QM_DROPIN_PATH="${QM_DROPIN_DIR}/${QM_DROPIN_FILE}"
-    generate_qm_dropin "${QM_DROPIN_PATH}" "qm_root"
-    echo "Created '${QM_DROPIN_PATH}'"
+    generate_qm_dropin "qm_root"
 }
 
 
 function remove_subid_entries() {
     local user=$1
-    sed -i "/^${user}:/d" /etc/subuid
-    sed -i "/^${user}:/d" /etc/subgid
+
+    # shellcheck disable=SC2155
+    local etc_subuid_file="$(realpath -m "${ROOT_DIR}/etc/subuid")"
+    # shellcheck disable=SC2155
+    local etc_subgid_file="$(realpath -m "${ROOT_DIR}/etc/subgid")"
+
+    sed -i "/^${user}:/d" "${etc_subuid_file}"
+    sed -i "/^${user}:/d" "${etc_subgid_file}"
 }
 
 
@@ -156,7 +182,9 @@ Usage:
     $(basename "${0}") disable [options]
 
 Available options:
-    --sysusers-dir  Directory the '${SYSUSERS_CONF_FILE}' is located. Default: '${SYSUSERS_OUTPUT_DIR}'.
+    --root-dir      The root filesystem of the host. Default: '${ROOT_DIR}'.
+    --qm-root-dir   The root filesystem of QM. Default: '${QM_ROOT_DIR}'.
+    --sysusers-dir  Directory inside the ${ROOT_DIR} where the '${SYSUSERS_CONF_FILE}' is located. Default: '${SYSUSERS_OUTPUT_DIR}'.
 
 Flags:
     -h, --help  Print help
@@ -165,6 +193,14 @@ EOF
 
     while [[ $# -gt 0 ]]; do
         case $1 in
+            --root-dir)
+                ROOT_DIR="${2}"
+                shift 2
+                ;;
+            --qm-root-dir)
+                QM_ROOT_DIR="${2}"
+                shift 2
+                ;;
             --sysusers-dir)
                 SYSUSERS_OUTPUT_DIR="${2}"
                 shift 2
@@ -189,8 +225,8 @@ EOF
     done
 
     remove_subid_entries "qm_root"
-    rm -f "${QM_DROPIN_DIR}/${QM_DROPIN_FILE}"
-    rm -f "${SYSUSERS_OUTPUT_DIR}/${SYSUSERS_CONF_FILE}"
+    rm -f "$(realpath -m "${ROOT_DIR}/${QM_DROPIN_DIR}/${QM_DROPIN_FILE}")"
+    rm -f "$(realpath -m "${ROOT_DIR}/${SYSUSERS_OUTPUT_DIR}/${SYSUSERS_CONF_FILE}")"
 }
 
 
