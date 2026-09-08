@@ -93,12 +93,14 @@ use container tools like Podman.
 ### qmctl ###
 ###################
 
-%package ctl
+%package -n qmctl
 Summary:	QM service controller command line tool
 Requires:	%{name} = %{version}-%{release}
 Requires:	python3 >= 3.9
+Provides:	%{name}-ctl = %{version}-%{release}
+Obsoletes:	%{name}-ctl < %{version}-%{release}
 
-%description ctl
+%description -n qmctl
 QM is a containerized environment for running Quality Management software.
 This package contains the service controller command line tool for managing
 and interacting with QM containers and services.
@@ -182,7 +184,7 @@ fi
 %ghost %dir %{_installscriptdir}/rootfs
 %ghost %{_installscriptdir}/rootfs/*
 
-%files ctl
+%files -n qmctl
 %doc README.md
 %license LICENSE
 %{_bindir}/qmctl
