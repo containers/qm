@@ -12,7 +12,7 @@ reload_config
 running_container_in_qm
 
 # Get numbers of sysctl permission denied
-sysctl_num=$(podman exec qm /usr/bin/podman exec ffi-qm ./setsysctl 2>&1 | grep -c "sysctl: permission denied on key")
+sysctl_num=$(qmc exec /usr/bin/podman exec ffi-qm ./setsysctl 2>&1 | grep -c "sysctl: permission denied on key")
 
 # We execute 'X' sysctl call(s) inside a nested container running in a QM environment
 # to determine if changes are allowed, which should be denied for:

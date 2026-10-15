@@ -4,7 +4,7 @@ description: |
     This tests confirms that /run/systemd/journal/socket have different inode number inside
     and outside of the QM partition.
     The test gets inode number of /run/systemd/journal/socket inside and outside of the QM partition
-    using `stat --printf='%i' /run/systemd/journal/socket` and `podman exec qm stat --printf='%i' /run/systemd/journal/socket`
+    using `stat --printf='%i' /run/systemd/journal/socket` and `qmc exec stat --printf='%i' /run/systemd/journal/socket`
     respectively and checks to ensure these are different values.
     Test inputs:
         None

@@ -55,35 +55,20 @@ run_test_containers(){
     for ((i=1;i<=NUMBER_OF_NODES;i++)); do
         #Reload bluechi-testers in qm
         info_message "run_test_containers(): bluechi-tester-${i} reload & restart"
-        exec_cmd "podman exec qm systemctl daemon-reload"
-        exec_cmd "podman exec qm systemctl restart bluechi-tester-${i}"
+        exec_cmd "qmc exec systemctl daemon-reload"
+        exec_cmd "qmc exec systemctl restart bluechi-tester-${i}"
     done
 }
 
 create_bluechi_socket_volume_mount_drop_in_file(){
     info_message "Creating BlueChi socket volume mount drop-in file..."
-  mkdir -p /etc/containers/systemd/qm.container.d/
-  cat > /etc/containers/systemd/qm.container.d/bluechi-socket.conf << 'EOF'
-[Container]
-Volume=/run/bluechi/bluechi.sock:/run/bluechi.sock
+  mkdir -p /etc/qmc.conf.d/
+  cat > /etc/qmc.conf.d/90-ffi-bluechi-socket.conf << 'EOF'
+{"mounts": [{"source": "/run/bluechi/bluechi.sock", "destination": "/run/bluechi.sock"}]}
 EOF
   info_message "BlueChi socket volume mount drop-in file created successfully"
 }
 
-# Extract the Network mode from qm.service
-get_qm_network_mode(){
-    qm_config_file="/run/systemd/generator/qm.service"
-
-    # Check if the configuration file exists
-    if [ ! -f "$qm_config_file" ]; then
-        echo "Configuration file not found: $qm_config_file"
-        exit 1
-    fi
-
-    # Extract the Network using awk
-    qm_network_mode=$(awk -F'=' '/Network=/ { print $2 }' "$qm_config_file")
-    echo "${qm_network_mode}"
-}
 
 trap disk_cleanup EXIT
 prepare_test
@@ -94,7 +79,7 @@ reload_config
 qm_node=$(bluechictl status | grep qm | cut -d'|' -f1)
 if timeout 30 sh -c "until bluechictl status $qm_node bluechi-agent.service >/dev/null; do sleep 5; done"; then
     info_message "PASS: bluechi-agent.service is online on $qm_node.";
-    exec_cmd 'podman exec -it qm sh -c "systemctl stop bluechi-agent"'
+    exec_cmd 'qmc exec sh -c "systemctl stop bluechi-agent"'
 fi
 
 #Prepare quadlet files for testing containers
@@ -104,7 +89,7 @@ run_test_containers
 
 #Check both tests services are on
 for ((i=1;i<=NUMBER_OF_NODES;i++)); do
-    if [ "$(podman exec qm systemctl is-active bluechi-tester-"${i}")" != "active" ]; then
+    if [ "$(qmc exec systemctl is-active bluechi-tester-"${i}")" != "active" ]; then
         info_message "test() bluechi-tester-${i} is not active"
         exit 1
     fi

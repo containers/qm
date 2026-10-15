@@ -5,8 +5,8 @@
 
 check_usr_share_qm_not_accessible(){
     # Check /usr/share/qm is not accessible in the QM partition
-    if podman exec qm test -d /usr/share/qm; then
-        info_message "Found /usr/share/qm in the QM partition: $(podman exec -t qm ls -l /usr/share/qm)"
+    if qmc exec test -d /usr/share/qm; then
+        info_message "Found /usr/share/qm in the QM partition: $(qmc exec ls -l /usr/share/qm)"
         info_message "FAIL: check_usr_share_qm_not_accessible: Check for /usr/share/qm in the QM partition failed, it should not be accessible."
         exit 1
     else
