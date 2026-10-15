@@ -20,6 +20,7 @@ typedef struct {
 	uint8_t veth_mac[6];
 	uint32_t fallback_mtu; /* Used when no default IPv4 route exists. */
 	unsigned int rp_filter;
+	uint32_t ping_gid; /* Host GID of payload root, for ping_group_range. */
 	bool disable_ipv6;
 	const char *nft_table;
 } NetworkOptions;

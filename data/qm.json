@@ -248,8 +248,7 @@
   },
   "linux": {
     "sysctl": {
-      "fs.mqueue.queues_max": "4",
-      "net.ipv4.ping_group_range": "0 0"
+      "fs.mqueue.queues_max": "4"
     },
     "resources": {
       "devices": [

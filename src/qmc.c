@@ -88,9 +88,10 @@ static void crun_prefix(StrvBuilder *argv, const char *executable, const char *r
 	strv_builder_add(argv, root);
 }
 
-static NetworkOptions get_network_options(const Config *configuration)
+static NetworkOptions get_network_options(const Config *configuration,
+					  json_object *config)
 {
-	return (NetworkOptions){
+	NetworkOptions options = {
 		.runtime_dir = opt_runtime_dir,
 		.veth = "qm-veth",
 		.interface = "eth0",
@@ -104,6 +105,16 @@ static NetworkOptions get_network_options(const Config *configuration)
 		.disable_ipv6 = true,
 		.nft_table = "qm_launch",
 	};
+	json_object *mappings = js_get(js_get(config, "linux"), "gidMappings");
+	if (mappings) {
+		for (size_t i = 0; i < json_object_array_length(mappings); i++) {
+			json_object *mapping = json_object_array_get_idx(mappings, i);
+			if (json_object_get_int64(js_get(mapping, "containerID")) == 0)
+				options.ping_gid =
+					json_object_get_int64(js_get(mapping, "hostID"));
+		}
+	}
+	return options;
 }
 
 static void save_state(const State *state, const char *runtime_dir, bool replace)
@@ -294,7 +305,7 @@ static int setup(const Config *configuration, json_object *config, bool *state_c
 		.netns = xstrdup(netns),
 	};
 	/* Check for conflicts before replacing an earlier cleanup journal. */
-	const NetworkOptions network = get_network_options(configuration);
+	const NetworkOptions network = get_network_options(configuration, config);
 	debug("Checking network resource ownership");
 	state->network = network_prepare(&network);
 	if (!state->network) {
