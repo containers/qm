@@ -11,7 +11,7 @@ reload_config
 
 running_container_in_qm
 
-return_from_sched_setattr=$(podman exec -it qm /usr/bin/podman exec -it ffi-qm ./QM/execute_sched_setattr)
+return_from_sched_setattr=$(qmc exec /usr/bin/podman exec -it ffi-qm ./QM/execute_sched_setattr)
 
 # shellcheck disable=SC2076
 if [[ "${return_from_sched_setattr}" =~ "${expected_result}" ]]; then

@@ -7,9 +7,9 @@ Description:
 
 Input:
     This test set executes the following commands respectively:
-        `podman exec qm test -c /dev/console`
-        `podman exec qm test -d /dev/disk`
-        `podman exec qm test -c /dev/kmsg`
+        `qmc exec test -c /dev/console`
+        `qmc exec test -d /dev/disk`
+        `qmc exec test -c /dev/kmsg`
 
 Expected Result:
     out: [ INFO  ] PASS: check_dev_console_not_available: As expected, /dev/console is not available in the QM partition.
