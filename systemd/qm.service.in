@@ -73,6 +73,7 @@ RuntimeDirectoryPreserve=yes
 #   msg_max is the messages per queue and msgsize_max is the message size.
 #   The final factor of two leaves headroom for FFI workloads.
 # Container settings and default verbosity come from layered qmc.conf files.
+ExecStartPre=@DATADIR@/check-config-migration
 ExecStart=@BINDIR@/qmc launch
 # Delete surviving crun state, tear down networking and unpin the namespace,
 # including when startup fails.

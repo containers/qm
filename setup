@@ -439,7 +439,7 @@ case "$1" in
 
     if [ "$SYSTEMCTL_SKIP" == "N" ]; then
 	    systemctl daemon-reload
-        systemctl start qm.service || {
+        systemctl enable --now qm.service || {
             logger "ERROR" "'systemctl start qm.service' has failed, see details below";
             set +x
             logger "DEBUG" "$(journalctl --no-pager -xu qm.service)"
@@ -453,6 +453,12 @@ case "$1" in
             set -x
             exit 1
         fi
+    fi
+    if [ "$SYSTEMCTL_SKIP" == "Y" ]; then
+        # Enabling is an offline filesystem operation; no system manager needed.
+        local wants_dir="${SETUP_SERVICE_DIR%/qm.service.d}/default.target.wants"
+        mkdir -p "$wants_dir"
+        ln -sfn /usr/lib/systemd/system/qm.service "$wants_dir/qm.service"
     fi
     logger "SUCCESS" "Setup complete";
 	;;

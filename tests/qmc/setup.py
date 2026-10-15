@@ -80,6 +80,9 @@ findmnt() { :; }
         result = self.run_functions('root_check() { :; }; install() { write_qmc_configuration; }; main --skip-systemctl')
         self.assertEqual(result.returncode, 0, result.stderr)
         self.assertTrue((self.root / "config/50-qm-setup.conf").exists())
+        enabled = self.root / "service/default.target.wants/qm.service"
+        self.assertTrue(enabled.is_symlink())
+        self.assertEqual(os.readlink(enabled), "/usr/lib/systemd/system/qm.service")
 
 
 if __name__ == "__main__":
