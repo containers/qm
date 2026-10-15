@@ -32,7 +32,6 @@ install_man('tools/qmctl/qmctl.1')
 install_data('qm.if', install_dir: get_option('datadir') / 'selinux/devel/include/services')
 install_data('qm_contexts', install_dir: data_dir, rename: 'contexts')
 install_data('containers.conf', install_dir: data_dir)
-install_data('qm.container', install_dir: get_option('datadir') / 'containers/systemd')
 install_data('setup', 'userns', 'create-seccomp-rules', 'tools/comment-tz-local',
   'tools/qm-rootfs', 'tools/qm-storage-settings', 'tools/qm-is-ostree',
   install_dir: data_dir, install_mode: 'rwxr-xr-x')
@@ -49,6 +48,7 @@ build_config.set_quoted('QM_CONFIG_DIR', get_option('prefix') / get_option('sysc
 configure_file(output: 'config.h', configuration: build_config)
 subdir('src')
 subdir('data')
+subdir('systemd')
 
 if get_option('tests')
   subdir('tests/qmc')

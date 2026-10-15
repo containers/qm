@@ -1,0 +1,19 @@
+# SPDX-License-Identifier: GPL-2.0-only
+# Copyright (C) 2026 Alexander Larsson
+# See LICENSE for the full license text.
+
+[Unit]
+Description=Watch QM host DNS and hosts configuration
+# Install watches before QM reads the host files during startup.
+DefaultDependencies=no
+BindsTo=qm.service
+PartOf=qm.service
+Before=qm.service
+Conflicts=shutdown.target
+Before=shutdown.target
+
+[Path]
+PathModified=/etc/resolv.conf
+PathModified=/etc/hosts
+# The launcher prefers this upstream file when systemd-resolved supplies it.
+PathModified=/run/systemd/resolve/resolv.conf
