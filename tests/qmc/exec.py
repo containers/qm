@@ -7,6 +7,7 @@
 import json
 import os
 import pathlib
+import re
 import subprocess
 import sys
 import tempfile
@@ -76,27 +77,33 @@ class ExecTests(unittest.TestCase):
             "--runtime-dir",
             "relative",
             "--help",
+            "-i",
+            "-t",
         ]
-        result = subprocess.run(
-            self.command("exec", *arguments),
-            input="piped input\n",
-            text=True,
-            capture_output=True,
-        )
-        self.assertEqual(result.returncode, 23, result.stderr)
-        output = json.loads(result.stdout)
-        self.assertEqual(
-            output["argv"],
-            [
-                "--root",
-                str(self.runtime / "crun"),
-                "--cgroup-manager=cgroupfs",
-                "exec",
-                "qm",
-                *arguments,
-            ],
-        )
-        self.assertEqual(output["stdin"], "piped input\n")
+        for options in ([], ["-i"], ["--interactive"]):
+            with self.subTest(options=options):
+                result = subprocess.run(
+                    self.command("exec", *options, *arguments),
+                    input="piped input\n",
+                    text=True,
+                    capture_output=True,
+                    timeout=5,
+                )
+                self.assertEqual(result.returncode, 23, result.stderr)
+                output = json.loads(result.stdout)
+                self.assertEqual(
+                    output["argv"],
+                    [
+                        "--root",
+                        str(self.runtime / "crun"),
+                        "--cgroup-manager=cgroupfs",
+                        "exec",
+                        "qm",
+                        *arguments,
+                    ],
+                )
+                expected = "piped input\n" if options else ""
+                self.assertEqual(output["stdin"], expected)
         for path in self.runtime.rglob("*"):
             if path.is_file():
                 self.assertEqual(path.read_text(), "existing runtime state\n")
@@ -106,21 +113,30 @@ class ExecTests(unittest.TestCase):
     )
     def test_exec_terminal(self):
         """Check exec terminal."""
-        master, slave = os.openpty()
-        self.addCleanup(os.close, master)
-        try:
-            result = subprocess.run(
-                self.command("exec", "/bin/bash"),
-                stdin=slave,
-                stdout=slave,
-                stderr=subprocess.PIPE,
-            )
-        finally:
-            os.close(slave)
-        self.assertEqual(result.returncode, 23, result.stderr)
-        output = json.loads(os.read(master, 4096))
-        self.assertEqual(output["argv"][-3:], ["--tty", "qm", "/bin/bash"])
-        self.assertIsNone(output["stdin"])
+        for options in ([], ["-t"], ["--tty"], ["-it"], ["-ti"]):
+            with self.subTest(options=options):
+                master, slave = os.openpty()
+                try:
+                    result = subprocess.run(
+                        self.command("exec", *options, "/bin/bash"),
+                        stdin=slave,
+                        stdout=slave,
+                        stderr=subprocess.PIPE,
+                        timeout=5,
+                    )
+                    output = json.loads(os.read(master, 4096))
+                finally:
+                    os.close(master)
+                    os.close(slave)
+                self.assertEqual(result.returncode, 23, result.stderr)
+                if options:
+                    self.assertEqual(
+                        output["argv"][-3:], ["--tty", "qm", "/bin/bash"]
+                    )
+                    self.assertIsNone(output["stdin"])
+                else:
+                    self.assertNotIn("--tty", output["argv"])
+                    self.assertEqual(output["stdin"], "")
 
     @unittest.skipUnless(
         PRIVATE_CRUN, "requires the smoke test's private crun mount"
@@ -209,7 +225,7 @@ class ExecTests(unittest.TestCase):
         """Check command help."""
         common = {"--runtime-dir", "--verbose", "--help"}
         commands = {
-            "exec": set(),
+            "exec": {"--interactive", "--tty"},
             "inspect": {"--config", "--oci", "--field"},
             "signal": {"--clear"},
             "launch": {"--config", "--prepare-only"},
@@ -229,9 +245,9 @@ class ExecTests(unittest.TestCase):
                 )
                 self.assertEqual(result.stderr, "")
                 listed = {
-                    line.split()[0]
+                    match[1]
                     for line in result.stdout.splitlines()
-                    if line.startswith("  --")
+                    if (match := re.match(r"  (?:-[it], )?(--[a-z-]+)", line))
                 }
                 self.assertEqual(listed, common | options)
                 self.assertEqual(
@@ -251,6 +267,8 @@ class ExecTests(unittest.TestCase):
             "update-resolv-conf": ["--prepare-only", "--oci", "--field"],
         }
         for command, options in cases.items():
+            if command != "exec":
+                options.extend(["--interactive", "--tty"])
             for option in options:
                 with self.subTest(command=command, option=option):
                     result = subprocess.run(

@@ -7,6 +7,7 @@
 #include "config.h"
 #include "qm-config.h"
 #include "qm-console.h"
+#include "qm-exec.h"
 #include "qm-network.h"
 #include "qm-oci-config.h"
 #include "qm-seccomp.h"
@@ -61,6 +62,8 @@ static bool opt_inspect_oci;
 static const char *opt_inspect_field;
 static const char *opt_signal_name;
 static bool opt_clear_signal;
+static bool opt_interactive;
+static bool opt_tty;
 static char **opt_exec_argv; /* Borrowed from main's argv, NULL-terminated. */
 
 static void debug(const char *format, ...) __attribute__((format(printf, 1, 2)));
@@ -420,7 +423,7 @@ static int exec_in_container(void)
 	crun_prefix(&argv, CRUN, crun_state);
 	strv_builder_add(&argv, "--cgroup-manager=cgroupfs");
 	strv_builder_add(&argv, "exec");
-	if (isatty(STDIN_FILENO) && isatty(STDOUT_FILENO))
+	if (opt_tty)
 		strv_builder_add(&argv, "--tty");
 	strv_builder_add(&argv, QM_CONTAINER_ID);
 	for (size_t i = 0; opt_exec_argv[i]; i++)
@@ -428,6 +431,9 @@ static int exec_in_container(void)
 
 	debug("Executing %s in container %s with %s", opt_exec_argv[0], QM_CONTAINER_ID,
 	      CRUN);
+	if (!opt_tty)
+		return exec_with_stdio(argv.strv, opt_interactive);
+
 	execv(CRUN, argv.strv);
 	warn("exec %s", CRUN);
 
@@ -962,7 +968,7 @@ static int inspect(const Config *configuration)
 			found = json_pointer_get(object, opt_inspect_field, &value) == 0;
 		else
 			found = json_object_object_get_ex(object, opt_inspect_field,
-								  &value);
+							  &value);
 		if (!found)
 			errx(1, "unknown inspection field: %s", opt_inspect_field);
 	}
@@ -994,6 +1000,8 @@ enum {
 	OPTION_FIELD = 1 << 5,
 	OPTION_HELP = 1 << 6,
 	OPTION_CLEAR = 1 << 7,
+	OPTION_INTERACTIVE = 1 << 8,
+	OPTION_TTY = 1 << 9,
 
 	COMMON_OPTIONS = OPTION_RUNTIME_DIR | OPTION_VERBOSE | OPTION_HELP,
 };
@@ -1028,6 +1036,12 @@ static const OptionInfo options[] = {
 	{{"clear", no_argument, NULL, OPTION_CLEAR},
 	 NULL,
 	 "Clear a previously set signal"},
+	{{"interactive", no_argument, NULL, OPTION_INTERACTIVE},
+	 NULL,
+	 "Forward standard input (default: /dev/null)"},
+	{{"tty", no_argument, NULL, OPTION_TTY},
+	 NULL,
+	 "Allocate a terminal (implies --interactive)"},
 };
 
 typedef struct {
@@ -1045,7 +1059,7 @@ static const CommandInfo commands[] = {
 		.name = "exec",
 		.arguments = " [--] COMMAND [ARG...]",
 		.description = "Run a command in the running container",
-		.options = COMMON_OPTIONS,
+		.options = COMMON_OPTIONS | OPTION_INTERACTIVE | OPTION_TTY,
 	},
 	{
 		.command = COMMAND_INSPECT,
@@ -1111,9 +1125,15 @@ static void command_usage(FILE *output, const CommandInfo *command)
 		if (!(command->options & option->option.val))
 			continue;
 
-		autofree char *name = xasprintf("--%s%s%s", option->option.name,
-						option->argument ? " " : "",
-						option->argument ? option->argument : "");
+		const char *short_option = "";
+		if (option->option.val == OPTION_INTERACTIVE)
+			short_option = "-i, ";
+		else if (option->option.val == OPTION_TTY)
+			short_option = "-t, ";
+		autofree char *name =
+			xasprintf("%s--%s%s%s", short_option, option->option.name,
+				  option->argument ? " " : "",
+				  option->argument ? option->argument : "");
 		fprintf(output, "  %-22s%s\n", name, option->description);
 	}
 
@@ -1148,7 +1168,9 @@ static void parse_command_options(const CommandInfo *command, int argc, char **a
 	 */
 	optind = 1;
 	int option;
-	while ((option = getopt_long(argc, argv, "+", long_options, NULL)) != -1) {
+	const char *short_options = command->command == COMMAND_EXEC ? "+it" : "+";
+	while ((option = getopt_long(argc, argv, short_options, long_options, NULL)) !=
+	       -1) {
 		switch (option) {
 		case OPTION_CONFIG:
 			opt_config_file = optarg;
@@ -1170,6 +1192,15 @@ static void parse_command_options(const CommandInfo *command, int argc, char **a
 			break;
 		case OPTION_CLEAR:
 			opt_clear_signal = true;
+			break;
+		case 'i':
+		case OPTION_INTERACTIVE:
+			opt_interactive = true;
+			break;
+		case 't':
+		case OPTION_TTY:
+			opt_tty = true;
+			opt_interactive = true;
 			break;
 		case OPTION_HELP:
 			command_usage(stdout, command);

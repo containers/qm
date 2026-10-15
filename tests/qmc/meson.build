@@ -33,3 +33,7 @@ test('utils', utils_test)
 
 test('setup', python, args: [files('setup.py'), qmc])
 test('userns', python, args: [files('../userns/test.py')])
+
+stdio_test = executable('test-exec-stdio', ['exec-stdio.c', '../../src/qm-exec.c', '../../src/qm-utils.c'],
+  include_directories: qmc_includes, dependencies: dependency('json-c'))
+test('stdio', python, args: [files('stdio.py'), stdio_test])
