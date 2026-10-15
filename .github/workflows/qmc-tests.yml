@@ -7,7 +7,7 @@ jobs:
     steps:
       - uses: actions/checkout@v4
       - name: Install build dependencies
-        run: dnf -y --enablerepo=crb install gcc meson ninja-build make bzip2 golang-github-cpuguy83-md2man python3 json-c-devel libmnl-devel nftables-devel systemd-devel
+        run: dnf -y --enablerepo=crb install gcc meson ninja-build make bzip2 golang-github-cpuguy83-md2man python3 jq json-c-devel libmnl-devel nftables-devel systemd-devel
       - name: Build launcher and test fixtures
         run: |
           meson setup build --prefix=/usr

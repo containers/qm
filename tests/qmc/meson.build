@@ -30,3 +30,6 @@ dependencies: dependency('json-c'),
 link_args: ['-Wl,--wrap=open64', '-Wl,--wrap=read', '-Wl,--wrap=__read_chk',
   '-Wl,--wrap=write', '-Wl,--wrap=waitpid', '-Wl,--wrap=fork'])
 test('utils', utils_test)
+
+test('setup', python, args: [files('setup.py'), qmc])
+test('userns', python, args: [files('../userns/test.py')])
