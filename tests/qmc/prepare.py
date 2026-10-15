@@ -1693,6 +1693,18 @@ class PrepareTests(unittest.TestCase):
         result = self.prepare()
         self.assertEqual(result.returncode, 0, result.stderr)
         linux = self.generated()["linux"]
+        for mount in self.generated()["mounts"]:
+            if mount["destination"] in ("/etc", "/var", "/var/tmp"):
+                self.assertNotIn("idmap", mount["options"])
+            elif mount["destination"] in (
+                "/etc/hostname",
+                "/etc/hosts",
+                "/etc/resolv.conf",
+                "/run/.containerenv",
+                "/run/secrets",
+                "/run/host/qmc-signals",
+            ):
+                self.assertIn("idmap", mount["options"])
         self.assertIn({"type": "user"}, linux["namespaces"])
         self.assertEqual(
             linux["uidMappings"],

@@ -11,6 +11,7 @@
 #include "qm-oci-config.h"
 #include "qm-seccomp.h"
 #include "qm-state.h"
+#include "qm-userns.h"
 #include "qm-utils.h"
 
 #include <dirent.h>
@@ -681,6 +682,7 @@ static json_object *create_config(const Config *configuration)
 
 	autofree char *files = join_path(opt_runtime_dir, "files");
 	configure_mounts(config, files);
+	userns_configure_mounts(config, opt_runtime_dir);
 
 	debug("OCI configuration ready: hostname=%s rootfs=%s", configuration->hostname,
 	      js_string(js_get(config, "root"), "path"));
