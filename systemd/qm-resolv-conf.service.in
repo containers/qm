@@ -1,0 +1,22 @@
+# SPDX-License-Identifier: GPL-2.0-only
+# Copyright (C) 2026 Alexander Larsson
+# See LICENSE for the full license text.
+
+[Unit]
+Description=Update QM DNS and hosts configuration
+# Allow updates while the host is still starting its basic services.
+DefaultDependencies=no
+Requisite=qm.service
+PartOf=qm.service
+# Queue changes seen during startup until QM's bind-mounted files are ready.
+After=qm.service
+Conflicts=shutdown.target
+Before=shutdown.target
+
+[Service]
+Type=oneshot
+# Reuse the directory without removing qm.service's runtime files on exit.
+RuntimeDirectory=qm
+RuntimeDirectoryMode=0700
+RuntimeDirectoryPreserve=yes
+ExecStart=@BINDIR@/qmc update-resolv-conf
