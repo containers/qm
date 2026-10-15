@@ -33,17 +33,17 @@ Choose one of the following sub-packages and build using make.
 ```bash
 git clone git@github.com:containers/qm.git && cd qm
 
-Example of subpackages: kvm, qm-oci-hooks, ros2, text2speech, windowmanager
+Example of subpackages: kvm, qm-oci-hooks, ros2, text2speech, wayland, sound, video
 
-make TARGETS=input subpackages
+make TARGETS=video subpackages
 ls rpmbuild/RPMS/noarch/
-qm-0.6.7-1.fc40.noarch.rpm  qm_mount_bind_input-0.6.7-1.fc40.noarch.rpm
+qm-mount-bind-video-<version>-<release>.noarch.rpm
 ```
 
 ## Installing QM sub-packages
 
 ```bash
-$ sudo dnf install ./rpmbuild/RPMS/noarch/qm_mount_bind_input-0.6.7-1.fc40.noarch.rpm
+$ sudo dnf install ./rpmbuild/RPMS/noarch/qm-mount-bind-video-*.noarch.rpm
 <SNIP>
 Complete!
 ```
@@ -52,45 +52,45 @@ If QM is already running, restart or reload your QM container environment to app
 
 ```bash
 sudo systemctl daemon-reload
-sudo podman restart qm
+sudo systemctl restart qm.service
 ```
 
 ## Removing QM sub-packages
 
 ```bash
-sudo rpm -e qm_mount_bind_input
+sudo rpm -e qm-mount-bind-video
 ```
 
 ## Creating your own drop-in QM sub-package
 
 We recommend using the existing drop-in files as a guide and adapting them to your specific needs. However, here are the step-by-step instructions:
 
-1) Add a drop-in file to: `etc/containers/systemd/qm.container.d/qm_dropin_<subpackage>.conf>`
+1) Add a drop-in file to: `data/qmc.conf.d/60-qm-<subpackage>.conf` (JSON, installed under `/usr/share/qm/qmc.conf.d/`)
 2) Add your package as a sub-package to: `rpm/<subpackage_directory>/<subpackage>.spec`
 3) Add the makefile for the sub-package and any files required by the sub-package to: `subsystems/<subpackage_directory>`
 4) Test the sub-package build by running: `make clean && make TARGETS=<subpackage> subpackages`
 5) Install your sub-package using: `dnf install -y rpmbuild/RPMS/noarch/<subpackage>*.noarch.rpm`
-6) Restart podman container using: `sudo podman restart qm`
+6) Restart QM using: `sudo systemctl restart qm.service`
 7) Additionally, test it with and without enabling the sub-package using (by default it should be disabled but there are cases where it will be enabled by default if QM community decide):
 
 Example changing the spec and triggering the build via make (feel free to automate via sed, awk etc):
 
 ```bash
 # Use make file to run specific subpackage
-make TARGETS=windowmanager subpackages
+make TARGETS=wayland subpackages
 ```
 
 ## QM sub-package Video
 
-The video sub-package exposes `/dev/video0` (or many video devices required) to the container. This feature is useful for demonstrating how to share a camera from the host system into a container using Podman drop-in. To showcase this functionality, we provide the following demo:
+The video sub-package exposes `/dev/video0` (or many video devices required) to the container. This feature is useful for demonstrating how to share a camera from the host system into a container using a qmc device drop-in. To showcase this functionality, we provide the following demo:
 
 ### Building the video sub-package, installing, and restarting QM
 
 ```bash
 make TARGETS=video subpackages
-sudo dnf install ./rpmbuild/RPMS/noarch/qm-mount-bind-video-0.6.7-1.fc40.noarch.rpm
+sudo dnf install ./rpmbuild/RPMS/noarch/qm-mount-bind-video-*.noarch.rpm
 sudo systemctl daemon-reload
-sudo podman restart qm
+sudo systemctl restart qm.service
 ```
 
 This simulates a rear camera when the user shifts into reverse gear.
@@ -98,7 +98,7 @@ This simulates a rear camera when the user shifts into reverse gear.
 In this simulation, we created a systemd service that, every time it is started, captures a snapshot from the webcam, simulating the action of a rear camera. (Feel free to start and restart the service multiple times!)
 
 ```bash
-host> sudo podman exec -it qm bash
+host> sudo qmc exec bash
 
 bash-5.2# systemctl daemon-reload
 bash-5.2# systemctl start rear-camera
@@ -111,7 +111,7 @@ bash-5.2#
 ### Copy the screenshot to the host and view it
 
 ```bash
-host> sudo podman cp qm:/var/tmp/screenshot.jpg .
+host> sudo qmc exec cat /var/tmp/screenshot.jpg > screenshot.jpg
 ```
 
 Great job! Now imagine all the possibilities this opens up!
@@ -120,18 +120,18 @@ Great job! Now imagine all the possibilities this opens up!
 
 ### Step 1: Install the QM Mount Bind Sound Package
 
-To set up sound cards in a QM environment using Podman, follow the steps below:
-Run the following commands to install the `qm_mount_bind_sound` package and restart QM (if previously in use):
+To expose sound devices in QM, follow the steps below:
+Run the following commands to install the `qm-sound` package and restart QM (if previously in use):
 
 ```bash
 # Build and install the RPM for QM sound
 git clone https://github.com/containers/qm.git && cd qm
 make TARGETS=sound subpackages
-sudo dnf install -y rpmbuild/RPMS/noarch/qm_mount_bind_sound-0.6.7-1.fc40.noarch.rpm
+sudo dnf install -y rpmbuild/RPMS/noarch/qm-sound-*.noarch.rpm
 
 # Restart QM container (if already running)
 sudo systemctl daemon-reload
-sudo podman restart qm
+sudo systemctl restart qm.service
 ```
 
 ### Step 2: Identify Sound Cards
@@ -193,7 +193,7 @@ cat /proc/asound/cards | grep -A 1 '^ 2 '
 Inside QM, run the following command:
 
 ```bash
-podman exec -it qm bash
+qmc exec bash
 bash-# podman ps
 CONTAINER ID  IMAGE                           COMMAND         CREATED      STATUS      PORTS       NAMES
 76dacaa9a89e  quay.io/qm-images/audio:latest  sleep infinity  7 hours ago  Up 7 hours              systemd-audio
@@ -225,6 +225,9 @@ The `qm-oci-hooks` subpackage includes:
 - **wayland-client-devices**: Hook for GPU hardware acceleration access for Wayland client applications running as nested containers
 
 ### Supported Device Types
+
+The annotations below apply to application containers launched by Podman.
+Outer QM device access is configured separately through qmc JSON drop-ins.
 
 #### QM Device Manager
 
@@ -292,12 +295,20 @@ EOF
 #### Example 2: Multi-seat Wayland compositor with session devices
 
 ```bash
-# Create a dropin for QM container to enable multi-seat support
-mkdir -p /etc/containers/systemd/qm.container.d/
-cat > /etc/containers/systemd/qm.container.d/wayland-seat.conf << EOF
-[Container]
-Annotation=org.containers.qm.wayland.seat=seat0
+# Select the host seat and common input/render devices for outer QM.
+mkdir -p /etc/qmc.conf.d
+cat > /etc/qmc.conf.d/50-wayland-seat.conf <<'EOF'
+{
+  "devices": [
+    {"seat": "seat0", "optional": true},
+    {"source": "/dev/input/event[0-9]*", "optional": true},
+    {"source": "/dev/input/mice*", "optional": true},
+    {"source": "/dev/input/mouse[0-9]*", "optional": true},
+    {"source": "/dev/dri/render*", "optional": true}
+  ]
+}
 EOF
+systemctl restart qm.service
 
 # Create a Wayland compositor container that runs inside QM
 cat > /etc/qm/containers/systemd/wayland-compositor.container << EOF
@@ -462,10 +473,10 @@ git clone https://github.com/containers/qm.git && cd qm
 make TARGETS=ros2_rolling subpackages
 sudo dnf install rpmbuild/RPMS/noarch/qm_ros2_rolling-0.6.7-1.fc40.noarch.rpm  -y
 sudo systemctl daemon-reload
-sudo podman restart qm  # if you have qm already running
+sudo systemctl restart qm.service  # if you have qm already running
 
 Testing using talker and listener examples
-$host> sudo podman exec -it qm bash
+$host> sudo qmc exec bash
 QM> . /opt/ros/jazzy/setup.bash # always replace jazz with the image ROS distro
 QM> ros2 run demo_nodes_cpp talker &
 QM> ros2 run demo_nodes_cpp listener
@@ -503,20 +514,18 @@ sudo systemctl restart qm  # if you have qm already running
 Step 4: verify, configuration exist
 
 ```bash
-ls -ltr /etc/containers/systemd/qm.container.d/
-total 12
--rw-r--r--. 1 root root  34 Jan  1  1970 publish-port.conf
--rw-r--r--. 1 root root 139 Jul 21  2023 qm_dropin_mount_bind_kvm.conf
+cat /usr/share/qm/qmc.conf.d/60-qm-kvm.conf
+qmc inspect --field devices
 
  ls -ltr /etc/qm/containers/systemd/
 total 12
 -rw-r--r--. 1 root root  91 Jan  1  1970 nginx.container
 -rw-r--r--. 1 root root 188 Jul 21  2023 kvm.container
 
-[root@localhost ~]# podman exec  qm systemctl is-active kvm
+[root@localhost ~]# qmc exec systemctl is-active kvm
 active
 
-[root@localhost ~]# podman exec -it qm sh
+[root@localhost ~]# qmc exec sh
 sh-5.1# ssh fedora@localhost -p 2226
 [fedora@ibm-p8-kvm-03-guest-02 ~]$ grep ^NAME /etc/os-release
 NAME="Fedora Linux"

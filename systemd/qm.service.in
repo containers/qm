@@ -1,0 +1,102 @@
+# SPDX-License-Identifier: GPL-2.0-only
+# Copyright (C) 2026 Alexander Larsson
+# See LICENSE for the full license text.
+
+[Unit]
+Description=QM container
+# Start as soon as QM's prerequisites are ready, without waiting for basic.target.
+DefaultDependencies=no
+Wants=qm-resolv-conf.path
+RequiresMountsFor=/usr/lib/qm/rootfs /etc/qm /var/qm
+# Writable host trees, static device nodes and the host sysctl pass must be ready.
+# The sysctl pass is ordered after systemd-modules-load.service.
+After=systemd-remount-fs.service ostree-remount.service systemd-tmpfiles-setup-dev.service systemd-sysctl.service
+# Tmpfiles creates writable bind sources such as /var/qm/tmp.
+After=systemd-tmpfiles-setup.service
+# Restore shutdown ordering removed by DefaultDependencies=no.
+Conflicts=shutdown.target
+Before=shutdown.target
+
+[Service]
+# Override service settings with a systemd drop-in for qm.service.
+# See systemd.resource-control(5) for the resource controls below.
+# Crun forwards READY=1 from QM's systemd through the inherited NOTIFY_SOCKET.
+# The launcher aliases it in the runtime directory to avoid QM's own notify socket.
+Type=notify
+NotifyAccess=main
+
+# Delegate resource control to QM's nested container manager. Keep the launcher
+# in supervisor so crun can create the sibling payload cgroup for the container.
+Delegate=yes
+DelegateSubgroup=supervisor
+
+# Make QM a top-level cgroup, so its CPU weight is compared with user.slice and
+# system.slice. In another slice, it would only be compared with that slice's
+# other children.
+Slice=-.slice
+# Give QM idle CPU weight and a lower block I/O weight.
+CPUWeight=idle
+IOWeight=50
+# Allow systemd-oomd to act on this cgroup under swap pressure.
+ManagedOOMSwap=kill
+
+# No hard ceiling on memory usage; QM can use as much as the system allows.
+MemoryMax=infinity
+# No memory usage threshold at which MemoryHigh throttles the service.
+MemoryHigh=infinity
+# Prevent QM's processes from using swap.
+MemorySwapMax=0
+# Raise the OOM score of QM's processes, making them preferred kernel OOM victims.
+OOMScoreAdjust=500
+Restart=always
+RestartSec=5s
+SyslogIdentifier=%N
+
+# Forward an explicit TZ override. Vendor qmc.conf also binds host /etc/localtime.
+PassEnvironment=TZ
+
+# Keep launcher state private to the QM service.
+RuntimeDirectory=qm
+RuntimeDirectoryMode=0700
+# Retain the cleanup journal if cleanup fails; startup retries it.
+RuntimeDirectoryPreserve=yes
+
+# Container policy is defined in qm.json:
+# - Grant the captured capability set, excluding CAP_SYS_BOOT and CAP_SYS_RESOURCE.
+#   Broad capabilities allow nested workloads but reduce container isolation.
+# - Disable the container's own PID limit (linux.resources.pids.limit=-1).
+#   The service-wide TasksMax below still applies.
+# - Keep the root filesystem read-only, with writable /dev, /dev/shm, /tmp and
+#   /run tmpfs mounts. Vendor qmc.conf supplies the writable /etc and /var binds.
+# - Set fs.mqueue.queues_max=4 to limit POSIX message queues in the container.
+#   A sizing estimate is RLIMIT_MSGQUEUE / (msg_max * msgsize_max) / 2, where
+#   msg_max is the messages per queue and msgsize_max is the message size.
+#   The final factor of two leaves headroom for FFI workloads.
+# Container settings and default verbosity come from layered qmc.conf files.
+ExecStartPre=@DATADIR@/check-config-migration
+ExecStart=@BINDIR@/qmc launch
+# Delete surviving crun state, tear down networking and unpin the namespace,
+# including when startup fails.
+ExecStopPost=@BINDIR@/qmc cleanup --verbose
+
+# Signal foreground crun, which forwards SIGRTMIN+3 to the container's systemd
+# for orderly shutdown. Kill remaining service processes after the timeout.
+KillMode=mixed
+KillSignal=SIGRTMIN+3
+TimeoutStopSec=10s
+LimitNOFILE=65536
+LimitNPROC=1048576
+# Cap tasks across the service, including nested workloads, at 50% of the
+# system's task limit, even though the container's own PID limit is disabled.
+TasksMax=50%
+
+# IOReadIOPSMax, IOWriteIOPSMax
+# ----------------------------
+# Optional per-device limits on block I/O operations per second for QM.
+# Select the host block device backing /var/qm. K, M, G and T suffixes use
+# powers of 1000 (KiloIOPS, MegaIOPS, etc.). Configure these in a drop-in:
+# IOReadIOPSMax=/dev/sdf 50
+# IOWriteIOPSMax=/dev/sdf 50
+
+[Install]
+WantedBy=default.target

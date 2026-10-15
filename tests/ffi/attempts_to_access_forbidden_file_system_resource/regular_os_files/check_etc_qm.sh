@@ -5,8 +5,8 @@
 
 check_etc_qm_not_accessible(){
     # Check /etc/qm is not accessible in the QM partition
-    if podman exec qm test -d /etc/qm; then
-        info_message "Found /etc/qm in the QM partition: $(podman exec -t qm ls -l /etc/qm)"
+    if qmc exec test -d /etc/qm; then
+        info_message "Found /etc/qm in the QM partition: $(qmc exec ls -l /etc/qm)"
         info_message "FAIL: check_etc_qm_not_accessible: Check for /etc/qm in the QM partition failed, it should not be accessible."
         exit 1
     else

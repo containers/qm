@@ -5,23 +5,23 @@ source ../e2e/lib/utils
 
 daemon_reload_in_qm() {
     info_message "qm: systemctl daemon-reload inside qm..."
-    podman exec -it qm bash -c "systemctl daemon-reload"
+    qmc exec bash -c "systemctl daemon-reload"
 }
 
 restart_ipc_client_in_qm() {
     info_message "qm: restart ipc_client inside qm..."
-    podman exec -it qm bash -c "podman restart systemd-ipc_client"
+    qmc exec bash -c "podman restart systemd-ipc_client"
     sleep 15
 }
 
 show_qm_podman_ps() {
     info_message "qm: podman ps inside qm..."
-    podman exec -it qm bash -c "podman ps"
+    qmc exec bash -c "podman ps"
 }
 
 check_ipc_client_logs() {
     info_message "qm: podman logs systemd-ipc_client"
-    if podman exec -it qm bash -c "podman logs systemd-ipc_client" | grep -Eiq "permission denied|no such file or directory"; then
+    if qmc exec bash -c "podman logs systemd-ipc_client" | grep -Eiq "permission denied|no such file or directory"; then
         info_message "systemd-ipc_client has failed"
         exit 1
     fi
@@ -34,7 +34,7 @@ check_nested_container_exists() {
 
   # Capture output of nested podman ps inside qm
   local output
-  output=$(podman exec qm podman ps --format "{{.Names}}" 2>/dev/null)
+  output=$(qmc exec podman ps --format "{{.Names}}" 2>/dev/null)
 
   if info_message "$output" | grep -wq "$container_name"; then
     info_message "Container '$container_name' exists inside 'qm'."
@@ -66,7 +66,7 @@ check_nested_ipc_containers_exist() {
 
   # Capture the list of nested container names inside 'qm'
   local container_list
-  container_list=$(podman exec -it qm podman ps --all --format '{{.Names}}' | tr -d '\r')
+  container_list=$(qmc exec podman ps --all --format '{{.Names}}' | tr -d '\r')
 
   for name in "${nested_containers[@]}"; do
     if ! grep -q "^${name}$" <<< "$container_list"; then

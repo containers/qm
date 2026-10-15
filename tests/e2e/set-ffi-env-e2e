@@ -41,7 +41,7 @@ source "${SCRIPT_DIR}"/lib/repoutils
 readonly BLUECHI_CONTROLLER_CONF="/etc/bluechi/controller.conf"
 readonly BLUECHI_AGENT_CONF="/etc/bluechi/agent.conf.d/agent.conf"
 readonly QM_BLUECHI_AGENT_CONF="/etc/qm/bluechi/agent.conf.d/agent.conf"
-readonly QM_CONTAINER_DROPIN_DIR="/etc/containers/systemd/qm.container.d"
+readonly QM_CONTAINER_DROPIN_DIR="/etc/qmc.conf.d"
 readonly BLUECHI_SOCKET_DROPIN="${QM_CONTAINER_DROPIN_DIR}/bluechi-socket.conf"
 readonly BLUECHI_SOCKET_HOST="/run/bluechi/bluechi.sock"
 readonly BLUECHI_SOCKET_CONTAINER="/run/bluechi.sock"
@@ -257,8 +257,7 @@ gen_bluechi_socket_dropin_config() {
     local container_socket="${2:-${BLUECHI_SOCKET_CONTAINER}}"
 
     cat << EOF
-[Container]
-Volume=${host_socket}:${container_socket}
+{"mounts": [{"source": "${host_socket}", "destination": "${container_socket}"}]}
 EOF
 }
 

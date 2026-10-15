@@ -11,7 +11,7 @@ It must be executed inside the QM partition to validate it won't be possible to 
 Example:
 
 ```console
-my-host# podman exec -it qm bash
+my-host# qmc exec bash
 
 bash-5.1# ./modprobe_module
 modprobe: FATAL: Module ext4 not found in directory /lib/modules/5.14.0-447.400.el9iv.x86_64

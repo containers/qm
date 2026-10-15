@@ -1,8 +1,3 @@
-%global debug_package %{nil}
-
-# Define the feature flag: 1 to enable, 0 to disable
-# By default it's disabled: 0
-
 # Some bits borrowed from the openstack-selinux and container-selinux packages
 %global moduletype services
 %global modulenames qm
@@ -16,22 +11,11 @@
 # Format must contain '$x' somewhere to do anything useful
 %global _format() export %1=""; for x in %{modulenames}; do %1+=%2; %%1+=" "; done;
 
-# RHEL < 10 and Fedora < 40 use file context entries in /var/run
-%if %{defined rhel} && 0%{?rhel} < 10 || %{defined fedora} && 0%{?fedora} < 40
-%define legacy_var_run 1
-%endif
-
 # copr_username is only set on copr environments, not on others like koji
 %if "%{?copr_username}" != "centos-automotive-sig" && "%{?copr_projectname}" != "qm-next"
 %bcond_with copr
 %else
 %bcond_without copr
-%endif
-
-%if 0%{?fedora}
-%global podman_epoch 5
-%else
-%global podman_epoch 2
 %endif
 
 Name: qm
@@ -51,18 +35,25 @@ Release: 1
 License: GPL-2.0-only
 URL: https://github.com/containers/qm
 Summary: Containerized environment for running Quality Management software
-Source0: %{url}/archive/v%{version}.tar.gz
-BuildArch: noarch
-# golang-github-cpuguy83-md2man on CentOS Stream 9 is available in CRB repository
+Source0: %{url}/archive/v%{version}.tar.gz#/%{name}-%{version}.tar.gz
 BuildRequires: golang-github-cpuguy83-md2man
 BuildRequires: container-selinux
 BuildRequires: make
+BuildRequires: gcc
+BuildRequires: pkgconfig(json-c)
+BuildRequires: pkgconfig(libmnl)
+BuildRequires: pkgconfig(libnftables)
+BuildRequires: pkgconfig(libsystemd) >= 254
+BuildRequires: meson
+BuildRequires: ninja-build
 BuildRequires: git-core
 BuildRequires: pkgconfig(systemd)
 BuildRequires: selinux-policy >= %_selinux_policy_version
 BuildRequires: selinux-policy-devel >= %_selinux_policy_version
 BuildRequires: bluechi-selinux
-BuildRequires: python3-devel
+BuildRequires: python3
+BuildRequires: systemd-rpm-macros
+BuildRequires: jq
 
 Recommends: selinux-policy-targeted >= %_selinux_policy_version
 
@@ -73,8 +64,15 @@ Requires(post): selinux-policy-base >= %_selinux_policy_version
 Requires(post): selinux-policy-any >= %_selinux_policy_version
 Requires(post): policycoreutils
 Requires(post): libselinux-utils
-Requires: podman >= %{podman_epoch}:4.5
 Requires: jq
+Requires: crun
+Requires: systemd >= 254
+Requires: shadow-utils
+%{?systemd_requires}
+# Retired CLIs and the standalone prototype; no command compatibility implied.
+Obsoletes: qmctl < %{?epoch:%{epoch}:}2
+Obsoletes: qm-ctl < %{?epoch:%{epoch}:}2
+Obsoletes: qm-launch < 1
 
 %description
 This package allow users to setup an environment which prevents applications
@@ -90,45 +88,46 @@ automatically isolated from the host. If developers need to further
 isolate there applications from other processes in the QM they should
 use container tools like Podman.
 
-###################
-### qmctl ###
-###################
-
-%package -n qmctl
-Summary:	QM service controller command line tool
-Requires:	%{name} = %{?epoch:%{epoch}:}%{version}-%{release}
-Requires:	python3 >= 3.9
-Provides:	%{name}-ctl = %{?epoch:%{epoch}:}%{version}-%{release}
-Obsoletes:	%{name}-ctl < %{?epoch:%{epoch}:}%{version}-%{release}
-
-%description -n qmctl
-QM is a containerized environment for running Quality Management software.
-This package contains the service controller command line tool for managing
-and interacting with QM containers and services.
-
 %prep
 %autosetup -Sgit -n %{name}-%{version}
-sed -i 's/^install: man all/install:/' Makefile
 
 %build
-%if %{defined legacy_var_run}
-sed -i 's|^/run/|/var/run/|' qm.fc
-%endif
-
-%{__make} all
+%meson
+%meson_build
 
 %install
-# Create the directory for drop-in configurations
-install -d %{buildroot}%{_sysconfdir}/containers/containers.conf.d
+%meson_install
 
-# Install Python module for qmctl
-install -d %{buildroot}%{python3_sitelib}/qmctl
-install -m 0644 tools/qmctl/__init__.py %{buildroot}%{python3_sitelib}/qmctl/
-install -m 0644 tools/qmctl/qmctl.py %{buildroot}%{python3_sitelib}/qmctl/
+%check
+%meson_test
 
-# install policy modules
-%_format MODULES $x.pp.bz2
-%{__make} DESTDIR=%{buildroot} DATADIR=%{_datadir} install
+%pre
+# Stop the old generated unit before its Quadlet disappears. Store activation
+# outside /run/qm, whose contents belong to runtime cleanup.
+if [ -d /run/systemd/system ]; then
+    if [ -f /etc/systemd/system/qm.service ]; then
+        echo 'QM: move the full /etc/systemd/system/qm.service override aside and migrate its settings to qm.service.d before upgrading.' >&2
+        exit 1
+    fi
+    umask 077
+    mkdir -p /run/qm-rpm-upgrade
+    : > /run/qm-rpm-upgrade/state
+    for unit in qm.service qmc.service; do
+        if systemctl is-active --quiet "$unit"; then
+            echo active >> /run/qm-rpm-upgrade/state
+            systemctl stop "$unit" || exit 1
+        fi
+        case "$(systemctl is-enabled "$unit" 2>/dev/null)" in
+            enabled|enabled-runtime|generated) echo enabled >> /run/qm-rpm-upgrade/state ;;
+        esac
+    done
+    # The old Quadlet normally removes its container on stop. Only remove a
+    # stopped leftover explicitly labelled as belonging to that unit.
+    if command -v podman >/dev/null &&
+       [ "$(podman inspect --format '{{ index .Config.Labels "PODMAN_SYSTEMD_UNIT" }}' qm 2>/dev/null)" = qm.service ]; then
+        podman rm qm || exit 1
+    fi
+fi
 
 %post
 %_format MODULES %{_datadir}/selinux/packages/$x.pp.bz2
@@ -136,19 +135,18 @@ install -m 0644 tools/qmctl/qmctl.py %{buildroot}%{python3_sitelib}/qmctl/
 %selinux_modules_install -s ${SELINUXTYPE} $MODULES
 # Execute the script to create seccomp rules after the package is installed
 /usr/share/qm/create-seccomp-rules
-/usr/share/qm/comment-tz-local # FIX-ME GH-issue: 367
-# podmand netavark requires at host to load or let's ignore in case host don't have it and proceed with the installation
-modprobe ip_tables || true
+# The binary was unpacked before its new file-context rule was installed.
+/sbin/restorecon %{_bindir}/qmc
+%systemd_post qm.service
+%sysctl_apply 00-qm-forwarding.conf 90-qm-launch.conf
 
 %preun
-if [ $1 = 0 ]; then
-   # Commands to run before the package is completely removed
-   # remove previous configured qm rootfs
-   systemctl stop qm
-   %{setup_tool} --remove-qm-rootfs &> /dev/null
-fi
+%systemd_preun qm.service qm-resolv-conf.path qm-resolv-conf.service
+# Preserve the prepared rootfs and application data on package removal. An
+# explicit setup --remove-qm-rootfs remains available before uninstalling.
 
 %postun
+%systemd_postun qm.service qm-resolv-conf.path qm-resolv-conf.service
 if [ $1 -eq 0 ]; then
    # This section executes only on package removal, not on upgrade
    . %{_sysconfdir}/selinux/config
@@ -158,6 +156,21 @@ if [ $1 -eq 0 ]; then
    fi
 fi
 
+%posttrans
+if [ -d /run/systemd/system ]; then
+    systemctl daemon-reload
+    if [ -f /run/qm-rpm-upgrade/state ]; then
+        if grep -q '^enabled$' /run/qm-rpm-upgrade/state; then
+            systemctl enable qm.service
+        fi
+        if grep -q '^active$' /run/qm-rpm-upgrade/state; then
+            systemctl start qm.service || echo 'QM: startup failed; see journalctl -u qm.service and the configuration migration guide.' >&2
+        fi
+        rm -f /run/qm-rpm-upgrade/state
+        rmdir /run/qm-rpm-upgrade
+    fi
+fi
+
 #define license tag if not already defined
 %{!?_licensedir:%global license %doc}
 
@@ -165,9 +178,13 @@ fi
 %license LICENSE
 %doc CODE-OF-CONDUCT.md NOTICE README.md SECURITY.md
 %dir %{_datadir}/selinux
-%dir %{_sysconfdir}/containers/systemd/qm.container.d
 %{_datadir}/selinux/*
 %dir %{_datadir}/qm
+%{_bindir}/qmc
+%{_datadir}/qm/qm.json
+%{_datadir}/qm/qmc.conf
+%dir %{_datadir}/qm/qmc.conf.d
+%dir %{_sysconfdir}/qmc.conf.d
 %{_datadir}/qm/containers.conf
 %{_datadir}/qm/contexts
 %{_datadir}/qm/file_contexts
@@ -176,22 +193,19 @@ fi
 %{_datadir}/qm/create-seccomp-rules
 %{_datadir}/qm/qm-rootfs
 %{_datadir}/qm/qm-storage-settings
-%{_datadir}/qm/comment-tz-local
+%{_datadir}/qm/check-config-migration
 %{_datadir}/qm/qm-is-ostree
-%ghost %dir %{_datadir}/containers
-%ghost %dir %{_datadir}/containers/systemd
-%{_datadir}/containers/systemd/qm.container
+%{_unitdir}/qm.service
+%{_unitdir}/qm-resolv-conf.path
+%{_unitdir}/qm-resolv-conf.service
+%{_sysctldir}/00-qm-forwarding.conf
+%{_sysctldir}/90-qm-launch.conf
 %{_mandir}/man8/*
+%{_mandir}/man1/qmc.*
+%{_mandir}/man5/qmc.conf.*
 %ghost %dir %{_installscriptdir}
 %ghost %dir %{_installscriptdir}/rootfs
 %ghost %{_installscriptdir}/rootfs/*
-
-%files -n qmctl
-%doc README.md
-%license LICENSE
-%{_bindir}/qmctl
-%{_mandir}/man1/qmctl.*
-%{python3_sitelib}/qmctl/
 
 %changelog
 %if %{defined autochangelog}

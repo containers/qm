@@ -8,7 +8,7 @@ verify_kvm_exposed_to_qm() {
     info_message "verify_kvm_exposed_to_qm(): Confirm that /dev/kvm is exposed to qm. If not, the test will terminate."
 
     # Check /dev/kvm in qm
-    if podman exec qm test -c /dev/kvm; then
+    if qmc exec test -c /dev/kvm; then
         info_message "PASS: /dev/kvm is exposed to qm."
     else
         info_message "FAIL: /dev/kvm is not exposed to qm, test terminated."
@@ -21,13 +21,13 @@ copy_kvm_configuration() {
     info_message "copy_kvm_configuration(): Copy kvm container quadlet and qm drop-in to host."
 
     quadlet_dir="/etc/qm/containers/systemd/"
-    dropin_dir="/etc/containers/systemd/qm.container.d/"
+    dropin_dir="/etc/qmc.conf.d/"
 
     if [ ! -d "${dropin_dir}" ]; then
         exec_cmd "mkdir -p ${dropin_dir}"
     fi
 
-    cp "${TMT_TREE}/etc/containers/systemd/qm.container.d/qm_dropin_mount_bind_kvm.conf" "$dropin_dir"
+    cp "${TMT_TREE}/data/qmc.conf.d/60-qm-kvm.conf" "$dropin_dir"
     cp "${TMT_TREE}/subsystems/kvm/etc/containers/systemd/kvm.container" "$quadlet_dir"
     info_message "PASS: Copy configuration finished."
 }
@@ -40,7 +40,7 @@ wait_for_service_active() {
 
     # Command and message
     if [ -n "${container}" ];then # when service in the container
-        cmd="podman exec $container systemctl is-active --quiet $service"
+        cmd="qmc exec systemctl is-active --quiet $service"
         msg="'$service' in container '$container'"
     else # when service in the host
         cmd="systemctl is-active --quiet $service"
@@ -62,14 +62,14 @@ wait_for_service_active() {
 verify_configuration() {
     info_message "verify_configuration(): Verify the kvm container quadlet and qm drop-in exist."
 
-    qm_dropin_file="$dropin_dir""qm_dropin_mount_bind_kvm.conf"
+    qm_dropin_file="$dropin_dir""60-qm-kvm.conf"
     kvm_quadlet_file="$quadlet_dir""kvm.container"
 
-    # Check qm_dropin_mount_bind_kvm.conf
+    # Check 60-qm-kvm.conf
     if [ -f $qm_dropin_file ];then
-        info_message "PASS: qm_dropin_mount_bind_kvm.conf exist."
+        info_message "PASS: 60-qm-kvm.conf exist."
     else
-        info_message "FAIL: qm_dropin_mount_bind_kvm.conf dose not exist."
+        info_message "FAIL: 60-qm-kvm.conf dose not exist."
         exit 1
 
     fi
@@ -83,8 +83,8 @@ verify_configuration() {
     fi
 
     # Start the kvm service in qm
-    exec_cmd "podman exec qm systemctl daemon-reload"
-    exec_cmd "podman exec qm systemctl start kvm"
+    exec_cmd "qmc exec systemctl daemon-reload"
+    exec_cmd "qmc exec systemctl start kvm"
 }
 
 # Check kvm is active in qm
@@ -99,7 +99,7 @@ check_kvm_service_running () {
     wait_for_service_active qm kvm
 
     # Check kvm service status
-    if [ "$(podman exec qm systemctl is-active kvm)" == "active" ]; then
+    if [ "$(qmc exec systemctl is-active kvm)" == "active" ]; then
         info_message "PASS: The kvm service is active in qm."
     else
         info_message "FAIL: The kvm service is not active in qm."
@@ -111,8 +111,8 @@ check_kvm_service_running () {
 check_container_vm_accessible () {
     info_message "check_container_vm_accessible(): Verify the container VM is accessible."
 
-    network_namespace="$(ip netns | cut -d ' ' -f 1)"
-    login_vm_cmd="ip netns exec $network_namespace sshpass -p fedora ssh -tt \
+    network_namespace=/run/qm/netns
+    login_vm_cmd="nsenter --net=$network_namespace sshpass -p fedora ssh -tt \
     -oStrictHostKeyChecking=no -oUserKnownHostsFile=/dev/null fedora@localhost -p 2226"
 
     # Waiting for the VM to be ready

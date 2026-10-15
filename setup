@@ -4,7 +4,7 @@
 # non-automotive environments like baremetal, desktop, or CICD.
 #
 # It will install an OS environment by default into
-# /usr/lib/qm/rootfs and create a Podman quadlet containerized environment
+# /usr/lib/qm/rootfs and create a QM containerized environment
 # running systemd as PID1 inside.
 #
 
@@ -12,7 +12,8 @@
 SYSTEMCTL_SKIP="N"
 REMOVE_QM_ROOTFS="N"
 INSTALLDIR="/usr/share/qm"
-QM_ROOTFS_TOOL="${INSTALLDIR}/qm-rootfs"
+SETUP_CONFIG_DIR="/etc/qmc.conf.d"
+SETUP_SERVICE_DIR="/etc/systemd/system/qm.service.d"
 ROOTFS="/usr/lib/qm/rootfs"
 RWETCFS="/etc/qm"
 RWVARFS="/var/qm"
@@ -77,7 +78,7 @@ usage()
    echo "non-automotive environments like baremetal, desktop, or CICD."
    echo
    echo "The setup script will install an OS environment by default into"
-   echo "/usr/lib/qm/rootfs and create a Podman quadlet containerized environment"
+   echo "/usr/lib/qm/rootfs and create a QM containerized environment"
    echo "running systemd as PID1 inside."
    echo
    echo "Usage: setup [OPTIONS]"
@@ -168,6 +169,15 @@ install() {
     ROOTFS=$1
     RWETCFS=$2
     RWVARFS=$3
+    # Persist paths before tools such as qm-storage-settings inspect them.
+    write_qmc_configuration
+    local requested_rootfs=$ROOTFS requested_etc=$RWETCFS requested_var=$RWVARFS
+    read_qmc_paths
+    if [[ "$ROOTFS" != "$requested_rootfs" || "$RWETCFS" != "$requested_etc" || "$RWVARFS" != "$requested_var" ]]; then
+        echo 'Later qmc configuration overrides the requested setup paths' >&2
+        return 1
+    fi
+    mkdir -p "${RWVARFS}/tmp"
     # shellcheck source=/dev/null
     . /etc/os-release
     setupRW "${ROOTFS}" "${RWETCFS}" "${RWVARFS}"
@@ -175,11 +185,6 @@ install() {
     EXTRA_FLAG=""
     if [ "$ID" == "fedora" ] && [ "$VERSION_ID" -ge 41 ]; then
         EXTRA_FLAG="--use-host-config"
-    fi
-
-    # SecurityLabelNested not supported so far in CentOS Stream 9 or lower
-    if grep -qi "^ID=centos" /etc/os-release && [[ $(grep -oP '^VERSION_ID="\K[0-9]+' /etc/os-release) -le 9 ]]; then
-        sed -i '/SecurityLabelNested/d' /usr/share/containers/systemd/qm.container
     fi
 
     cmd_dnf_install="dnf -y install --releasever=${VERSION_ID} --installroot ${ROOTFS} ${PACKAGES_TO_INSTALL} ${EXTRA_FLAG}"
@@ -273,6 +278,79 @@ EOF
     umount "${ROOTFS}/var" "${ROOTFS}/etc"
 }
 
+# Read all paths before any setup or removal side effects. List entries are
+# ordered operations; the last operation for a destination decides its source.
+read_qmc_paths() {
+    local settings
+    settings=$(qmc inspect) || return
+    ROOTFS=$(jq -er '.rootfs | select(type == "string" and startswith("/"))' <<< "$settings") || return
+    RWETCFS=$(jq -er '[.mounts[]? | select(.destination == "/etc")] | last | select(.remove != true) | .source | select(type == "string" and startswith("/"))' <<< "$settings") || return
+    RWVARFS=$(jq -er '[.mounts[]? | select(.destination == "/var")] | last | select(.remove != true) | .source | select(type == "string" and startswith("/"))' <<< "$settings") || return
+}
+
+validate_setup_paths() {
+    local path
+    for path in "$ROOTFS" "$RWETCFS" "$RWVARFS"; do
+        case "$path" in
+            /*) ;;
+            *) echo "QM paths must be absolute: $path" >&2; return 1 ;;
+        esac
+        case "$(realpath -m -- "$path")" in
+            /|/usr|/usr/lib|/usr/share|/etc|/var|/home|/root|/run|/tmp|/var/tmp)
+                echo "Refusing to use a system directory as QM storage: $path" >&2
+                return 1 ;;
+        esac
+        if [[ "$path" == *$'\n'* || "$path" == *$'\r'* ]]; then
+            echo "QM paths must not contain newlines" >&2
+            return 1
+        fi
+    done
+}
+
+write_qmc_configuration() {
+    validate_setup_paths || return
+    local temporary path
+    mkdir -p "$SETUP_CONFIG_DIR" "$SETUP_SERVICE_DIR" || return
+    temporary=$(mktemp "$SETUP_CONFIG_DIR/.qm-setup.XXXXXX") || return
+    if ! jq -n --arg rootfs "$ROOTFS" --arg etc "$RWETCFS" --arg var "$RWVARFS" \
+        '{rootfs: $rootfs, mounts: [{source: $etc, destination: "/etc"},
+          {source: $var, destination: "/var"},
+          {source: ($var + "/tmp"), destination: "/var/tmp"}]}' > "$temporary"; then
+        rm -f "$temporary"
+        return 1
+    fi
+    chmod 0644 "$temporary"
+    mv -f "$temporary" "$SETUP_CONFIG_DIR/50-qm-setup.conf"
+    {
+        printf '[Unit]\nRequiresMountsFor=\n'
+        for path in "$ROOTFS" "$RWETCFS" "$RWVARFS"; do
+            path=${path//\\/\\\\}
+            path=${path//\"/\\\"}
+            path=${path//%/%%}
+            printf 'RequiresMountsFor="%s"\n' "$path"
+        done
+    } > "$SETUP_SERVICE_DIR/50-qm-setup.conf"
+}
+
+remove_qm_rootfs() {
+    # Resolve errors and unsafe paths before stopping services or removing data.
+    read_qmc_paths || return
+    validate_setup_paths || return
+    if [ "$SYSTEMCTL_SKIP" == "N" ]; then
+        systemctl stop qm.service || return
+    fi
+    local target
+    while IFS= read -r target; do
+        case "$target" in
+            "$ROOTFS"|"$ROOTFS"/*|"$RWETCFS"|"$RWETCFS"/*|"$RWVARFS"|"$RWVARFS"/*)
+                umount -- "$target" || return ;;
+        esac
+    done < <(findmnt -rn -o TARGET | sort -r)
+    # Remove the configured tree itself, never its parent directory.
+    rm -rf --one-file-system -- "$ROOTFS" "$RWETCFS" "$RWVARFS"
+}
+
+main() {
 # read command line arguments
 opts=$(getopt \
   --longoptions "$(printf "help,skip-systemctl,remove-qm-rootfs,%s:," "${CMDLINE_ARGUMENT_LIST[@]}")" \
@@ -285,6 +363,7 @@ eval set --"${opts}"
 
 # main()
 root_check
+read_qmc_paths || return
 
 while [[ $# -gt 0 ]]; do
   case "$1" in
@@ -338,20 +417,8 @@ echo  "  * agent hostname: ${AGENT_HOSTNAME}"
 echo
 
 if [ "${REMOVE_QM_ROOTFS}" == "Y" ]; then
-    # Unmount qm binds
-    qm_mounts="$(mount | grep /qm  | cut -d" " -f3)"
-    if [ -z "$qm_mounts" ]; then
-        echo "No mount points found under /qm."
-    else
-        for mount in $qm_mounts; do
-            umount "$mount"
-        done
-    fi
-    # Get the one path below, i.e: /usr/lib/qm instead /usr/lib/qm/rootfs
-    path_qm_rootfs=$(${QM_ROOTFS_TOOL} | sed 's|/[^/]*$||')
-    rm -rf "${path_qm_rootfs}"
-    rm -rf "${RWETCFS}" "${RWVARFS}"
-    exit 0
+    remove_qm_rootfs
+    return $?
 fi
 
 
@@ -372,7 +439,7 @@ case "$1" in
 
     if [ "$SYSTEMCTL_SKIP" == "N" ]; then
 	    systemctl daemon-reload
-        systemctl start qm.service || {
+        systemctl enable --now qm.service || {
             logger "ERROR" "'systemctl start qm.service' has failed, see details below";
             set +x
             logger "DEBUG" "$(journalctl --no-pager -xu qm.service)"
@@ -386,9 +453,19 @@ case "$1" in
             set -x
             exit 1
         fi
-    else
-      /usr/libexec/podman/quadlet /run/systemd/generator/
+    fi
+    if [ "$SYSTEMCTL_SKIP" == "Y" ]; then
+        # Enabling is an offline filesystem operation; no system manager needed.
+        local wants_dir="${SETUP_SERVICE_DIR%/qm.service.d}/default.target.wants"
+        mkdir -p "$wants_dir"
+        ln -sfn /usr/lib/systemd/system/qm.service "$wants_dir/qm.service"
     fi
     logger "SUCCESS" "Setup complete";
 	;;
 esac
+
+}
+
+if [[ "${BASH_SOURCE[0]}" == "$0" ]]; then
+    main "$@"
+fi

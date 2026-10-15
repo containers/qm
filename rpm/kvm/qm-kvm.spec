@@ -28,19 +28,19 @@ This subpackage provides a drop-in configuration for the QM environment to enabl
 
 %install
 # Create the directory for drop-in configurations
-install -d %{buildroot}%{_sysconfdir}/containers/systemd/qm.container.d
+install -d %{buildroot}%{_datadir}/qm/qmc.conf.d
 install -d %{buildroot}%{qm_sysconfdir}/containers/systemd
 
 # Install the KVM drop-in configuration file
-install -m 644 %{_builddir}/qm-kvm-%{version}/etc/containers/systemd/qm.container.d/qm_dropin_mount_bind_kvm.conf \
-    %{buildroot}%{_sysconfdir}/containers/systemd/qm.container.d/qm_dropin_mount_bind_kvm.conf
+install -m 644 %{_builddir}/qm-kvm-%{version}/data/qmc.conf.d/60-qm-kvm.conf \
+    %{buildroot}%{_datadir}/qm/qmc.conf.d/60-qm-kvm.conf
 install -m 644 %{_builddir}/qm-kvm-%{version}/subsystems/kvm/etc/containers/systemd/kvm.container \
     %{buildroot}%{qm_sysconfdir}/containers/systemd/kvm.container
 
 %files -n qm-kvm
 %license LICENSE
 %doc README.md SECURITY.md
-%{_sysconfdir}/containers/systemd/qm.container.d/qm_dropin_mount_bind_kvm.conf
+%{_datadir}/qm/qmc.conf.d/60-qm-kvm.conf
 %{qm_sysconfdir}/containers/systemd/kvm.container
 
 %changelog

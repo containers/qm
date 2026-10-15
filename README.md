@@ -29,9 +29,19 @@ The QM runs its own version of systemd and Podman to isolate not only the
 applications and containers launched by systemd and Podman, but also systemd and
 Podman commands themselves.
 
-This package requires the Podman package to establish the containerized
-environment and uses Quadlet to set it up. Refer to the [docs directory](docs/quadlet-examples/)
-for example Quadlet files.
+The native `qm.service` uses `qmc` and crun to start the environment. Podman and
+application Quadlets continue to run inside QM. Use `systemctl` to manage QM and
+`qmc` to interact with it:
+
+```sh
+sudo qmc exec /bin/bash
+qmc inspect
+qmc inspect --field rootfs
+```
+
+See the [command reference](docs/docs/qmc.md) and
+[configuration reference](docs/docs/configuration.md) for configuration files,
+command options and examples.
 
 Software installed in the QM environment under `/usr/lib/qm/rootfs` is
 automatically isolated from the host. To further isolate these processes
@@ -73,11 +83,10 @@ such as the transportation industry in which services must be controlled across 
 edge devices and where traditional orchestration tools do not comply with
 regulatory requirements.
 
-Systems with QM installed have two systemd processes running on them. The QM
-bluechi-agent is based on the hosts `/etc/bluechi/agent.conf` file. By default, any
-changes to the system's `agent.conf` file are reflected in the QM `/etc/bluechi/agent.conf` file.
-You can further customize the QM bluechi-agent by adding content to the
-`/usr/lib/qm/rootfs/etc/bluechi/agent.conf.d/` directory.
+Systems with QM installed have two systemd processes running on them. Setup
+creates the QM BlueChi agent configuration from the host configuration, with a
+`qm.` prefix on the node name. Customize the agent through
+`/etc/qm/bluechi/agent.conf.d/` on the host, or the configured writable etc tree.
 
 ```console
 # dnf install -y python3-dnf-plugins-core
@@ -86,7 +95,7 @@ You can further customize the QM bluechi-agent by adding content to the
 
 ## RPM building dependencies
 
-To build QM packages on CentOS Stream 9, enable the Code Ready Builder
+To build QM packages on CentOS Stream 10, enable the Code Ready Builder
 repository for access to the `golang-github-cpuguy83-md2man` package.
 
 ## How OOM score adjustment is used in QM
@@ -105,11 +114,11 @@ You can set their OOM score adjustment value from *-1* to *-1000*. To prioritize
 even in low-memory situations, setting the value to *-1000* makes the process immune to the OOM killer
 and ensures that ASIL applications are the last to be terminated.
 
-- The QM process has a default OOM score adjustment value set to *500*, configured via the `qm.container` file.
+- The QM process has a default OOM score adjustment value set to *500*, configured via the `qm.service` file.
 
 ```console
-cat /usr/share/containers/systemd/qm.container | grep OOMScoreAdjust
-# OOMScoreAdjust=500
+systemctl show qm.service -p OOMScoreAdjust
+OOMScoreAdjust=500
 ```
 
 - All nested containers created inside the QM have a default OOM score adjustment of *750*.
@@ -159,27 +168,18 @@ OOMScoreAdjust=100
 
 Create a QM drop-in file to override the default capability restrictions. This adds back the `SYS_RESOURCE` capability that QM drops by default:
 
-**Create:** `/etc/containers/systemd/qm.container.d/100-AddCAPA.conf`
+**Create:** `/etc/qmc.conf.d/100-capabilities.conf`
 
-```ini
-[Container]
-DropCapability=
-DropCapability=sys_boot
-AddCapability=sys_resource
+```json
+{"capabilities": [{"name": "CAP_SYS_RESOURCE"}]}
 ```
 
 #### Step 3: Verify and Apply the Configuration
 
-1. **Check the generated systemd configuration:**
+1. **Check the merged container configuration:**
 
    ```bash
-   sudo /usr/lib/systemd/system-generators/podman-system-generator --dryrun
-   ```
-
-   Look for the ExecStart line and verify it contains:
-
-   ```text
-   --cap-drop sys_boot --cap-add all --cap-add sys_resource
+   qmc inspect --field capabilities
    ```
 
 2. **Apply the changes:**
@@ -193,7 +193,7 @@ AddCapability=sys_resource
 
    ```bash
    # Enter the QM container
-   sudo podman exec -it qm /bin/bash
+   sudo qmc exec /bin/bash
 
    # Start first nested container and check its OOM score
    systemctl start nested
@@ -281,18 +281,22 @@ This allows fine-grained control over OOM killer priority for different nested c
 
 ## Contributing to the QM project
 
-For information about how to contribute to the QM project, see the [Developers documentation README](docs/devel/README.md).
+For information about how to contribute to the QM project, see the [Developers documentation README](docs/devel/README.developer.md).
 
 ## Realtime
 
 To enable real-time removal of sched_* blockage via seccomp, use the following schema:
 
 ```bash
-cat << EOF >> /etc/containers/systemd/qm.container.d/rt.conf
-> [Container]
-SeccompProfile=""
-> EOF
+mkdir -p /etc/qmc.conf.d
+cat > /etc/qmc.conf.d/50-realtime.conf <<'EOF'
+{"seccomp": "/usr/share/containers/seccomp.json"}
+EOF
+systemctl restart qm.service
 ```
+
+This uses the standard containers seccomp profile in place of QM's additional
+realtime scheduling restrictions.
 
 ## Talks and videos
 
@@ -301,25 +305,22 @@ QM-related technology, please share it with us.
 
 ## RPM mirrors
 
-Looking for a specific version of QM? Search the [CentOS Automotive SIG Stream Mirror](https://mirror.stream.centos.org/SIGs/9-stream/automotive/aarch64/packages-main/Packages/q/). The packages in CentOS Automotive SIG Stream Mirror are for experimentation only.
+Looking for a specific version of QM? Search the [CentOS Automotive SIG Stream Mirror](https://mirror.stream.centos.org/SIGs/10-stream/automotive/aarch64/packages-main/Packages/q/). The packages in CentOS Automotive SIG Stream Mirror are for experimentation only.
 
 ## Configuring QM
 
-To run QM on an immutable OSTree-based OS, we use systemd units with Podman Quadlet.
-For more information on how `podman-systemd.unit` works, refer to the manual:
+QM runs through the native `qm.service`, including on immutable OSTree-based
+systems. Container settings belong in JSON files under `/etc/qmc.conf.d/`.
+Systemd resource limits and service ordering belong in
+`/etc/systemd/system/qm.service.d/`. Keep vendor files unchanged.
 
-`man podman-systemd.unit`
-
-The default QM configuration drop-in file is located in `/usr/share/containers/systemd/qm.container`.
-Modifying the original service file is not an option. Instead, create drop-in files to
-modify the default configuration.
-
-**NOTE:** The configuration is built in alphabetical order of the drop-in files.
+See [configuration](docs/docs/configuration.md) for precedence and examples,
+and [migration](docs/docs/migration.md) when upgrading from the outer Quadlet.
 
 ### Modifying the `MemoryHigh` variable
 
 To override the default settings, create a new drop-in `.conf` file in the
-`/etc/containers/systemd/qm.container.d/` directory. This method ensures that QM memory
+`/etc/systemd/system/qm.service.d/` directory. This method ensures that QM memory
 usage is controlled without modifying the base system configuration.
 
 1. Check the current memory limit:
@@ -333,23 +334,23 @@ infinity
 ```
 
 The command output `infinity` indicates that `MemoryHigh` is unlimited. You can
-see this setting in `/usr/share/containers/systemd/qm.container`.
+see this setting in `/usr/lib/systemd/system/qm.service`.
 
 1. Create a directory for the new drop-in file:
 
 ```bash
 
-mkdir -p /etc/containers/systemd/qm.container.d/
+mkdir -p /etc/systemd/system/qm.service.d/
 
 ```
 
 1. Create a new drop-in file:
 
 ```bash
-vim /etc/containers/systemd/qm.container.d/100-MemoryMax.conf
+vim /etc/systemd/system/qm.service.d/100-MemoryHigh.conf
 ```
 
-In this example, the new drop-in file is named `100-MemoryMax.conf`. You can choose a different name,
+In this example, the new drop-in file is named `100-MemoryHigh.conf`. You can choose a different name,
 but be aware that the configuration is built in alphabetical order of the drop-in files.
 
 1. Edit the file to add the following content:
@@ -368,7 +369,7 @@ MemoryHigh=2G
 
 ```bash
 
-/usr/lib/systemd/system-generators/podman-system-generator {--user} --dryrun
+systemctl cat qm.service
 
 ```
 

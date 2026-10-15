@@ -19,7 +19,7 @@ During the QM service startup it passes arguments to Podman. One of these argume
 host> gcc -o execute_sched_setattr execute_sched_setattr.c -Wall  # build the bin
 host> cp execute_sched_setattr /usr/lib/qm/rootfs/root/  # copy the bin to QM partition
 
-# podman exec -it qm bash  # Execute the test, it must fail in recent versions of QM
+# qmc exec bash  # Execute the test, it must fail in recent versions of QM
 bash-5.1# cd /root && ./execute_sched_setattr
 Current Scheduling Policy: SCHED_OTHER
 Current Priority: 0

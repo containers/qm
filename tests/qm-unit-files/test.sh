@@ -18,7 +18,7 @@ test_qm_readonly_unit_file() {
         qm_cmd="podman exec "
         qm_cmd+="${CONTROL_CONTAINER_NAME} "
     fi
-    qm_cmd+="podman exec qm bash -c 'echo true >> /usr/lib/systemd/system/bluechi-agent.service' 2>&1"
+    qm_cmd+="qmc exec bash -c 'echo true >> /usr/lib/systemd/system/bluechi-agent.service' 2>&1"
     sleep 1
     cmd_result=$(eval "${qm_cmd}")
 

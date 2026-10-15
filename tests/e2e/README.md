@@ -119,7 +119,7 @@ CONTAINER ID  IMAGE                                               COMMAND       
 9402e530feb8  registry.access.redhat.com/ubi8/ubi-minimal:latest  sleep infinity  About a minute ago  Up About a minute              cruise_control
 07b55cee56fd  registry.access.redhat.com/ubi8/ubi-minimal:latest  sleep infinity  About a minute ago  Up About a minute              tires
 27441c8a0fe5  registry.access.redhat.com/ubi8/ubi-minimal:latest  sleep infinity  About a minute ago  Up About a minute              breaks
-[root@dell730 e2e]# podman exec node1 podman exec qm podman ps
+[root@dell730 e2e]# podman exec node1 qmc exec podman ps
 CONTAINER ID  IMAGE                                               COMMAND         CREATED         STATUS         PORTS       NAMES
 faf4da74567d  registry.access.redhat.com/ubi8/ubi-minimal:latest  sleep infinity  43 seconds ago  Up 44 seconds              radio
 37579a9bbc96  registry.access.redhat.com/ubi8/ubi-minimal:latest  sleep infinity  41 seconds ago  Up 42 seconds              store

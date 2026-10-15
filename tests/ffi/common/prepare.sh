@@ -2,7 +2,7 @@
 # shellcheck disable=SC1091
 . ../../e2e/lib/utils
 
-export DROP_IN_DIR="/etc/containers/systemd/qm.container.d/"
+export DROP_IN_DIR="/etc/qmc.conf.d/"
 OSTREE_PATH="/run/ostree"
 
 # Checks if the system is running under OSTree.
@@ -24,11 +24,7 @@ is_ostree() {
 }
 
 prepare_test() {
-   # Search variables for update file in qm.container
-   # qm_service_file=$(systemctl show -P  SourcePath qm)
-   # Create qm container custom config folder for qm drop-in file.
-   # Use drop-in files to update qm_service_file
-   # please refer 'zcat $(man -w qm.8) | grep -i "^\.sh" | grep drop-in'
+   # Test-owned qmc drop-ins use the 90-ffi- prefix.
    exec_cmd "mkdir -p ${DROP_IN_DIR}"
 }
 
@@ -39,13 +35,13 @@ disk_cleanup() {
       exec_cmd "rm -rf ${remove_file}"
    fi
    # Remove all containers in qm (don't care about stop in clean-up)
-   if [ "$(podman inspect qm --format '{{.State.Running}}' 2>/dev/null)" = "true" ]; then
-      exec_cmd "podman exec qm /usr/bin/podman rm -af"
+   if systemctl is-active --quiet qm.service; then
+      exec_cmd "qmc exec /usr/bin/podman rm -af"
    else
       info_message "SKIP: qm is not running, nested 'podman rm -af' not executed."
    fi
    if test -d "${DROP_IN_DIR}"; then
-      exec_cmd "rm -rf ${DROP_IN_DIR}"
+      rm -f "${DROP_IN_DIR}"/90-ffi-*.conf
    fi
    exec_cmd "systemctl daemon-reload"
    exec_cmd "systemctl restart qm"
@@ -80,20 +76,17 @@ reload_config() {
 }
 
 running_container_in_qm() {
-   while true; do
-      if podman exec qm /usr/bin/systemctl is-active ffi-qm -q; then
-         info_message "ffi-qm container inside qm is fully started"
-         break
-      fi
-      sleep 1
-   done
+   if ! timeout 60 bash -c 'until qmc exec /usr/bin/systemctl is-active ffi-qm -q; do sleep 1; done'; then
+      info_message "FAIL: ffi-qm did not start within 60s"
+      return 1
+   fi
    info_message "qm was started: $(systemctl status qm | grep Active | cut -d ';' -f 2)"
 }
 
 # systemd can report ffi-qm Active before nested podman reliably accepts exec.
 ffi_qm_nested_ready() {
    local wait_sec="${1:-60}"
-   if timeout "${wait_sec}" bash -c "until podman exec qm /usr/bin/podman exec ffi-qm true 2>/dev/null; do sleep 1; done"; then
+   if timeout "${wait_sec}" bash -c "until qmc exec /usr/bin/podman exec ffi-qm true 2>/dev/null; do sleep 1; done"; then
       info_message "ffi-qm nested podman exec is ready"
    else
       info_message "FAIL: ffi-qm nested exec not ready within ${wait_sec}s"

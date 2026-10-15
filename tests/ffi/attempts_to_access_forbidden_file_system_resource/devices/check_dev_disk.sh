@@ -5,8 +5,8 @@
 
 check_dev_disk_not_available(){
     # Check /dev/disk is not available in the QM partition
-    if podman exec qm test -d /dev/disk; then
-        info_message "Found /dev/disk in the QM partition: $(podman exec -t qm ls -l /dev/disk)"
+    if qmc exec test -d /dev/disk; then
+        info_message "Found /dev/disk in the QM partition: $(qmc exec ls -l /dev/disk)"
         info_message "FAIL: check_dev_disk_not_available: Check for /dev/disk in the QM partition failed, it should not be available."
         exit 1
     else

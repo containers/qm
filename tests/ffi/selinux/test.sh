@@ -7,7 +7,7 @@
 expected_value="setenforce:  security_setenforce() failed:  Permission denied"
 
 # Get setenforce 0 permission denied from qm.
-setenforce_0=$(podman exec -it qm setenforce 0)
+setenforce_0=$(qmc exec setenforce 0)
 
 echo "This is what qm returns $setenforce_0"
 

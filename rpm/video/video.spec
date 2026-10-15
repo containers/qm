@@ -25,19 +25,19 @@ This subpackage installs a drop-in configuration for QM containers to mount bind
 
 %install
 # Create the directory for drop-in configurations
-install -d %{buildroot}%{_sysconfdir}/containers/systemd/qm.container.d
+install -d %{buildroot}%{_datadir}/qm/qmc.conf.d
 install -d %{buildroot}%{qm_sysconfdir}/containers/systemd
 
 install -m 644 %{_builddir}/qm-video-%{version}/subsystems/video/etc/containers/systemd/rear-camera.container \
      %{buildroot}%{qm_sysconfdir}/containers/systemd/rear-camera.container
 
-install -m 644 %{_builddir}/qm-video-%{version}/etc/containers/systemd/qm.container.d/qm_dropin_mount_bind_video.conf \
-    %{buildroot}%{_sysconfdir}/containers/systemd/qm.container.d/qm_dropin_mount_bind_video.conf
+install -m 644 %{_builddir}/qm-video-%{version}/data/qmc.conf.d/60-qm-video.conf \
+    %{buildroot}%{_datadir}/qm/qmc.conf.d/60-qm-video.conf
 
 %files
 %license LICENSE
 %doc README.md SECURITY.md
-%{_sysconfdir}/containers/systemd/qm.container.d/qm_dropin_mount_bind_video.conf
+%{_datadir}/qm/qmc.conf.d/60-qm-video.conf
 %{qm_sysconfdir}/containers/systemd/rear-camera.container
 
 %changelog
