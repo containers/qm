@@ -1,8 +1,3 @@
-%global debug_package %{nil}
-
-# Define the feature flag: 1 to enable, 0 to disable
-# By default it's disabled: 0
-
 # Some bits borrowed from the openstack-selinux and container-selinux packages
 %global moduletype services
 %global modulenames qm
@@ -47,10 +42,14 @@ License: GPL-2.0-only
 URL: https://github.com/containers/qm
 Summary: Containerized environment for running Quality Management software
 Source0: %{url}/archive/v%{version}.tar.gz#/%{name}-%{version}.tar.gz
-BuildArch: noarch
 BuildRequires: golang-github-cpuguy83-md2man
 BuildRequires: container-selinux
 BuildRequires: make
+BuildRequires: gcc
+BuildRequires: pkgconfig(json-c)
+BuildRequires: pkgconfig(libmnl)
+BuildRequires: pkgconfig(libnftables)
+BuildRequires: pkgconfig(libsystemd) >= 254
 BuildRequires: meson
 BuildRequires: ninja-build
 BuildRequires: git-core
@@ -71,6 +70,8 @@ Requires(post): policycoreutils
 Requires(post): libselinux-utils
 Requires: podman >= %{podman_epoch}:4.5
 Requires: jq
+Requires: crun
+Requires: systemd >= 254
 
 %description
 This package allow users to setup an environment which prevents applications
@@ -91,6 +92,7 @@ use container tools like Podman.
 ###################
 
 %package -n qmctl
+BuildArch: noarch
 Summary:	QM service controller command line tool
 Requires:	%{name} = %{?epoch:%{epoch}:}%{version}-%{release}
 Requires:	python3 >= 3.9
@@ -153,6 +155,11 @@ fi
 %dir %{_sysconfdir}/containers/systemd/qm.container.d
 %{_datadir}/selinux/*
 %dir %{_datadir}/qm
+%{_bindir}/qmc
+%{_datadir}/qm/qm.json
+%{_datadir}/qm/qmc.conf
+%dir %{_datadir}/qm/qmc.conf.d
+%dir %{_sysconfdir}/qmc.conf.d
 %{_datadir}/qm/containers.conf
 %{_datadir}/qm/contexts
 %{_datadir}/qm/file_contexts
