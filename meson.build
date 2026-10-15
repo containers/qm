@@ -12,8 +12,7 @@ policy = custom_target('qm-policy',
   input: ['qm.te', 'qm.fc', 'qm.if'],
   output: 'qm.pp.bz2',
   command: [find_program('build-aux/build-policy'), make,
-    meson.current_source_dir() / 'build-aux/validations', '@OUTPUT@', '@INPUT@'],
-  depend_files: files('build-aux/validations'),
+    '@OUTPUT@', '@INPUT@'],
   build_by_default: true,
   install: true, install_dir: get_option('datadir') / 'selinux/packages')
 

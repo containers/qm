@@ -3,15 +3,11 @@
 set -euo pipefail
 
 make=$1
-validations=$2
-output=$3
-shift 3
+output=$2
+shift 2
 
 workdir=$(mktemp -d ./policy.XXXXXX)
 trap 'rm -rf "$workdir"' EXIT
 cp "$@" "$workdir/"
-if "$validations"; then
-    sed -i /user_namespace/d "$workdir/qm.if"
-fi
 "$make" -C "$workdir" -f /usr/share/selinux/devel/Makefile qm.pp
 bzip2 -c -9 "$workdir/qm.pp" > "$output"

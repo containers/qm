@@ -16,13 +16,8 @@ jobs:
   - &pr_job
     job: copr_build
     trigger: pull_request
-    # x86_64 is assumed by default
-    # qm is noarch so we only need to test on one arch
     targets: &pr_targets
       fedora-stable: {}
-      epel-9:
-        additional_repos:
-          - copr://@centos-automotive-sig/bluechi-snapshot
       epel-10:
         additional_repos:
           - copr://@centos-automotive-sig/bluechi-snapshot
@@ -44,9 +39,6 @@ jobs:
       - fedora-stable-aarch64
       - fedora-stable-ppc64le
       - fedora-stable-x86_64
-      - epel-9-aarch64
-      - epel-9-ppc64le
-      - epel-9-x86_64
       - epel-10-aarch64
       - epel-10-ppc64le
       - epel-10-x86_64
@@ -56,14 +48,11 @@ jobs:
     identifier: e2e-multi-bluechi-agents
     tmt_plan: /plans/e2e/multi-bluechi-agents
     targets:
-      - epel-9-x86_64
+      - epel-10-x86_64
     manual_trigger: true
     tf_extra_params:
       environments:
         - artifacts:
-            - &bluechi_copr_repo_c9s
-              type: repository-file
-              id: https://copr.fedorainfracloud.org/coprs/g/centos-automotive-sig/bluechi-snapshot/repo/centos-stream-9
             - &bluechi_copr_repo_c10s
               type: repository-file
               id: https://copr.fedorainfracloud.org/coprs/g/centos-automotive-sig/bluechi-snapshot/repo/centos-stream-10
@@ -80,12 +69,10 @@ jobs:
     identifier: e2e-ffi
     tmt_plan: /plans/e2e/ffi
     targets:
-      - epel-9-x86_64
       - epel-10-x86_64
     tf_extra_params:
       environments:
         - artifacts:
-            - *bluechi_copr_repo_c9s
             - *bluechi_copr_repo_c10s
           tmt:
             context:
@@ -100,12 +87,10 @@ jobs:
     identifier: qm-tier-0
     tmt_plan: /plans/e2e/tier-0
     targets:
-      - epel-9-x86_64
       - epel-10-x86_64
     tf_extra_params:
       environments:
         - artifacts:
-            - *bluechi_copr_repo_c9s
             - *bluechi_copr_repo_c10s
           hardware:
             disk:
@@ -117,11 +102,11 @@ jobs:
     tmt_plan: /plans/e2e/kvm-tier-0
     targets:
       - fedora-42-x86_64
-      - epel-9-x86_64
+      - epel-10-x86_64
     tf_extra_params:
       environments:
         - artifacts:
-            - *bluechi_copr_repo_c9s
+            - *bluechi_copr_repo_c10s
             - *bluechi_copr_repo_fedora
           hardware:
             disk:
@@ -134,7 +119,7 @@ jobs:
     identifier: automotive-image-builder
     tmt_plan: /plans/e2e/aib
     targets:
-      - epel-9-x86_64
+      - epel-10-x86_64
     tf_extra_params:
       environments:
         hardware:
@@ -146,7 +131,6 @@ jobs:
     trigger: release
     dist_git_branches: &downstream_branches
       - fedora-all
-      - epel-9
       - epel-10
 
   - job: koji_build
@@ -158,7 +142,6 @@ jobs:
     dist_git_branches: &bodhi_branches
       # rawhide updates are created automatically
       - fedora-branched
-      - epel-9
       - epel-10
 
   # QM Wayland package
