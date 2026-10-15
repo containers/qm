@@ -201,6 +201,8 @@ fi
 %{_sysctldir}/00-qm-forwarding.conf
 %{_sysctldir}/90-qm-launch.conf
 %{_mandir}/man8/*
+%{_mandir}/man1/qmc.*
+%{_mandir}/man5/qmc.conf.*
 %ghost %dir %{_installscriptdir}
 %ghost %dir %{_installscriptdir}/rootfs
 %ghost %{_installscriptdir}/rootfs/*
