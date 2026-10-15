@@ -1,0 +1,308 @@
+{
+  "ociVersion": "1.3.0",
+  "process": {
+    "terminal": true,
+    "user": {
+      "uid": 0,
+      "gid": 0,
+      "umask": 18
+    },
+    "args": [
+      "/sbin/init"
+    ],
+    "env": [
+      "PATH=/usr/local/sbin:/usr/local/bin:/usr/sbin:/usr/bin:/sbin:/bin",
+      "HOME=/root"
+    ],
+    "cwd": "/",
+    "rlimits": [
+      {
+        "type": "RLIMIT_NOFILE",
+        "hard": 1048576,
+        "soft": 1048576
+      },
+      {
+        "type": "RLIMIT_NPROC",
+        "hard": 1048576,
+        "soft": 1048576
+      }
+    ],
+    "selinuxLabel": "system_u:system_r:qm_t:s0"
+  },
+  "root": {
+    "readonly": true
+  },
+  "mounts": [
+    {
+      "destination": "/tmp",
+      "type": "tmpfs",
+      "source": "tmpfs",
+      "options": [
+        "rw",
+        "rprivate",
+        "nosuid",
+        "nodev",
+        "tmpcopyup"
+      ]
+    },
+    {
+      "destination": "/run",
+      "type": "tmpfs",
+      "source": "tmpfs",
+      "options": [
+        "rw",
+        "rprivate",
+        "nosuid",
+        "nodev",
+        "tmpcopyup"
+      ]
+    },
+    {
+      "destination": "/proc",
+      "type": "proc",
+      "source": "proc",
+      "options": [
+        "nosuid",
+        "noexec",
+        "nodev"
+      ]
+    },
+    {
+      "destination": "/dev",
+      "type": "tmpfs",
+      "source": "tmpfs",
+      "options": [
+        "nosuid",
+        "strictatime",
+        "mode=755",
+        "size=65536k"
+      ]
+    },
+    {
+      "destination": "/sys",
+      "type": "sysfs",
+      "source": "sysfs",
+      "options": [
+        "nosuid",
+        "noexec",
+        "nodev",
+        "ro"
+      ]
+    },
+    {
+      "destination": "/dev/pts",
+      "type": "devpts",
+      "source": "devpts",
+      "options": [
+        "nosuid",
+        "noexec",
+        "newinstance",
+        "ptmxmode=0666",
+        "mode=0620",
+        "gid=5"
+      ]
+    },
+    {
+      "destination": "/dev/mqueue",
+      "type": "mqueue",
+      "source": "mqueue",
+      "options": [
+        "nosuid",
+        "noexec",
+        "nodev"
+      ]
+    },
+    {
+      "destination": "/dev/shm",
+      "type": "tmpfs",
+      "source": "shm",
+      "options": [
+        "rw",
+        "rprivate",
+        "nosuid",
+        "noexec",
+        "nodev",
+        "mode=1777",
+        "size=65536k"
+      ]
+    },
+    {
+      "destination": "/run/.containerenv",
+      "type": "bind",
+      "options": [
+        "bind",
+        "rprivate",
+        "ro",
+        "nosuid",
+        "noexec",
+        "nodev"
+      ]
+    },
+    {
+      "destination": "/run/secrets",
+      "type": "bind",
+      "options": [
+        "bind",
+        "rprivate",
+        "ro",
+        "nosuid",
+        "noexec",
+        "nodev"
+      ]
+    },
+    {
+      "destination": "/run/host/qmc-signals",
+      "type": "bind",
+      "options": [
+        "rbind",
+        "rprivate",
+        "ro",
+        "nosuid",
+        "noexec",
+        "nodev"
+      ]
+    },
+    {
+      "destination": "/etc/hostname",
+      "type": "bind",
+      "options": [
+        "bind",
+        "rprivate",
+        "ro",
+        "nosuid",
+        "noexec",
+        "nodev"
+      ]
+    },
+    {
+      "destination": "/etc/resolv.conf",
+      "type": "bind",
+      "options": [
+        "bind",
+        "rprivate",
+        "ro",
+        "nosuid",
+        "noexec",
+        "nodev"
+      ]
+    },
+    {
+      "destination": "/etc/hosts",
+      "type": "bind",
+      "options": [
+        "bind",
+        "rprivate",
+        "ro",
+        "nosuid",
+        "noexec",
+        "nodev"
+      ]
+    },
+    {
+      "destination": "/run/lock",
+      "type": "tmpfs",
+      "source": "tmpfs",
+      "options": [
+        "rw",
+        "rprivate",
+        "nosuid",
+        "nodev",
+        "tmpcopyup"
+      ]
+    },
+    {
+      "destination": "/sys/fs/selinux",
+      "type": "bind",
+      "source": "/sys/fs/selinux",
+      "options": [
+        "rprivate",
+        "noexec",
+        "nosuid",
+        "rbind"
+      ]
+    },
+    {
+      "destination": "/var/log/journal",
+      "type": "tmpfs",
+      "source": "tmpfs",
+      "options": [
+        "rw",
+        "rprivate",
+        "nosuid",
+        "nodev",
+        "tmpcopyup"
+      ]
+    },
+    {
+      "destination": "/sys/fs/cgroup",
+      "type": "cgroup",
+      "source": "cgroup",
+      "options": [
+        "private",
+        "rw"
+      ]
+    }
+  ],
+  "annotations": {
+    "run.oci.mount_context_type": "rootcontext"
+  },
+  "linux": {
+    "sysctl": {
+      "fs.mqueue.queues_max": "4",
+      "net.ipv4.ping_group_range": "0 0"
+    },
+    "resources": {
+      "devices": [
+        {
+          "allow": false,
+          "access": "rwm"
+        }
+      ],
+      "pids": {
+        "limit": -1
+      }
+    },
+    "namespaces": [
+      {
+        "type": "pid"
+      },
+      {
+        "type": "network"
+      },
+      {
+        "type": "ipc"
+      },
+      {
+        "type": "uts"
+      },
+      {
+        "type": "mount"
+      },
+      {
+        "type": "cgroup"
+      }
+    ],
+    "maskedPaths": [
+      "/proc/acpi",
+      "/proc/kcore",
+      "/proc/keys",
+      "/proc/latency_stats",
+      "/proc/sched_debug",
+      "/proc/scsi",
+      "/proc/timer_list",
+      "/proc/timer_stats",
+      "/sys/devices/virtual/powercap",
+      "/sys/firmware",
+      "/proc/interrupts"
+    ],
+    "readonlyPaths": [
+      "/proc/asound",
+      "/proc/bus",
+      "/proc/fs",
+      "/proc/irq",
+      "/proc/sys",
+      "/proc/sysrq-trigger"
+    ],
+    "mountLabel": "system_u:object_r:qm_file_t:s0"
+  }
+}

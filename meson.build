@@ -1,7 +1,7 @@
 # SPDX-License-Identifier: GPL-2.0-only
 
-project('qm', version: files('VERSION'), license: 'GPL-2.0-only',
-  meson_version: '>=1.2.0', default_options: ['python.bytecompile=-1'])
+project('qm', 'c', version: files('VERSION'), license: 'GPL-2.0-only',
+  meson_version: '>=1.2.0', default_options: ['c_std=gnu17', 'warning_level=3', 'werror=true', 'python.bytecompile=-1'])
 
 data_dir = get_option('datadir') / 'qm'
 python = import('python').find_installation('python3')
@@ -42,3 +42,10 @@ python.install_sources('tools/qmctl/__init__.py', 'tools/qmctl/qmctl.py',
   subdir: 'qmctl', pure: true)
 install_emptydir(get_option('sysconfdir') / 'containers/systemd/qm.container.d')
 install_emptydir(get_option('sysconfdir') / 'containers/containers.conf.d')
+
+build_config = configuration_data()
+build_config.set_quoted('QM_DATA_DIR', get_option('prefix') / data_dir)
+build_config.set_quoted('QM_CONFIG_DIR', get_option('prefix') / get_option('sysconfdir'))
+configure_file(output: 'config.h', configuration: build_config)
+subdir('src')
+subdir('data')
