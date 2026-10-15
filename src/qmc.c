@@ -948,7 +948,8 @@ static int inspect(const Config *configuration)
 		if (opt_inspect_field[0] == '/')
 			found = json_pointer_get(object, opt_inspect_field, &value) == 0;
 		else
-			found = json_object_object_get_ex(object, opt_inspect_field, &value);
+			found = json_object_object_get_ex(object, opt_inspect_field,
+								  &value);
 		if (!found)
 			errx(1, "unknown inspection field: %s", opt_inspect_field);
 	}

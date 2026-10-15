@@ -49,3 +49,7 @@ build_config.set_quoted('QM_CONFIG_DIR', get_option('prefix') / get_option('sysc
 configure_file(output: 'config.h', configuration: build_config)
 subdir('src')
 subdir('data')
+
+if get_option('tests')
+  subdir('tests/qmc')
+endif
