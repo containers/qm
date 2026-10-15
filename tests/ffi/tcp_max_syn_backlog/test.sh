@@ -37,7 +37,7 @@ execute_in_qm() {
 	local new_value
 
 	new_value=$(generate_random_number $min $max)
-	QM_NET_IPV4_TCP_MAX_SYN_BACKLOG_VALUE=$(podman exec -it qm bash -c "sysctl -w net.ipv4.tcp_max_syn_backlog=$new_value" | awk '{print $3}')
+	QM_NET_IPV4_TCP_MAX_SYN_BACKLOG_VALUE=$(qmc exec bash -c "sysctl -w net.ipv4.tcp_max_syn_backlog=$new_value" | awk '{print $3}')
 	echo "QM Value: $QM_NET_IPV4_TCP_MAX_SYN_BACKLOG_VALUE"
 }
 

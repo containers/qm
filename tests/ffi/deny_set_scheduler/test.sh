@@ -12,11 +12,11 @@ reload_config
 
 running_container_in_qm
 # Copy the test from ffi-qm container to qm container
-podman exec -it qm /usr/bin/podman cp ffi-qm:/root/tests/FFI/bin/QM/test_sched_setscheduler /var/
+qmc exec /usr/bin/podman cp ffi-qm:/root/tests/FFI/bin/QM/test_sched_setscheduler /var/
 
 for policy in "${policy_arr[@]}"; do
     # Run the test inside qm container
-    return_from_setscheduler=$(podman exec -it qm ./var/test_sched_setscheduler "$policy")
+    return_from_setscheduler=$(qmc exec ./var/test_sched_setscheduler "$policy")
 
     # Assign the expected result according to the policy
     if [[ "$policy" == "SCHED_OTHER" || "$policy" == "SCHED_BATCH" || "$policy" == "SCHED_IDLE" ]]; then

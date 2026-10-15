@@ -6,9 +6,9 @@ Description:
 
 Input:
     This test set executes the following commands respectively:
-        `podman exec qm test -d /etc/qm`
-        `podman exec qm test -d /usr/lib/qm`
-        `podman exec qm test -d /usr/share/qm`
+        `qmc exec test -d /etc/qm`
+        `qmc exec test -d /usr/lib/qm`
+        `qmc exec test -d /usr/share/qm`
 
 Expected Result:
     out: [ INFO  ] PASS: check_etc_qm_not_accessible: As expected, /etc/qm is not accessible in the QM partition.
