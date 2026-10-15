@@ -7,3 +7,4 @@ qm_file_contexts
 *.8
 tests/e2e/ContainerFile.template
 __pycache__/
+/build/
