@@ -16,7 +16,7 @@ install_libkrun() {
 
 check_libkrun() {
     info_message "check_libkrun(): run virtualization-isolated containers."
-    exec_cmd "podman exec -it qm podman run --runtime=krun --rm -it alpine echo 'Hello libkrun.'"
+    exec_cmd "qmc exec podman run --runtime=krun --rm -it alpine echo 'Hello libkrun.'"
     info_message "PASS: libkrun runs successfully."
 }
 

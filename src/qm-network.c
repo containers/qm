@@ -383,6 +383,9 @@ static int configure_namespace(const NetworkOptions *options, int netns)
 			     get_link(&nl, options->interface, 0, &eth) < 0 ||
 			     !eth.index ||
 			     interface_sysctls(options, options->interface) ||
+			     /* This netns is owned by the host user namespace. Configure
+			      * it before crun enters an optional payload user namespace. */
+			     sysctl_write("net/ipv4/ping_group_range", "0 0", false) ||
 			     add_address(&nl, eth.index, options->ip,
 					 options->prefix_len) < 0 ||
 			     link_change(&nl, eth.index, false) < 0 ||

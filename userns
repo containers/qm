@@ -144,7 +144,7 @@ EOF
     # users are created (required by adding subids)
     mkdir -p "${ROOT_DIR}/${SYSUSERS_OUTPUT_DIR}" || return
     generate_sysusers_conf "${ID_OFFSET}" || return
-    systemd-sysusers --root="${ROOT_DIR}" || return
+    systemd-sysusers --root="${ROOT_DIR}" "${SYSUSERS_OUTPUT_DIR}/${SYSUSERS_CONF_FILE}" || return
 
     # Add subuids/subgids
     # A root user is always expected, so the corresponding qm user is qm_root

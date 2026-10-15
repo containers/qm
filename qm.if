@@ -179,6 +179,7 @@ template(`qm_domain_template',`
 	allow $1_t cgroup_t:filesystem { getattr remount};
 	allow $1_t cgroup_t:{dir file } mounton;
 	allow $1_t container_devpts_t:chr_file { watch watch_reads };
+	allow $1_t container_runtime_t:fd use;
 	allow $1_t container_runtime_t:fifo_file rw_fifo_file_perms;
 	# Allow QM systemd to send readiness to the runtime notify proxy.
 	allow $1_t container_runtime_t:unix_dgram_socket sendto;

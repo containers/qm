@@ -19,7 +19,7 @@ ffi_qm_nested_ready
 
 # Temporarily disable -e to capture exit status
 set +e
-podman exec qm podman exec ffi-qm ./QM/90_percent_memory_eat >/dev/null 2>&1
+qmc exec podman exec ffi-qm ./QM/90_percent_memory_eat >/dev/null 2>&1
 memory_eat_exit=$?
 set -e
 if [ "${memory_eat_exit}" -eq 137 ]; then

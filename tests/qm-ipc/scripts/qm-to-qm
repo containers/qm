@@ -68,7 +68,7 @@ sleep 15
 
 check_nested_ipc_containers_exist
 
-if podman exec -it qm podman logs systemd-ipc_server | grep -q "Current time received from client is"; then
+if qmc exec podman logs systemd-ipc_server | grep -q "Current time received from client is"; then
     info_message "[PASS] Log entry found"
 else
     info_message "[FAIL] Log entry not found"

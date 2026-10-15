@@ -32,37 +32,25 @@ check_var_partition(){
    fi
 }
 
-set_PodmanArgs(){
-   podmanArgs_of_qm=$(grep "PodmanArgs" /usr/share/containers/systemd/qm.container)
-   if [ -n "$podmanArgs_of_qm" ]; then
-      podmanArgs_of_qm=$podmanArgs_of_qm" --memory 5G"
-   else
-      podmanArgs_of_qm="--memory 5G"
-   fi
-}
 
 check_var_partition
 trap disk_cleanup EXIT
 prepare_test
 
-set_PodmanArgs
-cat << EOF > "${DROP_IN_DIR}"/oom.conf
-[Container]
-PodmanArgs=
-PodmanArgs=${podmanArgs_of_qm}
-
+cat > "${DROP_IN_DIR}/90-ffi-memory.conf" <<'EOF'
+{"memory-max": "5G"}
 EOF
 
 reload_config
 
 running_container_in_qm
 LOCK_DISK_SPACE=${LOCK_DISK_SPACE:-2G}
-exec_cmd "podman exec -it qm /bin/bash -c \
+exec_cmd "qmc exec /bin/bash -c \
          'podman exec -it ffi-qm ./QM/file-allocate'"
 
 if ! eval "fallocate -l ${LOCK_DISK_SPACE} /root/file.lock" ; then
    info_message "FAIL: No space left on device."
-   podman exec -it qm /bin/bash -c 'podman  rmi -i -f --all; echo $?'
+   qmc exec /bin/bash -c 'podman  rmi -i -f --all; echo $?'
    exit 1
 fi
 
@@ -71,4 +59,4 @@ info_message "PASS: The disk in qm is full, host is not affected."
 
 # Calling cleanup QM directory to workaround exit code once
 # /var/qm disk is full.
-podman exec -it qm /bin/bash -c 'podman  rmi -i -f --all; echo $?'
+qmc exec /bin/bash -c 'podman  rmi -i -f --all; echo $?'

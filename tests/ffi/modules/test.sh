@@ -12,7 +12,7 @@ reload_config
 running_container_in_qm
 
 # Get result message of './modprobe_module'
-msg=$(podman exec -it qm /usr/bin/podman exec -it ffi-qm ./modprobe_module 2>&1)
+msg=$(qmc exec /usr/bin/podman exec -it ffi-qm ./modprobe_module 2>&1)
 
 info_message "Output is: $msg"
 

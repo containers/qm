@@ -263,9 +263,9 @@ cleanup_node_services() {
        done
        if grep -q "qm" <<< "${node}"; then
            rm -rf /etc/qm/containers/systemd/*
-           podman exec -t qm bash -c "systemctl daemon-reload"
-           podman exec -t qm bash -c "systemctl reset-failed"
-           podman exec -t qm bash -c \
+           qmc exec bash -c "systemctl daemon-reload"
+           qmc exec bash -c "systemctl reset-failed"
+           qmc exec bash -c \
  "podman rmi -f $(podman images --quiet  --filter reference=ubi9*)"
         else
            rm -rf /etc/containers/systemd/*

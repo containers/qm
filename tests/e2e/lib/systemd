@@ -21,7 +21,7 @@ create_stub_systemd_srv() {
     shift
 
     if [ -n "${creates_on_qm_node}" ]; then
-        command_on_qm_node="podman exec qm" # keep the space before podman
+        command_on_qm_node="qmc exec" # keep the space before podman
     else
         shift # remove the "" from qm param to the loop below
     fi
@@ -42,33 +42,30 @@ create_stub_systemd_srv() {
                 cmd_cp_systemd_srv="podman \
 cp \
 lib/quadlet/container-template.container \
-${container_target}:/tmp/container-${srv}.container"
+${container_target}:/var/tmp/container-${srv}.container"
                 #echo "${cmd_cp_systemd_srv}"
                 eval "${cmd_cp_systemd_srv}"
                 if_error_exit "cannot copy container-${srv} to qm container"
 
-                # Find configuration file from service
-                target_service_file=$(podman exec ${container_target} systemctl show -P  SourcePath qm.service)
-	        # START: remove DropCapability to run nested container
-                # TBD: use drop-in files to update qm.service
-                podman exec -it ${container_target} bash -c "sed -i '/^\s*DropCapability=/ d' \"${target_service_file}\""
-	        if_error_exit "unable to remove DropCapability=<caps> in qm.container"
+                # Grant capabilities needed by these nested test workloads.
+                printf '%s\n' '{"capabilities":[{"name":"CAP_SYS_BOOT"},{"name":"CAP_SYS_RESOURCE"}]}' |
+                    podman exec -i "${container_target}" sh -c 'mkdir -p /etc/qmc.conf.d; cat > /etc/qmc.conf.d/90-e2e-capabilities.conf'
 
                 podman exec -it ${container_target} systemctl daemon-reload
                 if_error_exit "unable to execute daemon-reload"
 
 	        podman exec -it ${container_target} systemctl restart qm
 	        if_error_exit "unable to restart qm service"
-	        # END: remove DropCapability to run nested container
+	        # Capabilities are set through the qmc drop-in.
 
 	        # START: copy template quadlet to qm container
-	        podman exec -it ${container_target} podman cp /tmp/container-${srv}.container qm:/etc/containers/systemd
+	        podman exec ${container_target} cp /var/tmp/container-${srv}.container /etc/qm/containers/systemd/
 	        if_error_exit "unable to copy container-${srv}.container to qm container"
 
-	        podman exec -it ${container_target} podman exec -it qm systemctl daemon-reload
+	        podman exec -it ${container_target} qmc exec systemctl daemon-reload
 	        if_error_exit "unable to execute on qm container systemctl daemon-reload"
 
-	        podman exec -it ${container_target} podman exec -it qm systemctl start container-${srv}
+	        podman exec -it ${container_target} qmc exec systemctl start container-${srv}
 	        if_error_exit "unable to start the quadlet service container-${srv}"
 
                 # END: copy template quadlet to qm container
@@ -77,9 +74,9 @@ ${container_target}:/tmp/container-${srv}.container"
                  cp \
 lib/quadlet/container-template.container \
 "/etc/qm/containers/systemd/container-${srv}.container"
-                 podman exec -it qm systemctl daemon-reload
+                 qmc exec systemctl daemon-reload
                  if_error_exit "unable to execute on qm filesystem systemctl daemon-reload"
-                 podman exec -it qm systemctl start container-${srv}
+                 qmc exec systemctl start container-${srv}
                  if_error_exit "unable to start the quadlet service container-${srv} in qm"
             fi
 	# Controller container, example: bluechi-controller

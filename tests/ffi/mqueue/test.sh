@@ -41,9 +41,9 @@ comprehensive_cleanup() {
     fi
 
     # Clean up container message queues (if container is running)
-    if podman ps --format "{{.Names}}" | grep -q "^qm$" 2>/dev/null; then
+    if systemctl is-active --quiet qm.service; then
         info_message "Cleaning up container message queues"
-        podman exec qm bash -c 'for mq in /dev/mqueue/test_queue_*; do [ -e "$mq" ] && rm -f "$mq" 2>/dev/null || true; done' 2>/dev/null || true
+        qmc exec bash -c 'for mq in /dev/mqueue/test_queue_*; do [ -e "$mq" ] && rm -f "$mq" 2>/dev/null || true; done' 2>/dev/null || true
     fi
 
     # Clean up compiled binaries
@@ -120,7 +120,7 @@ test_mqueue_limit() {
     info_message "Testing message queue limit enforcement in QM container"
 
     # Check if the sysctl setting is applied correctly
-    MQUEUE_LIMIT=$(podman exec qm sysctl -n fs.mqueue.queues_max)
+    MQUEUE_LIMIT=$(qmc exec sysctl -n fs.mqueue.queues_max)
     info_message "Current fs.mqueue.queues_max value in QM: $MQUEUE_LIMIT"
 
     if [ "$MQUEUE_LIMIT" != "4" ]; then
@@ -132,15 +132,15 @@ test_mqueue_limit() {
     exec_cmd "dnf install --setopt=reposdir=/etc/yum.repos.d  --installroot=/usr/lib/qm/rootfs -y gcc make || true"
 
     # Create test directory and copy the test files to the QM container
-    exec_cmd "podman exec qm mkdir -p /tmp/mqueue_test"
-    exec_cmd "podman cp test_mqueue_limit.c qm:/tmp/mqueue_test/"
-    exec_cmd "podman cp Makefile qm:/tmp/mqueue_test/"
+    exec_cmd "qmc exec mkdir -p /var/tmp/mqueue_test"
+    exec_cmd "qmc exec tee /var/tmp/mqueue_test/test_mqueue_limit.c < test_mqueue_limit.c > /dev/null"
+    exec_cmd "qmc exec tee /var/tmp/mqueue_test/Makefile < Makefile > /dev/null"
 
     # Compile the test program inside QM
-    exec_cmd "podman exec qm bash -c 'cd /tmp/mqueue_test && make test_mqueue_limit'"
+    exec_cmd "qmc exec bash -c 'cd /var/tmp/mqueue_test && make test_mqueue_limit'"
 
     # Run the test program inside QM
-    if exec_cmd "podman exec qm bash -c 'cd /tmp/mqueue_test && ./test_mqueue_limit'"; then
+    if exec_cmd "qmc exec bash -c 'cd /var/tmp/mqueue_test && ./test_mqueue_limit'"; then
         info_message "PASS: Message queue limit test passed successfully"
     else
         info_message "FAIL: Message queue limit test failed"

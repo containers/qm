@@ -7,10 +7,12 @@
 #include "config.h"
 #include "qm-config.h"
 #include "qm-console.h"
+#include "qm-exec.h"
 #include "qm-network.h"
 #include "qm-oci-config.h"
 #include "qm-seccomp.h"
 #include "qm-state.h"
+#include "qm-userns.h"
 #include "qm-utils.h"
 
 #include <dirent.h>
@@ -416,6 +418,9 @@ static int exec_in_container(void)
 
 	debug("Executing %s in container %s with %s", opt_exec_argv[0], QM_CONTAINER_ID,
 	      CRUN);
+	if (!isatty(STDIN_FILENO) || !isatty(STDOUT_FILENO))
+		return exec_with_stdio(argv.strv);
+
 	execv(CRUN, argv.strv);
 	warn("exec %s", CRUN);
 
@@ -670,6 +675,7 @@ static json_object *create_config(const Config *configuration)
 
 	autofree char *files = join_path(opt_runtime_dir, "files");
 	configure_mounts(config, files);
+	userns_configure_mounts(config, opt_runtime_dir);
 
 	debug("OCI configuration ready: hostname=%s rootfs=%s", configuration->hostname,
 	      js_string(js_get(config, "root"), "path"));
@@ -948,7 +954,8 @@ static int inspect(const Config *configuration)
 		if (opt_inspect_field[0] == '/')
 			found = json_pointer_get(object, opt_inspect_field, &value) == 0;
 		else
-			found = json_object_object_get_ex(object, opt_inspect_field, &value);
+			found = json_object_object_get_ex(object, opt_inspect_field,
+							  &value);
 		if (!found)
 			errx(1, "unknown inspection field: %s", opt_inspect_field);
 	}
@@ -1265,8 +1272,13 @@ int main(int argc, char **argv)
 	bool state_created = false;
 	pid_t network_pid = -1;
 	int status = setup(configuration, config, &state_created, &network_pid);
-	if (!status)
+	autofree char *mapped_rootfs = NULL;
+	if (!status) {
+		mapped_rootfs = userns_mount_rootfs(config);
 		status = crun_run(config);
+	}
+	if (mapped_rootfs && umount(mapped_rootfs) < 0)
+		err(1, "unmount private rootfs before cleanup");
 
 	/* A successful launch execs crun. On a local failure, cancel the job
 	 * before cleanup waits for the shared lock held by its descendants.

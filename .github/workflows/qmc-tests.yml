@@ -7,10 +7,10 @@ jobs:
     steps:
       - uses: actions/checkout@v4
       - name: Install build dependencies
-        run: dnf -y --enablerepo=crb install gcc meson ninja-build make bzip2 golang-github-cpuguy83-md2man python3 jq json-c-devel libmnl-devel nftables-devel systemd-devel
+        run: dnf -y --enablerepo=crb install gcc meson ninja-build make bzip2 golang-github-cpuguy83-md2man python3 systemd jq json-c-devel libmnl-devel nftables-devel systemd-devel
       - name: Build launcher and test fixtures
         run: |
           meson setup build --prefix=/usr
-          meson compile -C build qmc test-config test-prepare test-utils test-network test-launch-network
+          meson compile -C build qmc test-config test-prepare test-utils test-network test-launch-network test-exec-stdio
       - name: Run regression tests
         run: meson test -C build --no-rebuild --print-errorlogs

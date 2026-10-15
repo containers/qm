@@ -955,6 +955,9 @@ class PrepareTests(unittest.TestCase):
         result = self.prepare()
         self.assertEqual(result.returncode, 0, result.stderr)
         linux = self.generated()["linux"]
+        for mount in self.generated()["mounts"]:
+            if mount["destination"] in ("/etc", "/var", "/var/tmp", "/etc/hostname", "/run/secrets"):
+                self.assertIn("idmap", mount["options"])
         self.assertIn({"type": "user"}, linux["namespaces"])
         self.assertEqual(linux["uidMappings"],
                          [{"containerID": 0, "hostID": 1000000000, "size": 1500000000}])

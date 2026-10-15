@@ -82,7 +82,7 @@ setup_node() {
         cp ./lib/ContainerFile.template ContainerFile.node"${nodeID}"
         if_error_exit "failed to copy ContainerFile control template to node!"
         if [ -n "${use_copr_repo}" ]; then
-          sed -e "/crb/a RUN dnf -y copr enable ${use_copr_repo} centos-stream-9" -i ContainerFile.node"${nodeID}"
+          sed -e "/crb/a RUN dnf -y copr enable ${use_copr_repo} centos-stream-10" -i ContainerFile.node"${nodeID}"
           if_error_exit "failed to sed ContainerFile node template!"
         fi
         # remove specific code from control mode (template)
@@ -112,7 +112,7 @@ qm_set_nodename_all_nodes() {
     do
         qm_node_name="qm-node${nodeID}"
         eval "$(podman exec node"${nodeID}" \
-                podman exec qm \
+                qmc exec \
                 sed -i 's/^#NodeName=/NodeName='"${qm_node_name}"'/g' \
                 /etc/bluechi/agent.conf.d/agent.conf
         )"
@@ -120,7 +120,7 @@ qm_set_nodename_all_nodes() {
 
         # restarting the qm bluechi-agent
         eval "$(podman exec node"${nodeID}" \
-                podman exec qm \
+                qmc exec \
                 systemctl restart bluechi-agent
         )"
         if_error_exit "qm node: unable to restart bluechi-agent service"
@@ -149,9 +149,9 @@ create_qm_node() {
         fi
 
         # Execute qm setup
-        # Use --skip-systemctl true in podman build, systemd is not running
+        # Use --skip-systemctl in podman build, systemd is not running
         # Do not set --skip-systemctl inside running container with systemd in it.
-        echo "RUN /usr/share/qm/setup --skip-systemctl true 2>&1 > /tmp/qm-setup.log || echo "QM setup failed, please check /tmp/qm-setup.log."" >> ContainerFile.node"${nodeID}"
+        echo "RUN /usr/share/qm/setup --skip-systemctl 2>&1 > /var/tmp/qm-setup.log || echo "QM setup failed, please check /var/tmp/qm-setup.log."" >> ContainerFile.node"${nodeID}"
 
         # Enable bluechi-agent
         echo 'RUN cp /usr/share/bluechi-agent/config/*.conf /etc/bluechi/agent.conf.d/' >> ContainerFile.node"${nodeID}"
@@ -187,7 +187,7 @@ create_qm_node() {
 
         # set in the QM container the ControllerHost (Control Machine) and restart bluechi-agent
         eval "$(podman exec node"${nodeID}" \
-                podman exec qm \
+                qmc exec \
                 cp \
                 /usr/share/bluechi-agent/config/agent.conf \
                 /etc/bluechi/agent.conf.d/agent.conf
@@ -211,7 +211,7 @@ create_qm_node() {
         if_error_exit "node: unable to restart bluechi-agent service"
 
         eval "$(podman exec node"${nodeID}" \
-                podman exec qm \
+                qmc exec \
                 sed -i 's/^#ControllerHost=/ControllerHost='"${IP_CONTROL_MACHINE}"'/g' \
                 /etc/bluechi/agent.conf.d/agent.conf
         )"

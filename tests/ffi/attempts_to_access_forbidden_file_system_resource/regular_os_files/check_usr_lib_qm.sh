@@ -5,8 +5,8 @@
 
 check_usr_lib_qm_not_accessible(){
     # Check /usr/lib/qm is not accessible in the QM partition
-    if podman exec qm test -d /usr/lib/qm; then
-        info_message "Found /usr/lib/qm in the QM partition: $(podman exec -t qm ls -l /usr/lib/qm)"
+    if qmc exec test -d /usr/lib/qm; then
+        info_message "Found /usr/lib/qm in the QM partition: $(qmc exec ls -l /usr/lib/qm)"
         info_message "FAIL: check_usr_lib_qm_not_accessible: Check for /usr/lib/qm in the QM partition failed, it should not be accessible."
         exit 1
     else

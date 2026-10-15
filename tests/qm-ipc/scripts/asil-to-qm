@@ -18,7 +18,7 @@ QMQM_CLIENT="/etc/qm/containers/systemd/ipc_client.container"
 ASIL_SOCKET="/etc/systemd/system/ipc_server.socket"
 ASIL_SERVER="/etc/containers/systemd/ipc_server.container"
 ASIL_CLIENT="/etc/qm/containers/systemd/ipc_client.container"
-ASIL_EXTRA_VOLUME="/etc/containers/systemd/qm.container.d/10-extra-volume.conf"
+ASIL_EXTRA_VOLUME="/etc/qmc.conf.d/90-ipc-volume.conf"
 
 # asil to qm
 info_message "Cleaning up qm-to-qm files..."
@@ -50,11 +50,14 @@ ASIL_VOLUME_DIR="${ASIL_EXTRA_VOLUME%/*}"
 mkdir -p "$ASIL_VOLUME_DIR"
 info_message "Creating $EXTRA_VOLUME"
 cat <<EOF > "$EXTRA_VOLUME"
-[Unit]
-Requires=ipc_server
+{"mounts": [{"source": "/run/ipc", "destination": "/run/ipc"}]}
+EOF
 
-[Container]
-Volume=$VOLUME_PATH
+mkdir -p /etc/systemd/system/qm.service.d
+cat > /etc/systemd/system/qm.service.d/90-ipc.conf <<'EOF'
+[Unit]
+Requires=ipc_server.service
+After=ipc_server.service
 EOF
 
 info_message "Creating $SERVER"
