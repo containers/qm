@@ -25,6 +25,14 @@ qm_man = custom_target('qm-man', input: 'qm.8.md', output: 'qm.8',
   command: [md2man, '--in', '@INPUT@', '--out', '@OUTPUT@'],
   build_by_default: true, install: true,
   install_dir: get_option('mandir') / 'man8')
+foreach page : [['qmc', '1', 'qmc'], ['qmc.conf', '5', 'configuration']]
+  custom_target(page[0] + '-man', input: 'docs/docs/' + page[2] + '.md',
+    output: page[0] + '.' + page[1],
+    command: [find_program('build-aux/build-man'), md2man, page[0].to_upper(),
+      page[1], '@INPUT@', '@OUTPUT@'],
+    build_by_default: true, install: true,
+    install_dir: get_option('mandir') / ('man' + page[1]))
+endforeach
 install_man('qm_selinux.8')
 
 install_data('qm.if', install_dir: get_option('datadir') / 'selinux/devel/include/services')
