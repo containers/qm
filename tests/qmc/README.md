@@ -11,6 +11,29 @@ reports these cases as skipped when their prerequisites are unavailable. Passing
 this suite does not establish that the installed service runs with SELinux or
 that networking works; those checks require a disposable integration machine.
 
+## Installed service (disposable CentOS 10 machine)
+
+Install the built QM RPM and prepare its default rootfs first. Keep SELinux
+**enforcing**. The test needs Python 3, nftables, rootfs `curl`/`getent`, network
+connectivity, and a preloaded local nested image with `/bin/sh` and `sleep`.
+For user namespaces, prepare rootfs and writable etc/var ownership on disk to
+match the subordinate-ID ranges configured by `/usr/share/qm/userns enable`,
+as automotive-image-builder does. The runtime filesystem must support ID mapped
+mounts. The test reads the configured etc path, so it can also exercise custom
+setup locations.
+
+```sh
+python3 tests/qmc/installed-service.py --nested-image localhost/qm-test:latest
+```
+
+The test uses the actual `qm.service` and defaults to userns required. To check
+userns off, use `--userns-mode off` with a separately prepared unshifted fixture.
+It never switches the same storage between modes. It restores its test-owned
+configuration, restarts QM and must run on a disposable machine. Each command
+has a deadline. Do not register it with `%check`
+or run it on a developer's host. Bootc machines can use `bootc usr-overlay` in a
+VM snapshot to test RPM installation without changing the original image.
+
 ## Isolated launcher regressions
 
 `smoke.py` and `systemd.py` exercise synthetic roots in delegated private user,
