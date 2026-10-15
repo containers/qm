@@ -19,7 +19,7 @@ ID_RANGE=1500000000
 
 SYSUSERS_OUTPUT_DIR="/etc/sysusers.d/"
 SYSUSERS_CONF_FILE="qm-sysusers.conf"
-QM_DROPIN_DIR="/etc/containers/systemd/qm.container.d"
+QM_DROPIN_DIR="/etc/qmc.conf.d"
 QM_DROPIN_FILE="qm-user-namespaces.conf"
 
 
@@ -53,15 +53,9 @@ function generate_sysusers_conf() {
 function generate_qm_dropin() {
     # shellcheck disable=SC2155
     local file_path="$(realpath -m "${ROOT_DIR}/${QM_DROPIN_DIR}/${QM_DROPIN_FILE}")"
-    local user=$1
-
-    cat > "${file_path}" <<EOF
-[Container]
-# Run the QM container in the user namespace qm using the map with name in the /etc/subgid file.
-# It also maps to the QM user created via systemd sysusers.
-SubUIDMap=${user}
-SubGIDMap=${user}
-EOF
+    local mode=$1
+    mkdir -p "$(dirname "$file_path")" || return
+    printf '{"userns": "%s"}\n' "$mode" > "$file_path" || return
 
     echo "Created '${file_path}'"
 }
@@ -69,7 +63,7 @@ EOF
 function add_subid_entries() {
     local id_range_start=$1
     local id_range=$2
-    local id_range_end=$((id_range_start+id_range))
+    local id_range_end=$((id_range_start+id_range-1))
     local user=$3
 
     # shellcheck disable=SC2155
@@ -78,10 +72,10 @@ function add_subid_entries() {
     local etc_subgid_file="$(realpath -m "${ROOT_DIR}/etc/subgid")"
 
     if ! grep -q "^${user}:" "${etc_subuid_file}" 2>/dev/null; then
-        usermod --root="${ROOT_DIR}" --add-subuids "${id_range_start}-${id_range_end}" "${user}"
+        usermod --root="${ROOT_DIR}" --add-subuids "${id_range_start}-${id_range_end}" "${user}" || return
     fi
     if ! grep -q "^${user}:" "${etc_subgid_file}" 2>/dev/null; then
-        usermod --root="${ROOT_DIR}" --add-subgids "${id_range_start}-${id_range_end}" "${user}"
+        usermod --root="${ROOT_DIR}" --add-subgids "${id_range_start}-${id_range_end}" "${user}" || return
     fi
 }
 
@@ -148,15 +142,16 @@ EOF
 
     # Generate sysusers configuration and trigger systemd-sysusers so that
     # users are created (required by adding subids)
-    generate_sysusers_conf "${ID_OFFSET}"
-    systemd-sysusers --root="${ROOT_DIR}"
+    mkdir -p "${ROOT_DIR}/${SYSUSERS_OUTPUT_DIR}" || return
+    generate_sysusers_conf "${ID_OFFSET}" || return
+    systemd-sysusers --root="${ROOT_DIR}" || return
 
     # Add subuids/subgids
     # A root user is always expected, so the corresponding qm user is qm_root
-    add_subid_entries "${ID_OFFSET}" "${ID_RANGE}" "qm_root"
+    add_subid_entries "${ID_OFFSET}" "${ID_RANGE}" "qm_root" || return
 
-    # Add SubUIDMap= and SubGIDMap= to QM via drop-in
-    generate_qm_dropin "qm_root"
+    # Require the subordinate ID maps instead of silently falling back.
+    generate_qm_dropin required
 }
 
 
@@ -168,8 +163,12 @@ function remove_subid_entries() {
     # shellcheck disable=SC2155
     local etc_subgid_file="$(realpath -m "${ROOT_DIR}/etc/subgid")"
 
-    sed -i "/^${user}:/d" "${etc_subuid_file}"
-    sed -i "/^${user}:/d" "${etc_subgid_file}"
+    local file
+    for file in "$etc_subuid_file" "$etc_subgid_file"; do
+        if [ -f "$file" ]; then
+            sed -i "/^${user}:/d" "$file" || return
+        fi
+    done
 }
 
 
@@ -224,8 +223,8 @@ EOF
         esac
     done
 
-    remove_subid_entries "qm_root"
-    rm -f "$(realpath -m "${ROOT_DIR}/${QM_DROPIN_DIR}/${QM_DROPIN_FILE}")"
+    remove_subid_entries "qm_root" || return
+    generate_qm_dropin off || return
     rm -f "$(realpath -m "${ROOT_DIR}/${SYSUSERS_OUTPUT_DIR}/${SYSUSERS_CONF_FILE}")"
 }
 
@@ -233,6 +232,7 @@ EOF
 # Only parse CLI options etc. when invoked directly
 # Do nothing when sourced
 if [[ "${BASH_SOURCE[0]}" == "$0" ]]; then
+    set -e
 
     BASIC_USAGE=$(cat <<EOF
 ${USAGE_HEADER}
@@ -248,12 +248,12 @@ EOF
         enable)
             shift
             enable "$@"
-            exit 0
+            exit $?
             ;;
         disable)
             shift
             disable "$@"
-            exit 0
+            exit $?
             ;;
         -h|--help)
             echo "${BASIC_USAGE}"
