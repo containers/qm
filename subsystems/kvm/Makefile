@@ -1,3 +1,4 @@
+TMPDIR ?= /var/tmp
 RPM_TOPDIR ?= $(PWD)/rpmbuild
 VERSION ?= $(shell cat VERSION)
 ROOTDIR ?= $(PWD)
@@ -6,23 +7,17 @@ PACKAGE_NAME = qm-kvm
 
 .PHONY: dist
 dist: ##             - Creates the QM kvm package
-	cd ${ROOTDIR} && tar cvz \
-		--dereference \
-		--transform 's|subsystems/kvm/Makefile|Makefile|' \
-		--transform 's|rpm/kvm/qm-kvm.spec|qm-kvm.spec|' \
-		--transform 's|qm|qm-kvm-${VERSION}|' \
-		-f /tmp/qm-kvm-${VERSION}.tar.gz \
-		../qm/rpm/kvm/qm-kvm.spec \
-		../qm/subsystems/kvm/Makefile \
-		../qm/tools/version-update \
-		../qm/VERSION \
-		../qm/README.md \
-		../qm/SECURITY.md \
-		../qm/LICENSE \
-		../qm/etc/containers/systemd/qm.container.d/qm_dropin_mount_bind_kvm.conf \
-		../qm/subsystems/kvm/etc/containers/systemd/kvm.container
-
-	cd ${ROOTDIR} && mv /tmp/qm-kvm-${VERSION}.tar.gz ./rpm
+	cd $(ROOTDIR) && tar -czf $(TMPDIR)/qm-kvm-$(VERSION).tar.gz \
+		--transform 's|^|qm-kvm-$(VERSION)/|' \
+		rpm/kvm/qm-kvm.spec \
+		subsystems/kvm/Makefile \
+		VERSION \
+		README.md \
+		SECURITY.md \
+		LICENSE \
+		data/qmc.conf.d/60-qm-kvm.conf \
+		subsystems/kvm/etc/containers/systemd/kvm.container
+	mv $(TMPDIR)/qm-kvm-$(VERSION).tar.gz $(ROOTDIR)/rpm
 
 .PHONY: kvm
 kvm: dist ##             - Creates a local RPM kvm package, useful for development
