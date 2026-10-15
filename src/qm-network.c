@@ -379,14 +379,19 @@ static int configure_namespace(const NetworkOptions *options, int netns)
 			_exit(1);
 		autortnl Rtnl nl = {0};
 		Link eth;
-		int result = setns(netns, CLONE_NEWNET) < 0 || rtnl_open(&nl) < 0 ||
-			     get_link(&nl, options->interface, 0, &eth) < 0 ||
-			     !eth.index ||
-			     interface_sysctls(options, options->interface) ||
-			     add_address(&nl, eth.index, options->ip,
-					 options->prefix_len) < 0 ||
-			     link_change(&nl, eth.index, false) < 0 ||
-			     add_default_route(&nl, eth.index, options->gateway) < 0;
+		autofree char *ping_range =
+			xasprintf("%u %u", options->ping_gid, options->ping_gid);
+		int result =
+			setns(netns, CLONE_NEWNET) < 0 || rtnl_open(&nl) < 0 ||
+			get_link(&nl, options->interface, 0, &eth) < 0 || !eth.index ||
+			interface_sysctls(options, options->interface) ||
+			/* This netns is owned by the host user namespace. Configure
+			 * it before crun enters an optional payload user namespace. */
+			sysctl_write("net/ipv4/ping_group_range", ping_range, false) ||
+			add_address(&nl, eth.index, options->ip, options->prefix_len) <
+				0 ||
+			link_change(&nl, eth.index, false) < 0 ||
+			add_default_route(&nl, eth.index, options->gateway) < 0;
 		if (result)
 			warn("configure QM network namespace");
 		_exit(result != 0);
