@@ -124,8 +124,6 @@ and interacting with QM containers and services.
 # Execute the script to create seccomp rules after the package is installed
 /usr/share/qm/create-seccomp-rules
 /usr/share/qm/comment-tz-local # FIX-ME GH-issue: 367
-# podmand netavark requires at host to load or let's ignore in case host don't have it and proceed with the installation
-modprobe ip_tables || true
 
 %preun
 if [ $1 = 0 ]; then
@@ -172,7 +170,11 @@ fi
 %{_datadir}/qm/qm-is-ostree
 %ghost %dir %{_datadir}/containers
 %ghost %dir %{_datadir}/containers/systemd
-%{_datadir}/containers/systemd/qm.container
+%{_unitdir}/qm.service
+%{_unitdir}/qm-resolv-conf.path
+%{_unitdir}/qm-resolv-conf.service
+%{_sysctldir}/00-qm-forwarding.conf
+%{_sysctldir}/90-qm-launch.conf
 %{_mandir}/man8/*
 %ghost %dir %{_installscriptdir}
 %ghost %dir %{_installscriptdir}/rootfs
