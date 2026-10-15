@@ -1,3 +1,4 @@
+TMPDIR ?= /var/tmp
 RPM_TOPDIR ?= $(PWD)/rpmbuild
 VERSION ?= $(shell cat VERSION)
 ROOTDIR ?= $(PWD)
@@ -6,27 +7,21 @@ PACKAGE_NAME = qm-mount-bind-video
 
 .PHONY: dist
 dist: ##             - Creates the QM video package
-	cd $(ROOTDIR) && tar cvz \
-		--dereference \
-                --transform 's|subsystems/video/Makefile|Makefile|' \
-                --transform 's|rpm/video/video.spec|video.spec|' \
-		--transform s/qm/qm-video-${VERSION}/ \
-		-f /tmp/qm-video-${VERSION}.tar.gz \
-		../qm/rpm/video/video.spec \
-                ../qm/subsystems/video/Makefile \
-                ../qm/tools/version-update \
-                ../qm/VERSION \
-		../qm/README.md \
-		../qm/SECURITY.md \
-		../qm/LICENSE \
-		../qm/etc/containers/systemd/qm.container.d/qm_dropin_mount_bind_video.conf \
-		../qm/subsystems/video/etc/containers/systemd/rear-camera.container
-	cd $(ROOTDIR) && mv /tmp/qm-video-${VERSION}.tar.gz ./rpm
+	cd $(ROOTDIR) && tar -czf $(TMPDIR)/qm-video-$(VERSION).tar.gz \
+		--transform 's|^|qm-video-$(VERSION)/|' \
+		rpm/video/video.spec \
+		subsystems/video/Makefile \
+		VERSION \
+		README.md \
+		SECURITY.md \
+		LICENSE \
+		data/qmc.conf.d/60-qm-video.conf \
+		subsystems/video/etc/containers/systemd/rear-camera.container
+	mv $(TMPDIR)/qm-video-$(VERSION).tar.gz $(ROOTDIR)/rpm
 
 .PHONY: video
 video: dist ##             - Creates a local RPM package, useful for development
 	cd $(ROOTDIR) && mkdir -p ${RPM_TOPDIR}/{RPMS,SRPMS,BUILD,SOURCES}
-	cd $(ROOTDIR) && tools/version-update -v ${VERSION}
 	cd $(ROOTDIR) && cp ./rpm/qm-video-${VERSION}.tar.gz ${RPM_TOPDIR}/SOURCES
 	rpmbuild -ba \
 		--define="_topdir ${RPM_TOPDIR}" \
