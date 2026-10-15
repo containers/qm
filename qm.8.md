@@ -25,41 +25,27 @@ After the QM software package is installed, execute the
 /usr/share/qm/setup script to setup and install the /usr/lib/qm/rootfs
 with packages to run an isolated environment. The setup script installs the
 **selinux-policy-targeted**, **podman**, **systemd**, and **bluechi** packages.
-Setup then enables and starts a Podman quadlet service qm.service (qm.container).
+Setup enables and starts the native `qm.service`, using qmc and crun. On image
+builds, `--skip-systemctl` prepares files and enablement without contacting a
+running service manager. Existing image build pipelines can supply the rootfs.
 
-This Podman quadlet can be examined with the following command:
-
-```console
+```sh
+/usr/share/qm/setup
 systemctl status qm.service
-● qm.service
-     Loaded: loaded (/etc/containers/systemd/qm.container; generated)
-    Drop-In: /usr/lib/systemd/system/service.d
-             └─10-timeout-abort.conf
-     Active: active (running) since Tue 2023-04-11 15:43:45 EDT; 28min ago
-   Main PID: 993674 (conmon)
-      Tasks: 11 (limit: 76801)
-     Memory: 275.1M (swap max: 0B)
-        CPU: 4.527s
-     CGroup: /qm.service
-             ├─libpod-payload-00de006493bc970788d6c830beb494a58a9a2847a5eda200812d3a8b4e214814
-             │ ├─init.scope
-             │ │ └─993676 /sbin/init
-             │ └─system.slice
-             │   ├─dbus-broker.service
-             │   │ ├─993763 /usr/bin/dbus-broker-launch --scope system --audit
-             │   │ └─993764 dbus-broker --log 4 --controller 9 --machine-id 4ce4c21b211d41e78b7b64418c1c0cb5 -->
-             │   ├─systemd-journald.service
-             │   │ └─993718 /usr/lib/systemd/systemd-journald
-...
+journalctl -b -u qm.service
 ```
 
 ## CGroups and container configuration
 
-The options in the qm.container file overridden by using drop-in files, in the
-directories `/etc/containers/systemd/qm.container.d` or`
-`/usr/lib/containers/systemd/qm.container.d. This allows overriding for example
-CGroup options like Service.CPUWeight, or podman options like Container.Volume.
-Such options will affect all the processes running in the qm container.
+Use JSON `/etc/qmc.conf.d/*.conf` files for container settings and systemd
+`/etc/systemd/system/qm.service.d/*.conf` files for service limits and ordering.
+See qmc.conf(5). Inspect configuration with `qmc inspect`, then restart QM.
+Systemd drop-ins also require `systemctl daemon-reload`.
+
+The default rootfs is `/usr/lib/qm/rootfs`, with writable `/etc/qm` and `/var/qm`.
+Setup accepts `--rootfs`, `--rwetcfs` and `--rwvarfs` to prepare custom locations.
+Package removal preserves these filesystems. To explicitly remove them before
+uninstalling, run `/usr/share/qm/setup --remove-qm-rootfs`.
 
 ## Install Additional packages in QM
 
@@ -82,11 +68,10 @@ Installing:
 
 ## Entering the QM
 
-To enter the QM environment, use this Podman command to
-launch containers within it.
+Use qmc(1) to run a command or enter a shell inside QM.
 
 ```console
-sh-5.2# podman exec -ti qm sh
+sh-5.2# qmc exec sh
 sh-5.2#
 ```
 
@@ -94,7 +79,7 @@ The SELinux label can be checked by executing the following:
 
 ```console
 sh-5.2# id -Z
-system_u:system_r:qm_t:s0:c35,c404
+system_u:system_r:qm_t:s0
 ```
 
 Notice that the process is running as `qm_t`, indicating that the process is a
@@ -122,27 +107,22 @@ environment.
 
 ## Configuring bluechi agent in the QM
 
-The configuration of the hosts /etc/bluechi/agent.conf file is copied into the QM every time the
-qm.service is started, with the nodename of the hosts agent.conf modified by prepending `qm.`
-on the front of the nodename. If the hosts /etc/bluechi/agent.conf does not exists, then the
-QM bluechi agent will default to `qm.`$(hostname).
-
-If you want permanently modify the bluechi agent within the QM you can add config to
-/usr/lib/qm/rootfs/etc/bluechi/agent.conf.d/ directory or modify the /etc/containers/systemd/qm.container
-quadlet file to not execute the bluechi-agent setup script.
+Setup derives QM's BlueChi agent configuration from the host configuration,
+with the node name prefixed by `qm.`. Customize the agent inside QM through
+`/etc/qm/bluechi/agent.conf.d/` on the host (or the configured writable etc tree).
 
 ## Using systemd drop-in with QM
 
 The systemd drop-in feature allows users to extend or modify the configuration of systemd units without directly editing the unit files provided by the system package.
 
-In this example, we will add the AllowedCPU to set as 1 to qm.service that quadlet generated:
+In this example, we will add the AllowedCPU to set as 1 for the native qm.service:
 
 ### Create allowedcpus.conf
 
 ```console
 cat  /etc/systemd/system/qm.service.d/allowedcpus.conf
 
-# Contents of qm.continer.d/allowedcpus.conf
+# Contents of qm.service.d/allowedcpus.conf
 [Service]
 AllowedCPUs=1
 ```
@@ -165,5 +145,7 @@ Setup the initial QM configuration for storage using the follow config files and
   - add `[engine]` and `TMPDIR`
 
 ## SEE ALSO
+
+qmc(1), qmc.conf(5),
 
 **[podman(1)](https://github.com/containers/podman/blob/main/docs/source/markdown/podman.1.md)**,**[quadlet(5)](https://github.com/containers/podman/blob/main/docs/source/markdown/podman-systemd.unit.5.md)**, systemctl(1), systemd(1), dnf(8), [bluechi-agent(1)](https://github.com/containers/bluechi/blob/main/doc/man/bluechi-agent.1.md),[bluechi-agent.conf.5](https://github.com/containers/bluechi/blob/main/doc/man/bluechi-agent.conf.5.md)

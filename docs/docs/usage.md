@@ -24,84 +24,49 @@ the QM package has been installed.
 
 ```bash
 #host> cp file_to_be_copied /usr/lib/qm/rootfs/root
-#host> podman exec -it qm bash
+#host> qmc exec bash
 bash-5.1> ls /root
 file_to_be_copied
 ```
 
-## Listing QM service
+## Managing the QM service
 
-```bash
-[root@localhost ~]# systemctl status qm -l
-● qm.service
-     Loaded: loaded (/usr/share/containers/systemd/qm.container; generated)
-     Active: active (running) since Sun 2024-04-28 22:12:28 UTC; 12s
-ago
-   Main PID: 354 (conmon)
-      Tasks: 7 (limit: 7772)
-     Memory: 82.1M (swap max: 0B)
-        CPU: 945ms
-     CGroup: /qm.service
-             ├─libpod-payload-a83253ae278d7394cb38e975535590d71de90a41157b547040
-4abd6311fd8cca
-             │ ├─init.scope
-             │ │ └─356 /sbin/init
-             │ └─system.slice
-             │   ├─bluechi-agent.service
-             │   │ └─396 /usr/libexec/bluechi-agent
-             │   ├─dbus-broker.service
-             │   │ ├─399 /usr/bin/dbus-broker-launch --scope system
---audit
-             │   │ └─401 dbus-broker --log 4 --controller 9 --machin
-e-id a83253ae278d7394cb38e975535590d7 --max-bytes 536870912 --max-fds 4096 --max
--matches 16384 --audit
+```sh
+systemctl status qm.service
+systemctl restart qm.service
+journalctl -b -u qm.service
+qmc exec /bin/bash
+qmc inspect
+qmc inspect --field rootfs
 ```
 
-## List QM container via podman
+The host starts QM with the native `qm.service`. Manage application services and
+Podman containers inside it with `qmc exec`, for example:
 
-```console
-# podman ps
-CONTAINER ID  IMAGE       COMMAND     CREATED         STATUS         PORTS       NAMES
-a83253ae278d              /sbin/init  38 seconds ago  Up 38 seconds              qm
+```sh
+qmc exec systemctl list-units
+qmc exec podman ps
 ```
 
-## Extend QM quadlet managed by podman
+## Extending QM configuration
 
-QM quadlet file is shipped through rpm, refer the following file.
-qm.container which is installed to /usr/share/containers/systemd/qm.container
-Please refer `man quadlet` for the supported value and how to.
+Create `/etc/qmc.conf.d/50-devices.conf` to expose an optional host device:
 
-In case a change needed in quadlet file, do not update systemd/qm.container file
-As per `man quadlet` do the following:
-
-```console
-if ! test -e /etc/containers/systemd/qm.container.d ; then
-  mkdir -p  /etc/containers/systemd/qm.container.d
-fi
-cat > "/etc/containers/systemd/qm.container.d/expose-dev.conf" <<EOF
-[Container]
-# Expose host device /dev/net/tun
-AddDevice=-/dev/net/tun
-# In case parameter override needed, add empty value before the required key
-Unmask=
-Unmask=ALL
-EOF
+```json
+{"devices": [{"source": "/dev/net/tun", "optional": true}]}
 ```
 
-To verify the result use the following command:
+Check the configuration and restart QM to apply it:
 
-```console
-/usr/lib/systemd/system-generators/podman-system-generator  --dryrun
+```sh
+qmc inspect
+systemctl restart qm.service
 ```
 
-Once the result is satisfied, apply the following
-
-```console
-systemctl daemon-reload
-systemctl restart qm
-systemctl is-active qm
-active
-```
+Use `/etc/systemd/system/qm.service.d/*.conf` for service limits and ordering,
+then run `systemctl daemon-reload` before restarting QM. See the
+[command reference](qmc.md), [configuration reference](configuration.md), and
+[migration guide](migration.md).
 
 ## Managing CPU usage
 
@@ -162,7 +127,7 @@ systemctl set-property qm.service CPUQuota=50%
 - Execute this command to stress the CPU for 30 seconds:
 
 ```bash
-podman exec qm timeout 30 dd if=/dev/zero of=/dev/null
+qmc exec timeout 30 dd if=/dev/zero of=/dev/null
 ```
 
 - Observe the limited CPU consumption from the `qm.service`, as shown in the output of the command below:
@@ -180,10 +145,10 @@ Expected output:
       1 root      20   0   65576  37904  11116 S   0.0   0.1   0:40.00 systemd
 ```
 
-## Connecting to QM container via podman
+## Connecting to QM
 
 ```console
-# podman exec -it qm bash
+# qmc exec bash
 bash-5.1#
 ```
 
@@ -248,7 +213,7 @@ mkdir /usr/lib/containers/storage: read-only file system
 Imagine a situation where you have a Quadlet container inside QM that isn't starting, and you're unsure why. The best approach is to log into the QM, run the ```quadlet --dryrun``` command, and analyze what's happening. Here's how you can troubleshoot the issue step by step.
 
 ```bash
-$ sudo podman exec -it qm bash
+$ sudo qmc exec bash
 bash-5.1# cd /etc/containers/systemd/
 bash-5.1# ls
 ros2.container

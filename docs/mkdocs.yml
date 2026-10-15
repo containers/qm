@@ -9,10 +9,13 @@ nav:
   - Home: index.md
   - Getting Started: getting_started.md
   - Using QM: usage.md
+  - qmc commands: qmc.md
+  - Configuration: configuration.md
+  - Migration: migration.md
   - Setting up IPC: ipc.md
   - How To:
     - Android container: how_tos/android.md
-    - Using network modes with QM: how_tos/network.md
+    - Networking with QM: how_tos/network.md
     - Changing variables in QM: how_tos/qm_variables.md
   - Experimental:
     - QM Subpackages: experimental/subpackages.md
