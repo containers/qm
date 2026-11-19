@@ -6,8 +6,8 @@ The KVM, sound and video packages install their respective JSON defaults into
 `60-qm-window-manager.conf` is an optional TTY example. Copy it to
 `/etc/qmc.conf.d` on the host when QM needs virtual terminals. To select a
 Wayland seat as well, add a `devices` entry with `"seat": "seat0"` and
-`"optional": true`. The old seat hook also granted common input and render
-nodes regardless of seat. Add these explicitly if required:
+`"optional": true`. Add common input and render nodes explicitly when access
+independent of the seat selection is required:
 
 ```json
 {
