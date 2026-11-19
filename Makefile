@@ -9,7 +9,7 @@ VERSION ?= $(shell cat VERSION)
 RPM_TOPDIR ?= $(CURDIR)/rpmbuild
 ROOTDIR ?= $(CURDIR)
 TARGETS ?= qm
-PACKIT_SUBPACKAGES := wayland qm-oci-hooks
+PACKIT_SUBPACKAGES := wayland
 FILTERED_TARGETS := $(filter-out $(PACKIT_SUBPACKAGES),$(TARGETS))
 
 .PHONY: help all install clean man selinux file_contexts dist rpm subpackages install-policy codespell

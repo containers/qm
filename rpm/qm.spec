@@ -69,10 +69,11 @@ Requires: crun
 Requires: systemd >= 254
 Requires: shadow-utils
 %{?systemd_requires}
-# Retired CLIs and the standalone prototype; no command compatibility implied.
+# Retired tools and OCI device hooks; no command compatibility implied.
 Obsoletes: qmctl < %{?epoch:%{epoch}:}2
 Obsoletes: qm-ctl < %{?epoch:%{epoch}:}2
 Obsoletes: qm-launch < 1
+Obsoletes: qm-oci-hooks < 0.2
 
 %description
 This package allow users to setup an environment which prevents applications
