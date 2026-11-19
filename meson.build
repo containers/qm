@@ -39,9 +39,8 @@ install_data('qm.if', install_dir: get_option('datadir') / 'selinux/devel/includ
 install_data('qm_contexts', install_dir: data_dir, rename: 'contexts')
 install_data('containers.conf', install_dir: data_dir)
 install_data('setup', 'userns', 'create-seccomp-rules', 'tools/check-config-migration',
-  'tools/qm-rootfs', 'tools/qm-storage-settings', 'tools/qm-is-ostree',
+  'tools/qm-rootfs', 'tools/qm-storage-settings',
   install_dir: data_dir, install_mode: 'rwxr-xr-x')
-install_emptydir(get_option('sysconfdir') / 'containers/containers.conf.d')
 
 build_config = configuration_data()
 build_config.set_quoted('QM_DATA_DIR', get_option('prefix') / data_dir)

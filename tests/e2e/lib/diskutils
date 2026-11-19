@@ -106,7 +106,7 @@ select_disk_to_partition() {
   # Once a disk is found and partitioned, we need to notify the kernel about the changes
   if [[ -n "${DISK}" ]]; then
     echo "Rescanning partition table on /dev/${DISK}..."
-    if ! rpm -qf qm &>/dev/null; then
+    if ! command -v partprobe &>/dev/null; then
        dnf install -y parted
     fi
     # Run partprobe to inform the kernel about partition changes
