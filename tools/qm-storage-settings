@@ -117,9 +117,16 @@ update_storage_conf() {
 	exit 255
     fi
 
-    # 1. Uncomment lines from 'additionalimage' to ']'
+    # 1. Uncomment the array, stopping on this line for a single-line array.
     if grep -q '#.*additionalimage' "$STORAGE_CONFIG"; then
-        sed -i '/additionalimage.*/,/]/s/^#//g' "$STORAGE_CONFIG"
+        sed -i '/^[[:space:]]*#[[:space:]]*additionalimagestores[[:space:]]*=/ {
+            :array
+            s/^[[:space:]]*#[[:space:]]*//
+            /]/! {
+                n
+                b array
+            }
+        }' "$STORAGE_CONFIG"
     fi
 
     # 2. Append line after 'additionalimages'
