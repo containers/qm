@@ -57,7 +57,6 @@ BuildRequires: jq
 
 Recommends: selinux-policy-targeted >= %_selinux_policy_version
 
-Requires: parted
 Requires: containers-common
 Requires: selinux-policy >= %_selinux_policy_version
 Requires(post): selinux-policy-base >= %_selinux_policy_version
@@ -195,7 +194,6 @@ fi
 %{_datadir}/qm/qm-rootfs
 %{_datadir}/qm/qm-storage-settings
 %{_datadir}/qm/check-config-migration
-%{_datadir}/qm/qm-is-ostree
 %{_unitdir}/qm.service
 %{_unitdir}/qm-resolv-conf.path
 %{_unitdir}/qm-resolv-conf.service
