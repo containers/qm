@@ -128,8 +128,8 @@ perform hotplug or session management. Later entries for the same seat replace
 it; `{"seat": "seat0", "remove": true}` cancels it. Seat entries have no source,
 destination or options. Selection is evaluated at startup.
 
-The old seat hook additionally exposed common input and render devices regardless
-of seat. List those explicitly when required; see the subsystem guide. Optional
+List common input and render devices explicitly when access independent of seat
+selection is required; see the subsystem guide. Optional
 KVM and fuse devices are already supplied by the main vendor configuration.
 
 ## Capabilities, seccomp and masked paths

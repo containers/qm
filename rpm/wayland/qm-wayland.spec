@@ -29,7 +29,7 @@ BuildRequires: pkgconfig(systemd)
 BuildRequires: systemd-rpm-macros
 
 Requires: systemd
-Recommends: qm-oci-hooks
+Obsoletes: qm-oci-hooks < 0.2
 
 %description
 This package provides Wayland display server support for the QM (Quality Management)

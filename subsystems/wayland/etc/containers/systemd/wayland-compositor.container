@@ -38,5 +38,6 @@ AddDevice=/dev/tty0
 # Traditional display terminal
 AddDevice=/dev/tty7
 
-# OCI hook triggers device injection for seat0
-Annotation=org.containers.qm.wayland.seat=seat0
+# Device access is limited to the nodes exposed to QM by qmc configuration.
+AddDevice=-/dev/dri
+AddDevice=-/dev/input
