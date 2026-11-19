@@ -11,6 +11,9 @@ print_journal_for_bluechi() {
     journalctl -r -u bluechi-agent -n 100
 
     info_message "Journal for qm bluechi-agent:\n"
+    qmc exec journalctl --no-pager -r -u bluechi-agent -n 100 || true
+
+    info_message "Journal for qm service:\n"
     journalctl -r -u qm -n 100
 }
 
