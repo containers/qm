@@ -2,20 +2,30 @@
 # See the documentation for more information:
 # https://packit.dev/docs/configuration/
 
-specfile_path: rpm/qm.spec
 upstream_tag_template: v{version}
 
 srpm_build_deps:
   - make
 
-actions:
-  fix-spec-file:
-    - bash .packit.sh
+# Jobs select packages explicitly so Wayland builds do not run QM integration tests.
+packages:
+  qm:
+    specfile_path: rpm/qm.spec
+    actions:
+      fix-spec-file:
+        - bash .packit.sh
+
+  qm-wayland:
+    specfile_path: rpm/wayland/qm-wayland.spec
+    actions:
+      fix-spec-file:
+        - bash .packit-wayland.sh
 
 jobs:
   - &pr_job
     job: copr_build
     trigger: pull_request
+    packages: [qm]
     targets: &pr_targets
       fedora-stable: {}
       epel-10:
@@ -26,6 +36,7 @@ jobs:
   - &copr
     job: copr_build
     trigger: commit
+    packages: [qm]
     branch: main
     owner: "@centos-automotive-sig"
     project: qm-next
@@ -45,6 +56,7 @@ jobs:
 
   - job: tests
     trigger: pull_request
+    packages: [qm]
     identifier: e2e-multi-bluechi-agents
     tmt_plan: /plans/e2e/multi-bluechi-agents
     targets:
@@ -66,6 +78,7 @@ jobs:
 
   - job: tests
     trigger: pull_request
+    packages: [qm]
     identifier: e2e-ffi
     tmt_plan: /plans/e2e/ffi
     targets:
@@ -84,6 +97,7 @@ jobs:
 
   - job: tests
     trigger: pull_request
+    packages: [qm]
     identifier: qm-tier-0
     tmt_plan: /plans/e2e/tier-0
     targets:
@@ -98,6 +112,7 @@ jobs:
 
   - job: tests
     trigger: pull_request
+    packages: [qm]
     identifier: kvm-tier-0
     tmt_plan: /plans/e2e/kvm-tier-0
     targets:
@@ -116,6 +131,7 @@ jobs:
 
   - job: tests
     trigger: pull_request
+    packages: [qm]
     identifier: automotive-image-builder
     tmt_plan: /plans/e2e/aib
     targets:
@@ -129,16 +145,19 @@ jobs:
 
   - job: propose_downstream
     trigger: release
+    packages: [qm]
     dist_git_branches: &downstream_branches
       - fedora-all
       - epel-10
 
   - job: koji_build
     trigger: commit
+    packages: [qm]
     dist_git_branches: *downstream_branches
 
   - job: bodhi_update
     trigger: commit
+    packages: [qm]
     dist_git_branches: &bodhi_branches
       # rawhide updates are created automatically
       - fedora-branched
@@ -147,19 +166,13 @@ jobs:
   # QM Wayland package
   - job: copr_build
     trigger: pull_request
+    packages: [qm-wayland]
     identifier: qm-wayland
-    specfile_path: rpm/wayland/qm-wayland.spec
-    actions:
-      fix-spec-file:
-        - bash .packit-wayland.sh
     targets: *pr_targets
 
   - <<: *copr
+    packages: [qm-wayland]
     identifier: qm-wayland-main
-    specfile_path: rpm/wayland/qm-wayland.spec
-    actions:
-      fix-spec-file:
-        - bash .packit-wayland.sh
     targets: *multiarch_targets
     notifications:
       failure_comment:
@@ -168,18 +181,18 @@ jobs:
   # Downstream jobs for qm-wayland
   - job: propose_downstream
     trigger: release
+    packages: [qm-wayland]
     identifier: qm-wayland-downstream
-    specfile_path: rpm/wayland/qm-wayland.spec
     dist_git_branches: *downstream_branches
 
   - job: koji_build
     trigger: commit
+    packages: [qm-wayland]
     identifier: qm-wayland-koji
-    specfile_path: rpm/wayland/qm-wayland.spec
     dist_git_branches: *downstream_branches
 
   - job: bodhi_update
     trigger: commit
+    packages: [qm-wayland]
     identifier: qm-wayland-bodhi
-    specfile_path: rpm/wayland/qm-wayland.spec
     dist_git_branches: *bodhi_branches
