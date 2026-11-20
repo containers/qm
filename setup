@@ -219,6 +219,8 @@ EOF
 [copr:copr.fedorainfracloud.org:group_centos-automotive-sig:libkrun]
 name=Copr repo for libkrun owned by @centos-automotive-sig
 baseurl=https://download.copr.fedorainfracloud.org/results/@centos-automotive-sig/libkrun/centos-stream-\$releasever-\$basearch/
+# Keep libkrun and its firmware together instead of mixing in AutoSD builds.
+priority=90
 type=rpm-md
 skip_if_unavailable=True
 gpgcheck=1
