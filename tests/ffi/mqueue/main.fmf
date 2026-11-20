@@ -25,3 +25,6 @@ duration: 10m
 tag: ffi
 framework: shell
 id: 774b0232-e29f-4bde-bbab-766e95721965
+
+check:
+  - how: avc
