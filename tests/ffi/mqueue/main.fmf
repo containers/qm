@@ -1,4 +1,6 @@
 summary: Test message queue limit enforcement in QM container and host isolation
+# This is temporary disabled, until we have a fix for https://github.com/containers/crun/pull/2487
+enabled: false
 description: |
     This test verifies that the fs.mqueue.queues_max=4 sysctl setting is properly
     applied in the QM container and that the limit is enforced when creating message queues
