@@ -84,7 +84,11 @@ verify_configuration() {
 
     # Start the kvm service in qm
     exec_cmd "qmc exec systemctl daemon-reload"
-    exec_cmd "qmc exec systemctl start kvm"
+    if ! exec_cmd "qmc exec systemctl start kvm" --return; then
+        qmc exec systemctl status --no-pager --full kvm || true
+        qmc exec journalctl --boot --no-pager --unit kvm --lines 100 || true
+        exit 1
+    fi
 }
 
 # Check kvm is active in qm
