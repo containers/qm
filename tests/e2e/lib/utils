@@ -22,12 +22,16 @@ if_error_exit() {
     #                                                                         #
     # Arguments:                                                              #
     #   $1 - error message if not provided, it will just exit                 #
+    #   $2 - optional --return to return the error instead of terminating     #
     ###########################################################################
     local exit_code="$?"
     if [ "${exit_code}" != "0" ]; then
         RED="\033[91m"
         ENDCOLOR="\033[0m"
         echo -e "[ ${RED}FAILED${ENDCOLOR} ] ${1} with exit code: ${exit_code}"
+        if [ "${2:-}" = "--return" ]; then
+            return "$exit_code"
+        fi
         kill $$ &> /dev/null
     fi
 }
@@ -248,9 +252,11 @@ exec_cmd() {
     local cmd_string="$1"
 
     # Use bash -c to interpret the string as a command
-    bash -c "$cmd_string"
-    if_error_exit "Error executing command '$cmd_string'"
-    info_message "PASS: Command '$cmd_string' successful"
+    if bash -c "$cmd_string"; then
+        info_message "PASS: Command '$cmd_string' successful"
+    else
+        if_error_exit "Error executing command '$cmd_string'" "${2:-}"
+    fi
 }
 
 cleanup_node_services() {
