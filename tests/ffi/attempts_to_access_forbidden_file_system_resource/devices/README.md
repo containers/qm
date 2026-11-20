@@ -4,6 +4,6 @@ This test is intended to confirm that resources (devices, networks, shared memor
 
 ## This Test Set includes these tests
 
-1. Confirm that the device /dev/console is not available in the QM partition.
+1. Confirm that QM does not expose the host console; a private console PTY is allowed.
 2. Confirm that the device /dev/disk is not available in the QM partition.
 3. Confirm that the device /dev/kmsg is not available in the QM partition.
