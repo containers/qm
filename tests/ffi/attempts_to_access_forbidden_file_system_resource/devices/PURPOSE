@@ -7,12 +7,12 @@ Description:
 
 Input:
     This test set executes the following commands respectively:
-        `podman exec qm test -c /dev/console`
-        `podman exec qm test -d /dev/disk`
-        `podman exec qm test -c /dev/kmsg`
+        Verify that /dev/console is absent or a PTY on a private devpts filesystem.
+        `qmc exec test -d /dev/disk`
+        `qmc exec test -c /dev/kmsg`
 
 Expected Result:
-    out: [ INFO  ] PASS: check_dev_console_not_available: As expected, /dev/console is not available in the QM partition.
+    out: [ INFO  ] PASS: check_dev_console_is_private: QM does not expose the host console.
     out: [ INFO  ] PASS: check_dev_disk_not_available: As expected, /dev/disk is not available in the QM partition.
     out: [ INFO  ] PASS: check_dev_kmsg_not_available: As expected, /dev/kmsg is not available in the QM partition.
 

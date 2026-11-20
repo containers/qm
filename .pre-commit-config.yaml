@@ -46,4 +46,4 @@ repos:
     hooks:
     -   id: sourcery
         args: ["--check"]
-        exclude: ^(demos/|tests/|oci-hooks/tests/)
+        exclude: ^(demos/|tests/)

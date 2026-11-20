@@ -14,8 +14,8 @@ check_dev_shm_file_not_visible_in_qm(){
     fi
 
     # Check for file /dev/shm/on-host is not visible inside the QM partition.
-    if podman exec qm test -e /dev/shm/on-host; then
-        info_message "Found /dev/shm/on-host in the QM partition: $(podman exec -t qm ls -l /dev/shm/on-host)"
+    if qmc exec test -e /dev/shm/on-host; then
+        info_message "Found /dev/shm/on-host in the QM partition: $(qmc exec ls -l /dev/shm/on-host)"
         info_message "FAIL: check_dev_shm_file_not_visible_in_qm: Check for /dev/shm/on-host failed, it should not be visible in the QM partition."
         exit 1
     else

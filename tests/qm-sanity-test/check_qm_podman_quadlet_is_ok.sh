@@ -21,10 +21,14 @@ Exec=sleep 1000
 WantedBy=multi-user.target default.target
 EOF
     info_message "check_qm_podman_quadlet_is_ok(): qm-sanity-test container reload & restart"
-    exec_cmd "podman exec qm systemctl daemon-reload"
-    exec_cmd "podman exec qm systemctl start qm-sanity-test"
-    exec_cmd "podman exec qm systemctl status qm-sanity-test | grep -i started"
-    exec_cmd "podman exec qm podman run fedora echo Hello QM"
+    exec_cmd "qmc exec systemctl daemon-reload"
+    if ! exec_cmd "qmc exec systemctl start qm-sanity-test" --return; then
+        qmc exec systemctl status --no-pager --full qm-sanity-test || true
+        qmc exec journalctl --boot --no-pager --unit qm-sanity-test --lines 100 || true
+        exit 1
+    fi
+    exec_cmd "qmc exec systemctl status qm-sanity-test | grep -i started"
+    exec_cmd "qmc exec podman run fedora echo Hello QM"
     info_message "PASS: check_qm_podman_quadlet_is_ok()"
     exit 0
 }

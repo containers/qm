@@ -11,7 +11,7 @@ It must be executed inside QM environment as a container (nested) to make sure a
 Example:
 
 ```console
-my-host# podman exec -it qm bash
+my-host# qmc exec bash
 
 bash-5.1# podman run -it fedora bash
 

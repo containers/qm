@@ -20,10 +20,10 @@ NESTED_STATUS=""
 create_nested() {
 	local nested_container_name="ffi-qm"
 	running_container_in_qm
-	NESTED_NAME=$(podman exec -it qm bash -c "podman inspect ${nested_container_name} --format '{{.Name}}'")
+	NESTED_NAME=$(qmc exec bash -c "podman inspect ${nested_container_name} --format '{{.Name}}'")
 	if_error_exit "An error occured: failed to extract Name parameter of container from inside of QM."
 	echo "Container name is: ${NESTED_NAME}"
-	NESTED_STATUS=$(podman exec -it qm bash -c "podman inspect --format='{{.State.Status}}' ${nested_container_name}")
+	NESTED_STATUS=$(qmc exec bash -c "podman inspect --format='{{.State.Status}}' ${nested_container_name}")
 	if_error_exit "An error occured: failed to extract State parameter of container from inside of QM."
 	echo "Container $NESTED_NAME status is: ${NESTED_STATUS}"
 }

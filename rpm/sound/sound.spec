@@ -13,7 +13,6 @@ Source0: %{url}/archive/qm-sound-%{version}.tar.gz
 BuildArch: noarch
 
 Requires: qm >= %{version}
-Requires: qm-oci-hooks
 
 %description
 This subpackage installs a drop-in configuration for QM containers,
@@ -29,19 +28,19 @@ the container and nested containers.
 %install
 # Install drop-in configuration for /dev/snd
 # Create the directory for drop-in configurations
-install -d %{buildroot}%{_sysconfdir}/containers/systemd/qm.container.d
+install -d %{buildroot}%{_datadir}/qm/qmc.conf.d
 install -d %{buildroot}%{qm_sysconfdir}/containers/systemd
 
 install -m 644 %{_builddir}/qm-sound-%{version}/subsystems/sound/etc/containers/systemd/audio.container \
     %{buildroot}%{qm_sysconfdir}/containers/systemd/audio.container
 # Install the sound drop-in configuration file
-install -m 644 %{_builddir}/qm-sound-%{version}/etc/containers/systemd/qm.container.d/qm_dropin_mount_bind_snd.conf \
-    %{buildroot}%{_sysconfdir}/containers/systemd/qm.container.d/qm_dropin_mount_bind_snd.conf
+install -m 644 %{_builddir}/qm-sound-%{version}/data/qmc.conf.d/60-qm-sound.conf \
+    %{buildroot}%{_datadir}/qm/qmc.conf.d/60-qm-sound.conf
 
 %files
 %license LICENSE
 %doc README.md SECURITY.md
-%{_sysconfdir}/containers/systemd/qm.container.d/qm_dropin_mount_bind_snd.conf
+%{_datadir}/qm/qmc.conf.d/60-qm-sound.conf
 %{qm_sysconfdir}/containers/systemd/audio.container
 
 %changelog

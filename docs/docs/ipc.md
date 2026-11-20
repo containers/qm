@@ -8,10 +8,10 @@
    - [`/etc/systemd/system/ipc_server.socket`](#etcsystemdsystemipc_serversocket)
    - [`/etc/qm/containers/systemd/ipc_client.container`](#etcqmcontainerssystemdipc_clientcontainer)
    - [`/etc/containers/systemd/ipc_server.container`](#etccontainerssystemdipc_servercontainer)
-   - [`/etc/containers/systemd/qm.container.d/10-extra-volume.conf`](#etccontainerssystemdqmcontainerd10-extra-volumeconf)
+   - [`/etc/qmc.conf.d/50-ipc.conf`](#etcqmcconfd50-ipcconf)
 
    1.2 [QM to QM IPC](#example-qm-to-qm-app)
-   - [`/etc/qm/containers/systemd/ipc_client.container`](#etcqmcontainerssystemdipc_clientcontainer-1)
+   - [`/etc/qm/containers/systemd/ipc_client.container`](#qm-to-qm-client)
    - [`/etc/qm/containers/systemd/ipc_server.container`](#etcqmcontainerssystemdipc_servercontainer)
 
 ---
@@ -87,17 +87,28 @@ Type=notify
 WantedBy=multi-user.target
 ```
 
-### /etc/containers/systemd/qm.container.d/10-extra-volume.conf
+### /etc/qmc.conf.d/50-ipc.conf
 
-```console
-[Unit]
-Requires=ipc_server
-
-[Container]
-Volume=/run/ipc/:/run/ipc/
+```json
+{"mounts": [{"source": "/run/ipc", "destination": "/run/ipc"}]}
 ```
 
+Order the host socket before QM with
+`/etc/systemd/system/qm.service.d/50-ipc.conf`:
+
+```ini
+[Unit]
+Requires=ipc_server.socket
+After=ipc_server.socket
+```
+
+Run `systemctl daemon-reload` and restart `qm.service` after configuring both.
+Keep the directory's `ipc_var_run_t` label; adding a bind mount does not grant
+new SELinux permissions.
+
 ## Example QM to QM app
+
+<a id="qm-to-qm-client"></a>
 
 ### /etc/qm/containers/systemd/ipc_client.container
 

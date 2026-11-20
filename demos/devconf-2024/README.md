@@ -16,11 +16,11 @@ It demonstartes:
 - How to use quadlet service files under HOST and QM partitions
 - How to control services with bluechictl
 
-Running the demo recommend environment for tests is inside CentOS-Stream-9
+Running the demo recommend environment for tests is inside CentOS-Stream-10
 
 ## Requirements
 
-It is recommend to use vm environment for tests in CentOS-Stream-9 virtual machine
+It is recommend to use vm environment for tests in CentOS-Stream-10 virtual machine
 
 Follow the following procedure to prepare virtual machine
 [Download and run vm](../../tests/e2e/README.md#run-tmt-tests-framework-locally)

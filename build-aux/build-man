@@ -1,0 +1,6 @@
+#!/bin/bash
+# SPDX-License-Identifier: GPL-2.0-only
+set -euo pipefail
+md2man=$1 title=$2 section=$3 input=$4 output=$5
+# Share the user-facing source with MkDocs; replace its H1 with a man title.
+{ printf '%% %s %s\n\n' "$title" "$section"; tail -n +2 "$input"; } | "$md2man" > "$output"

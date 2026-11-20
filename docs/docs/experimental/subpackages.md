@@ -33,17 +33,17 @@ Choose one of the following sub-packages and build using make.
 ```bash
 git clone git@github.com:containers/qm.git && cd qm
 
-Example of subpackages: kvm, qm-oci-hooks, ros2, text2speech, windowmanager
+Example of subpackages: kvm, ros2, text2speech, wayland, sound, video
 
-make TARGETS=input subpackages
+make TARGETS=video subpackages
 ls rpmbuild/RPMS/noarch/
-qm-0.6.7-1.fc40.noarch.rpm  qm_mount_bind_input-0.6.7-1.fc40.noarch.rpm
+qm-mount-bind-video-<version>-<release>.noarch.rpm
 ```
 
 ## Installing QM sub-packages
 
 ```bash
-$ sudo dnf install ./rpmbuild/RPMS/noarch/qm_mount_bind_input-0.6.7-1.fc40.noarch.rpm
+$ sudo dnf install ./rpmbuild/RPMS/noarch/qm-mount-bind-video-*.noarch.rpm
 <SNIP>
 Complete!
 ```
@@ -52,45 +52,45 @@ If QM is already running, restart or reload your QM container environment to app
 
 ```bash
 sudo systemctl daemon-reload
-sudo podman restart qm
+sudo systemctl restart qm.service
 ```
 
 ## Removing QM sub-packages
 
 ```bash
-sudo rpm -e qm_mount_bind_input
+sudo rpm -e qm-mount-bind-video
 ```
 
 ## Creating your own drop-in QM sub-package
 
 We recommend using the existing drop-in files as a guide and adapting them to your specific needs. However, here are the step-by-step instructions:
 
-1) Add a drop-in file to: `etc/containers/systemd/qm.container.d/qm_dropin_<subpackage>.conf>`
+1) Add a drop-in file to: `data/qmc.conf.d/60-qm-<subpackage>.conf` (JSON, installed under `/usr/share/qm/qmc.conf.d/`)
 2) Add your package as a sub-package to: `rpm/<subpackage_directory>/<subpackage>.spec`
 3) Add the makefile for the sub-package and any files required by the sub-package to: `subsystems/<subpackage_directory>`
 4) Test the sub-package build by running: `make clean && make TARGETS=<subpackage> subpackages`
 5) Install your sub-package using: `dnf install -y rpmbuild/RPMS/noarch/<subpackage>*.noarch.rpm`
-6) Restart podman container using: `sudo podman restart qm`
+6) Restart QM using: `sudo systemctl restart qm.service`
 7) Additionally, test it with and without enabling the sub-package using (by default it should be disabled but there are cases where it will be enabled by default if QM community decide):
 
 Example changing the spec and triggering the build via make (feel free to automate via sed, awk etc):
 
 ```bash
 # Use make file to run specific subpackage
-make TARGETS=windowmanager subpackages
+make TARGETS=wayland subpackages
 ```
 
 ## QM sub-package Video
 
-The video sub-package exposes `/dev/video0` (or many video devices required) to the container. This feature is useful for demonstrating how to share a camera from the host system into a container using Podman drop-in. To showcase this functionality, we provide the following demo:
+The video sub-package exposes `/dev/video0` (or many video devices required) to the container. This feature is useful for demonstrating how to share a camera from the host system into a container using a qmc device drop-in. To showcase this functionality, we provide the following demo:
 
 ### Building the video sub-package, installing, and restarting QM
 
 ```bash
 make TARGETS=video subpackages
-sudo dnf install ./rpmbuild/RPMS/noarch/qm-mount-bind-video-0.6.7-1.fc40.noarch.rpm
+sudo dnf install ./rpmbuild/RPMS/noarch/qm-mount-bind-video-*.noarch.rpm
 sudo systemctl daemon-reload
-sudo podman restart qm
+sudo systemctl restart qm.service
 ```
 
 This simulates a rear camera when the user shifts into reverse gear.
@@ -98,7 +98,7 @@ This simulates a rear camera when the user shifts into reverse gear.
 In this simulation, we created a systemd service that, every time it is started, captures a snapshot from the webcam, simulating the action of a rear camera. (Feel free to start and restart the service multiple times!)
 
 ```bash
-host> sudo podman exec -it qm bash
+host> sudo qmc exec -t bash
 
 bash-5.2# systemctl daemon-reload
 bash-5.2# systemctl start rear-camera
@@ -111,7 +111,7 @@ bash-5.2#
 ### Copy the screenshot to the host and view it
 
 ```bash
-host> sudo podman cp qm:/var/tmp/screenshot.jpg .
+host> sudo qmc exec cat /var/tmp/screenshot.jpg > screenshot.jpg
 ```
 
 Great job! Now imagine all the possibilities this opens up!
@@ -120,18 +120,18 @@ Great job! Now imagine all the possibilities this opens up!
 
 ### Step 1: Install the QM Mount Bind Sound Package
 
-To set up sound cards in a QM environment using Podman, follow the steps below:
-Run the following commands to install the `qm_mount_bind_sound` package and restart QM (if previously in use):
+To expose sound devices in QM, follow the steps below:
+Run the following commands to install the `qm-sound` package and restart QM (if previously in use):
 
 ```bash
 # Build and install the RPM for QM sound
 git clone https://github.com/containers/qm.git && cd qm
 make TARGETS=sound subpackages
-sudo dnf install -y rpmbuild/RPMS/noarch/qm_mount_bind_sound-0.6.7-1.fc40.noarch.rpm
+sudo dnf install -y rpmbuild/RPMS/noarch/qm-sound-*.noarch.rpm
 
 # Restart QM container (if already running)
 sudo systemctl daemon-reload
-sudo podman restart qm
+sudo systemctl restart qm.service
 ```
 
 ### Step 2: Identify Sound Cards
@@ -193,7 +193,7 @@ cat /proc/asound/cards | grep -A 1 '^ 2 '
 Inside QM, run the following command:
 
 ```bash
-podman exec -it qm bash
+qmc exec -t bash
 bash-# podman ps
 CONTAINER ID  IMAGE                           COMMAND         CREATED      STATUS      PORTS       NAMES
 76dacaa9a89e  quay.io/qm-images/audio:latest  sleep infinity  7 hours ago  Up 7 hours              systemd-audio
@@ -213,241 +213,33 @@ hw:1,0: sound card 1, device 0
 -r 48000: sample rate of 48 kHz
 ```
 
-## QM sub-package OCI Hooks
+## Device access
 
-The QM sub-package OCI Hooks provides dynamic device access management for containers through OCI runtime hooks. This subpackage includes essential hooks that enable secure and flexible device sharing between the host system and containers with robust error handling and comprehensive testing.
-
-### Components
-
-The `qm-oci-hooks` subpackage includes:
-
-- **qm-device-manager**: Dynamic device mounting hook that provides access to various hardware devices based on container annotations
-- **wayland-client-devices**: Hook for GPU hardware acceleration access for Wayland client applications running as nested containers
-
-### Supported Device Types
-
-#### QM Device Manager
-
-The `qm-device-manager` hook supports the following device types through container annotations:
-
-| Device Type | Annotation | Devices Provided |
-|-------------|------------|------------------|
-| Audio | `org.containers.qm.device.audio=true` | `/dev/snd/*` (audio devices) |
-| Video | `org.containers.qm.device.video=true` | `/dev/video*`, `/dev/media*` (cameras, video devices) |
-| Input | `org.containers.qm.device.input=true` | `/dev/input/*` (keyboards, mice, touchpads) |
-| TTYs | `org.containers.qm.device.ttys=true` | `/dev/tty0-7` (virtual terminals) |
-| TTY USB | `org.containers.qm.device.ttyUSB=true` | `/dev/ttyUSB*` (USB TTY devices) |
-| DVB | `org.containers.qm.device.dvb=true` | `/dev/dvb/*` (digital TV devices) |
-| Radio | `org.containers.qm.device.radio=true` | `/dev/radio*` (radio devices) |
-| Multi-seat Support | `org.containers.qm.wayland.seat=seat0` | Input devices, render devices, and display devices associated with the specified systemd-logind seat |
-
-#### Wayland Client Devices
-
-The `wayland-client-devices` hook supports:
-
-| Functionality | Annotation | Devices Provided |
-|---------------|------------|------------------|
-| GPU Acceleration | `org.containers.qm.wayland-client.gpu=true` | GPU render devices (`/dev/dri/render*`) for hardware acceleration |
-
-### Features
-
-- **Dynamic Device Discovery**: Automatically discovers and mounts available devices at container startup
-- **Annotation-Based Security**: Devices are only mounted when explicitly requested via annotations
-- **Multi-seat Support**: Enables proper device access in systemd-logind multi-seat environments
-- **Comprehensive Mock Device Support**: Full testing infrastructure with mock devices for all device types
-- **GPU Acceleration**: Provides hardware acceleration for Wayland client applications
-- **Comprehensive Logging**: All hooks provide detailed logging for monitoring and debugging:
-  - Device Manager: `/var/log/qm-device-manager.log`
-  - Wayland Client: `/var/log/qm-wayland-client-devices.log`
-- **Runtime Flexibility**: No system restart required when adding device access to new containers
-- **Lightweight Implementation**: Shell script-based hooks with minimal dependencies
-
-### Building and Installing
-
-```bash
-git clone https://github.com/containers/qm.git && cd qm
-make TARGETS=qm-oci-hooks subpackages
-sudo dnf install rpmbuild/RPMS/noarch/qm-oci-hooks-*.noarch.rpm
-```
-
-### Usage Examples
-
-#### Example 1: Serial communication with USB TTY devices
-
-```bash
-# Create a container with access to all USB TTY devices
-cat > /etc/containers/systemd/serial-app.container << EOF
-[Unit]
-Description=Serial Communication Application
-
-[Container]
-Image=my-serial-app:latest
-Annotation=org.containers.qm.device.ttyUSB=true
-
-[Install]
-WantedBy=default.target
-EOF
-```
-
-#### Example 2: Multi-seat Wayland compositor with session devices
-
-```bash
-# Create a dropin for QM container to enable multi-seat support
-mkdir -p /etc/containers/systemd/qm.container.d/
-cat > /etc/containers/systemd/qm.container.d/wayland-seat.conf << EOF
-[Container]
-Annotation=org.containers.qm.wayland.seat=seat0
-EOF
-
-# Create a Wayland compositor container that runs inside QM
-cat > /etc/qm/containers/systemd/wayland-compositor.container << EOF
-[Unit]
-Description=Wayland Compositor with Multi-seat Support
-
-[Container]
-Image=wayland-compositor:latest
-Annotation=org.containers.qm.wayland.seat=seat0
-
-[Install]
-WantedBy=default.target
-EOF
-```
-
-#### Example 3: Wayland client application with GPU acceleration
-
-```bash
-# Create a Wayland client container with GPU hardware acceleration
-cat > /etc/qm/containers/systemd/gpu-app.container << EOF
-[Unit]
-Description=GPU-accelerated Application
-
-[Container]
-Image=my-gpu-app:latest
-Annotation=org.containers.qm.wayland-client.gpu=true
-
-[Install]
-WantedBy=default.target
-EOF
-```
-
-### Verification
-
-To verify the hooks are installed and working:
-
-```bash
-# Check all OCI hook installations
-ls -la /usr/share/containers/oci/hooks.d/
-
-# Check hook executables
-ls -la /usr/libexec/oci/hooks.d/
-
-# Verify hook JSON configurations are valid
-find /usr/share/containers/oci/hooks.d/ -name "*.json" -exec jq . {} \;
-
-# View hook logs (all hooks provide comprehensive logging)
-tail -f /var/log/qm-device-manager.log
-tail -f /var/log/qm-wayland-client-devices.log
-
-# Test device access with qm-device-manager
-podman exec -it my-audio-app ls -la /dev/snd/
-
-# Test GPU access with wayland-client-devices (if applicable)
-podman exec -it gpu-app ls -la /dev/dri/
-
-# Run hook tests (if source available)
-cd oci-hooks && tox -e all
-```
-
-### Testing and Development
-
-The OCI hooks include a comprehensive test suite for development and validation:
-
-```bash
-# Run all tests
-cd oci-hooks && tox -e all
-
-# Run specific test categories
-tox -e unit          # Unit tests only
-tox -e integration   # Integration tests only
-tox -e performance   # Performance tests only
-
-# Run linting and formatting
-tox -e lint          # Code linting
-tox -e format        # Code formatting
-
-# Test with mock devices (useful for CI environments)
-FORCE_MOCK_DEVICES=true tox -e unit -- -k "mock_devices"
-```
-
-### OCI Hooks Specification and Documentation
-
-The QM OCI hooks are implemented according to the [Open Container Initiative (OCI) Runtime Specification](https://github.com/opencontainers/runtime-spec).
-
-#### OCI Hook Configuration Format
-
-OCI hooks are configured using JSON files that define when and how the hooks should be executed. Each hook configuration follows the structure defined in the [OCI config schema](https://github.com/opencontainers/runtime-spec/blob/main/schema/config-schema.json).
-
-**Key components of hook configuration:**
-
-- **version**: OCI specification version (e.g., `"1.0.0"`)
-- **hook**: Object defining the hook executable and arguments
-- **when**: Object defining trigger conditions for the hook
-- **stages**: Array of lifecycle stages when the hook should run
-
-#### Hook Lifecycle Stages
-
-According to the [OCI POSIX Platform Hooks specification](https://github.com/opencontainers/runtime-spec/blob/main/config.md#posix-platform-hooks), hooks can be executed at three stages:
-
-1. **prestart**: Hooks called after the container process is spawned, but before the user-supplied command is executed
-2. **poststart**: Hooks called after the user-supplied command is executed
-3. **poststop**: Hooks called after the container process is terminated
-
-QM hooks execution stages:
-
-- `qm-device-manager`: Runs during **prestart** to mount devices before the container starts
-- `wayland-client-devices`: Runs during **prestart** to provide GPU access before the container starts
-
-#### Hook Input/Output Specification
-
-OCI hooks receive container state information via **stdin** and communicate results via **stdout/stderr** and **exit codes**:
-
-**Input (stdin)**: JSON object containing container state according to OCI spec:
+Configure devices exposed to QM in a host JSON drop-in. For example, save the
+following as `/etc/qmc.conf.d/60-wayland.conf`:
 
 ```json
 {
-  "ociVersion": "1.0.0",
-  "id": "container-id",
-  "status": "creating",
-  "pid": 1234,
-  "bundle": "/path/to/bundle",
-  "annotations": {
-    "org.containers.qm.device.audio": "true"
-  }
+  "devices": [
+    {"seat": "seat0", "optional": true},
+    {"source": "/dev/tty[0-7]", "optional": true}
+  ]
 }
 ```
 
-**Output**:
+Restart `qm.service` after changing the configuration. See
+[device configuration](../configuration.md#devices-and-seats) for path selections
+and additional input or render nodes that a deployment may need.
 
-- **Exit code 0**: Success
-- **Exit code non-zero**: Failure (container creation aborted)
-- **stderr**: Error messages and diagnostics
-- **stdout**: Hook output (typically empty for QM hooks)
+Applications inside QM select from those devices with their own Quadlet
+`AddDevice=` entries. The Wayland compositor maps the DRM and input device
+nodes exposed inside QM. To give a different application GPU rendering access,
+add the required render node to its Quadlet:
 
-#### Annotation Pattern Matching
-
-QM hooks use regular expressions in their `when.annotations` configuration to match container annotations:
-
-- `org\\.containers\\.qm\\.device\\.(audio|video|input|ttys|ttyUSB|dvb|radio)`: Matches device-specific annotations
-- `org\\.containers\\.qm\\.wayland\\.seat`: Matches Wayland seat annotations with any value
-- `org\\.containers\\.qm\\.wayland-client\\.gpu`: Matches GPU acceleration requests
-
-#### Hook Installation Locations
-
-QM hooks are installed in standard OCI locations:
-
-- Hook executables: `/usr/libexec/oci/hooks.d/`
-- Hook configurations: `/usr/share/containers/oci/hooks.d/`
-- Hook libraries: `/usr/libexec/oci/lib/`
+```ini
+[Container]
+AddDevice=/dev/dri/renderD128
+```
 
 ## QM sub-package ROS2
 
@@ -462,10 +254,10 @@ git clone https://github.com/containers/qm.git && cd qm
 make TARGETS=ros2_rolling subpackages
 sudo dnf install rpmbuild/RPMS/noarch/qm_ros2_rolling-0.6.7-1.fc40.noarch.rpm  -y
 sudo systemctl daemon-reload
-sudo podman restart qm  # if you have qm already running
+sudo systemctl restart qm.service  # if you have qm already running
 
 Testing using talker and listener examples
-$host> sudo podman exec -it qm bash
+$host> sudo qmc exec -t bash
 QM> . /opt/ros/jazzy/setup.bash # always replace jazz with the image ROS distro
 QM> ros2 run demo_nodes_cpp talker &
 QM> ros2 run demo_nodes_cpp listener
@@ -503,20 +295,18 @@ sudo systemctl restart qm  # if you have qm already running
 Step 4: verify, configuration exist
 
 ```bash
-ls -ltr /etc/containers/systemd/qm.container.d/
-total 12
--rw-r--r--. 1 root root  34 Jan  1  1970 publish-port.conf
--rw-r--r--. 1 root root 139 Jul 21  2023 qm_dropin_mount_bind_kvm.conf
+cat /usr/share/qm/qmc.conf.d/60-qm-kvm.conf
+qmc inspect --field devices
 
  ls -ltr /etc/qm/containers/systemd/
 total 12
 -rw-r--r--. 1 root root  91 Jan  1  1970 nginx.container
 -rw-r--r--. 1 root root 188 Jul 21  2023 kvm.container
 
-[root@localhost ~]# podman exec  qm systemctl is-active kvm
+[root@localhost ~]# qmc exec systemctl is-active kvm
 active
 
-[root@localhost ~]# podman exec -it qm sh
+[root@localhost ~]# qmc exec -t sh
 sh-5.1# ssh fedora@localhost -p 2226
 [fedora@ibm-p8-kvm-03-guest-02 ~]$ grep ^NAME /etc/os-release
 NAME="Fedora Linux"

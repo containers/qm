@@ -1,13 +1,14 @@
-summary: Test that the device /dev/console is not available in the QM partition.
+summary: Test that QM does not expose the host console.
 description: |
-    This tests confirms that the device /dev/console is not available in the QM partition.
-    The test executes `test -c /dev/console` in QM partition, no other input.
+    The console must be absent or a character device on a devpts filesystem
+    distinct from the host's. The PTY itself must belong to that filesystem.
+    A failed qmc exec is a test failure.
 
     Test inputs:
         None
 
     Expected results:
-        [ INFO  ] PASS: check_dev_console_not_available: As expected, /dev/console is not available in the QM partition.
+        [ INFO  ] PASS: check_dev_console_is_private: QM does not expose the host console.
 
     Results location:
         output.txt

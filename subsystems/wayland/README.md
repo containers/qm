@@ -26,7 +26,26 @@ The `/usr/bin/wayland-session` script monitors and manages Wayland user sessions
 ### Configuration
 
 - **PAM files**: `/etc/pam.d/systemd-user`, `/etc/pam.d/wayland-autologin`
-- **Container files**: `/etc/container/systemd/*.container`
+- **Container files**: `/etc/containers/systemd/*.container`
+
+### Device access
+
+Select the devices exposed to QM in a host qmc drop-in, for example
+`/etc/qmc.conf.d/60-wayland.conf`:
+
+```json
+{
+  "devices": [
+    {"seat": "seat0", "optional": true},
+    {"source": "/dev/tty[0-7]", "optional": true}
+  ]
+}
+```
+
+Restart `qm.service` after changing the selection. The compositor's Quadlet uses
+`AddDevice=` to pass the DRM and input devices available inside QM into its
+application container. It cannot access devices that qmc has not exposed to QM.
+Adjust the host selection for other seats or additional required devices.
 
 ## Usage
 

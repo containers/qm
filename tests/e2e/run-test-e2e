@@ -190,9 +190,10 @@ fi
 cleanup
 
 info_message "Creating dual stack network"
+# Keep the nodes outside QM's 10.90.0.0/24 and nested Podman's 10.89.0.0/16.
 podman network \
     create --ipv6 --gateway fd00::1:8:1 --subnet fd00::1:8:0/112 \
-    --gateway 10.90.0.1 --subnet 10.90.0.0/16 podmanDualStack
+    --gateway 10.91.0.1 --subnet 10.91.0.0/16 podmanDualStack
 
 info_message "Cleaning any previous e2e files"
 

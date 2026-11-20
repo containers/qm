@@ -3,16 +3,35 @@
 # shellcheck disable=SC1091
 . ../../../e2e/lib/utils
 
-check_dev_console_not_available(){
-    # Check /dev/console is not available in the QM partition
-    if podman exec qm test -c /dev/console; then
-        info_message "Found /dev/console in the QM partition: $(podman exec -t qm ls -l /dev/console)"
-        info_message "FAIL: check_dev_console_not_available: Check for /dev/console in the QM partition failed, it should not be available."
+check_dev_console_is_private(){
+    local qm_devpts host_devpts
+
+    # qmc provides a console PTY for systemd. It must use private devpts,
+    # rather than exposing the host console or a host PTY.
+    if ! qm_devpts=$(qmc exec /bin/sh -ec '
+        if [ ! -e /dev/console ]; then
+            test ! -L /dev/console
+            echo absent
+            exit 0
+        fi
+        test -c /dev/console
+        test "$(stat -fLc %T /dev/pts)" = devpts
+        devpts=$(stat -Lc %d /dev/pts)
+        test "$(stat -Lc %d /dev/console)" = "$devpts"
+        echo "$devpts"
+    '); then
+        info_message "FAIL: Could not verify that QM has an isolated console."
         exit 1
-    else
-        info_message "PASS: check_dev_console_not_available: As expected, /dev/console is not available in the QM partition."
-        exit 0
     fi
+
+    if [[ "$qm_devpts" != absent ]]; then
+        host_devpts=$(stat -Lc %d /dev/pts)
+        if ! [[ "$qm_devpts" =~ ^[0-9]+$ ]] || [[ "$qm_devpts" == "$host_devpts" ]]; then
+            info_message "FAIL: QM's console is not on a private devpts filesystem."
+            exit 1
+        fi
+    fi
+    info_message "PASS: check_dev_console_is_private: QM does not expose the host console."
 }
 
-check_dev_console_not_available
+check_dev_console_is_private

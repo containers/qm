@@ -2,27 +2,32 @@
 # See the documentation for more information:
 # https://packit.dev/docs/configuration/
 
-specfile_path: rpm/qm.spec
 upstream_tag_template: v{version}
 
 srpm_build_deps:
   - make
 
-actions:
-  fix-spec-file:
-    - bash .packit.sh
+# Jobs select packages explicitly so Wayland builds do not run QM integration tests.
+packages:
+  qm:
+    specfile_path: rpm/qm.spec
+    actions:
+      fix-spec-file:
+        - bash .packit.sh
+
+  qm-wayland:
+    specfile_path: rpm/wayland/qm-wayland.spec
+    actions:
+      fix-spec-file:
+        - bash .packit-wayland.sh
 
 jobs:
   - &pr_job
     job: copr_build
     trigger: pull_request
-    # x86_64 is assumed by default
-    # qm is noarch so we only need to test on one arch
+    packages: [qm]
     targets: &pr_targets
       fedora-stable: {}
-      epel-9:
-        additional_repos:
-          - copr://@centos-automotive-sig/bluechi-snapshot
       epel-10:
         additional_repos:
           - copr://@centos-automotive-sig/bluechi-snapshot
@@ -31,6 +36,7 @@ jobs:
   - &copr
     job: copr_build
     trigger: commit
+    packages: [qm]
     branch: main
     owner: "@centos-automotive-sig"
     project: qm-next
@@ -44,26 +50,21 @@ jobs:
       - fedora-stable-aarch64
       - fedora-stable-ppc64le
       - fedora-stable-x86_64
-      - epel-9-aarch64
-      - epel-9-ppc64le
-      - epel-9-x86_64
       - epel-10-aarch64
       - epel-10-ppc64le
       - epel-10-x86_64
 
   - job: tests
     trigger: pull_request
+    packages: [qm]
     identifier: e2e-multi-bluechi-agents
     tmt_plan: /plans/e2e/multi-bluechi-agents
     targets:
-      - epel-9-x86_64
+      - epel-10-x86_64
     manual_trigger: true
     tf_extra_params:
       environments:
         - artifacts:
-            - &bluechi_copr_repo_c9s
-              type: repository-file
-              id: https://copr.fedorainfracloud.org/coprs/g/centos-automotive-sig/bluechi-snapshot/repo/centos-stream-9
             - &bluechi_copr_repo_c10s
               type: repository-file
               id: https://copr.fedorainfracloud.org/coprs/g/centos-automotive-sig/bluechi-snapshot/repo/centos-stream-10
@@ -77,15 +78,14 @@ jobs:
 
   - job: tests
     trigger: pull_request
+    packages: [qm]
     identifier: e2e-ffi
     tmt_plan: /plans/e2e/ffi
     targets:
-      - epel-9-x86_64
       - epel-10-x86_64
     tf_extra_params:
       environments:
         - artifacts:
-            - *bluechi_copr_repo_c9s
             - *bluechi_copr_repo_c10s
           tmt:
             context:
@@ -97,15 +97,14 @@ jobs:
 
   - job: tests
     trigger: pull_request
+    packages: [qm]
     identifier: qm-tier-0
     tmt_plan: /plans/e2e/tier-0
     targets:
-      - epel-9-x86_64
       - epel-10-x86_64
     tf_extra_params:
       environments:
         - artifacts:
-            - *bluechi_copr_repo_c9s
             - *bluechi_copr_repo_c10s
           hardware:
             disk:
@@ -113,15 +112,16 @@ jobs:
 
   - job: tests
     trigger: pull_request
+    packages: [qm]
     identifier: kvm-tier-0
     tmt_plan: /plans/e2e/kvm-tier-0
     targets:
       - fedora-42-x86_64
-      - epel-9-x86_64
+      - epel-10-x86_64
     tf_extra_params:
       environments:
         - artifacts:
-            - *bluechi_copr_repo_c9s
+            - *bluechi_copr_repo_c10s
             - *bluechi_copr_repo_fedora
           hardware:
             disk:
@@ -129,12 +129,14 @@ jobs:
             virtualization:
               is-supported: true
 
+  # TODO: Restore pull_request once automotive-image-builder supports qmc.
   - job: tests
-    trigger: pull_request
+    trigger: ignore
+    packages: [qm]
     identifier: automotive-image-builder
     tmt_plan: /plans/e2e/aib
     targets:
-      - epel-9-x86_64
+      - epel-10-x86_64
     tf_extra_params:
       environments:
         hardware:
@@ -144,39 +146,34 @@ jobs:
 
   - job: propose_downstream
     trigger: release
+    packages: [qm]
     dist_git_branches: &downstream_branches
       - fedora-all
-      - epel-9
       - epel-10
 
   - job: koji_build
     trigger: commit
+    packages: [qm]
     dist_git_branches: *downstream_branches
 
   - job: bodhi_update
     trigger: commit
+    packages: [qm]
     dist_git_branches: &bodhi_branches
       # rawhide updates are created automatically
       - fedora-branched
-      - epel-9
       - epel-10
 
   # QM Wayland package
   - job: copr_build
     trigger: pull_request
+    packages: [qm-wayland]
     identifier: qm-wayland
-    specfile_path: rpm/wayland/qm-wayland.spec
-    actions:
-      fix-spec-file:
-        - bash .packit-wayland.sh
     targets: *pr_targets
 
   - <<: *copr
+    packages: [qm-wayland]
     identifier: qm-wayland-main
-    specfile_path: rpm/wayland/qm-wayland.spec
-    actions:
-      fix-spec-file:
-        - bash .packit-wayland.sh
     targets: *multiarch_targets
     notifications:
       failure_comment:
@@ -185,58 +182,18 @@ jobs:
   # Downstream jobs for qm-wayland
   - job: propose_downstream
     trigger: release
+    packages: [qm-wayland]
     identifier: qm-wayland-downstream
-    specfile_path: rpm/wayland/qm-wayland.spec
     dist_git_branches: *downstream_branches
 
   - job: koji_build
     trigger: commit
+    packages: [qm-wayland]
     identifier: qm-wayland-koji
-    specfile_path: rpm/wayland/qm-wayland.spec
     dist_git_branches: *downstream_branches
 
   - job: bodhi_update
     trigger: commit
+    packages: [qm-wayland]
     identifier: qm-wayland-bodhi
-    specfile_path: rpm/wayland/qm-wayland.spec
-    dist_git_branches: *bodhi_branches
-
-  # qm-oci-hooks jobs
-  - job: copr_build
-    trigger: pull_request
-    identifier: qm-oci-hooks
-    specfile_path: rpm/oci-hooks/qm-oci-hooks.spec
-    actions:
-      fix-spec-file:
-        - bash .packit-oci-hooks.sh
-    targets: *pr_targets
-
-  - <<: *copr
-    identifier: qm-oci-hooks-main
-    specfile_path: rpm/oci-hooks/qm-oci-hooks.spec
-    actions:
-      fix-spec-file:
-        - bash .packit-oci-hooks.sh
-    targets: *multiarch_targets
-    notifications:
-      failure_comment:
-        message: "QM OCI hooks build failed for merged commit {commit_sha}. Please check logs {logs_url}"
-
-  # Downstream jobs for qm-oci-hooks
-  - job: propose_downstream
-    trigger: release
-    identifier: qm-oci-hooks-downstream
-    specfile_path: rpm/oci-hooks/qm-oci-hooks.spec
-    dist_git_branches: *downstream_branches
-
-  - job: koji_build
-    trigger: commit
-    identifier: qm-oci-hooks-koji
-    specfile_path: rpm/oci-hooks/qm-oci-hooks.spec
-    dist_git_branches: *downstream_branches
-
-  - job: bodhi_update
-    trigger: commit
-    identifier: qm-oci-hooks-bodhi
-    specfile_path: rpm/oci-hooks/qm-oci-hooks.spec
     dist_git_branches: *bodhi_branches
