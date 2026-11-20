@@ -114,6 +114,11 @@ Rootfs=${ROOTFS}
 # The division by 2 provides a safety margin to avoid exhausting resources and grant FFI.
 Sysctl=fs.mqueue.queues_max=4
 
+# Cap QM's share of root's per-UID POSIX mqueue memory (RLIMIT_MSGQUEUE).
+# QM root == host root (no user namespace), so without this QM can use up
+# the host's 819200-byte budget, even from nested IPC namespaces.
+Ulimit=msgqueue=409600:409600
+
 SecurityLabelNested=true
 SecurityLabelFileType=qm_file_t
 SecurityLabelLevel=s0
