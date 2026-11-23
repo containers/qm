@@ -248,6 +248,32 @@ run_test() {
     return 0
 }
 
+get_qm_ulimit() {
+    local option="$1"
+    local direct_limit service_limit
+
+    case "$option" in
+        -n|-u) ;;
+        *) return 1 ;;
+    esac
+
+    # Older crun versions let exec inherit the caller's limits, while services
+    # inherit QM's systemd limits. Nested containers must fit both contexts.
+    direct_limit=$(qmc exec /bin/bash -c "ulimit $option") || return
+    service_limit=$(qmc exec systemd-run --quiet --pipe --wait /bin/bash -c "ulimit $option") || return
+
+    if [[ "$direct_limit" == unlimited && "$service_limit" == unlimited ]]; then
+        echo "Cannot calculate a test limit from two unlimited limits ($option)" >&2
+        return 1
+    elif [[ "$direct_limit" == unlimited ]]; then
+        echo "$service_limit"
+    elif [[ "$service_limit" == unlimited ]] || (( direct_limit < service_limit )); then
+        echo "$direct_limit"
+    else
+        echo "$service_limit"
+    fi
+}
+
 exec_cmd() {
     local cmd_string="$1"
 

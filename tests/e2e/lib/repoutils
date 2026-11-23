@@ -94,9 +94,10 @@ set_qm_rlimits() {
     info_message "set_qm_rlimits(): prepare qm containers.conf file, update ulimits"
     # Check if QM containers.conf exists
     exec_cmd "test -e ${QM_CTR_CFG}"
-    # Calculate ulimits
-    ulimit_nofile=$(( $(ulimit -n) * U_NOFILE_PRCTG / 100 ))
-    ulimit_nproc=$(( $(ulimit -u) * U_NPROC_PRCTG / 100 ))
+    ulimit_nofile=$(get_qm_ulimit -n) || return
+    ulimit_nproc=$(get_qm_ulimit -u) || return
+    ulimit_nofile=$(( ulimit_nofile * U_NOFILE_PRCTG / 100 ))
+    ulimit_nproc=$(( ulimit_nproc * U_NPROC_PRCTG / 100 ))
     # Update containers.conf
     exec_cmd "sed -i -E 's/(default_ulimits = \[)/\1\"nproc=$ulimit_nproc:$ulimit_nproc\",\"nofile=$ulimit_nofile:$ulimit_nofile\"/' $QM_CTR_CFG"
     # Verify limits are set
