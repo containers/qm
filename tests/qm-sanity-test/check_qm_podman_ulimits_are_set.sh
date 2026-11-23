@@ -16,8 +16,10 @@ check_qm_podman_ulimits_are_set(){
     refer issue #666"
     info_message "check_qm_podman_ulimits_are_set(): qm-sanity-test update qm ulimits"
     exec_cmd "test -e ${QM_CTR_CFG}"
-    ulimit_nofile=$(printf %.0f "$(echo "$(ulimit -n) * $U_NOFILE_PRCTG" | bc)")
-    ulimit_nproc=$(printf %.0f "$(echo "$(ulimit -u) * $U_NPROC_PRCTG" | bc)")
+    ulimit_nofile=$(get_qm_ulimit -n) || return
+    ulimit_nproc=$(get_qm_ulimit -u) || return
+    ulimit_nofile=$(printf %.0f "$(echo "$ulimit_nofile * $U_NOFILE_PRCTG" | bc)")
+    ulimit_nproc=$(printf %.0f "$(echo "$ulimit_nproc * $U_NPROC_PRCTG" | bc)")
     exec_cmd "sed -i -E 's/(default_ulimits = \[)/\1\"nproc=$ulimit_nproc:$ulimit_nproc\",\"nofile=$ulimit_nofile:$ulimit_nofile\"/' $QM_CTR_CFG"
     info_message "check_qm_podman_ulimits_are_set(): qm-sanity-test verify limits are set"
     exec_cmd "grep -oP \(nproc.*\",\|nofile.*\"\)  ${QM_CTR_CFG} | tr -d '\t\",' "
