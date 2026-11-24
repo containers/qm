@@ -138,9 +138,9 @@ jobs:
       - epel-10-x86_64
     tf_extra_params:
       environments:
-        hardware:
-          disk:
-            - size: ">= 20 GB"
+        - hardware:
+            disk:
+              - size: ">= 20 GB"
 
 
   - job: propose_downstream
