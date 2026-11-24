@@ -10,21 +10,14 @@ set -eo pipefail
 SPEC_FILE=rpm/qm.spec
 
 # Get Version from HEAD
-HEAD_VERSION=$(grep '^policy_module' qm.te | sed 's/[^0-9.]//g')
-
-# Check version consistency in qm.te and VERSION before proceeding
-if [[ $(cat VERSION) != "${HEAD_VERSION}" ]]; then
-    echo "Inconsistent versions mentioned in VERSION and qm.te files. Investigate!"
-    echo "Aborting Packit tasks!"
-    exit 1
-fi
+HEAD_VERSION=$(cat VERSION)
 
 # Generate source tarball
 git archive --prefix="qm-${HEAD_VERSION}/" -o "rpm/qm-${HEAD_VERSION}.tar.gz" HEAD
 
 # RPM Spec modifications
 
-# Update Version in spec with Version from qm.te
+# Update Version in spec with Version from VERSION
 sed -i "s/^Version:.*/Version: ${HEAD_VERSION}/" ${SPEC_FILE}
 
 # Update Release in spec with Packit's release envvar
