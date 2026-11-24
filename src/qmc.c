@@ -43,6 +43,7 @@
 #define PAYLOAD_CGROUP "payload"
 
 #define DEFAULT_RUNTIME_DIR "/run/qm"
+#define LIFECYCLE_LOCK_FILE ".lock"
 #define CRUN "/usr/bin/crun"
 
 typedef enum {
@@ -180,7 +181,48 @@ static int teardown_namespace(const char *netns)
 	return result != 0;
 }
 
-static int cleanup(const char *runtime_dir)
+/* Runtime locking:
+ *
+ * .lock (exclusive) serializes launch (including --prepare-only), recovery and
+ * cleanup. It protects checking, publishing and removing the runtime state
+ * and preparing/tearing down the resources recorded there. Its inode must stay
+ * stable across other changes in the rundir.
+ *
+ * Parallelized setup child processes (like network setup) inherit the lock fd. The
+ * lock lasts until the last inherited copy closes. The console relay closes
+ * its copy explicitly because it lives as long as the container.
+ *
+ * A lock on state.json (shared by network setup workers, exclusive for cleanup)
+ * lets cleanup wait for those workers and their descendants to complete before
+ * teardown. Always take .lock before locking state.json; finish publishing the
+ * state file before starting workers and do not replace it while they hold the
+ * shared lock.
+ *
+ * These locks protect qmc's setup and teardown, not crun initialization or the
+ * running container's lifetime. The internal launch/cleanup commands rely on
+ * service-manager ordering: qm.service runs cleanup in ExecStopPost after
+ * stopping the runtime.
+ */
+static int lock_lifecycle(const char *runtime_dir)
+{
+	/* Never replace or unlink this inode: state files are published with rename. */
+	autofree char *filename = join_path(runtime_dir, LIFECYCLE_LOCK_FILE);
+	autoclose int fd =
+		open(filename, O_RDWR | O_CREAT | O_NOFOLLOW | O_CLOEXEC, 0600);
+	if (fd < 0)
+		return -1;
+	debug("Locking runtime lifecycle in %s", filename);
+	if (TEMP_FAILURE_RETRY(flock(fd, LOCK_EX)) < 0)
+		return -1;
+	int result = fd;
+	fd = -1;
+	return result;
+}
+
+/* The caller already holds .lock, including during recovery and local rollback;
+ * only the worker lock on state.json is acquired here.
+ */
+static int cleanup_locked(const char *runtime_dir)
 {
 	autofree char *state_file = join_path(runtime_dir, QM_STATE_FILE);
 	autoclose int state_fd = open(state_file, O_RDONLY | O_CLOEXEC);
@@ -192,8 +234,8 @@ static int cleanup(const char *runtime_dir)
 		warn("open %s", state_file);
 		return 1;
 	}
-	/* Setup workers inherit a shared lock. Wait for all of them, including
-	 * children of an interrupted worker, before tearing down resources.
+	/* Wait for all worker copies, even if their immediate parent has exited.
+	 * Holding .lock keeps this state file current while we lock and read it.
 	 */
 	if (TEMP_FAILURE_RETRY(flock(state_fd, LOCK_EX)) < 0) {
 		warn("lock cleanup state %s", state_file);
@@ -211,7 +253,8 @@ static int cleanup(const char *runtime_dir)
 	if (!result && state->bundle) {
 		debug("Removing runtime bundle contents in %s", state->bundle);
 		/* systemd may own this directory and its label/mode. Keep it intact. */
-		result |= remove_tree_contents_except(state->bundle, "signals");
+		const char *preserve[] = {"signals", LIFECYCLE_LOCK_FILE, NULL};
+		result |= remove_tree_contents_except(state->bundle, preserve);
 	}
 	if (!result && unlink(state_file) < 0 && errno != ENOENT) {
 		warn("remove %s", state_file);
@@ -220,6 +263,18 @@ static int cleanup(const char *runtime_dir)
 
 	debug("Cleanup %s", result ? "incomplete" : "complete");
 	return result != 0;
+}
+
+static int cleanup(const char *runtime_dir)
+{
+	autoclose int lifecycle_fd = lock_lifecycle(runtime_dir);
+	if (lifecycle_fd < 0) {
+		if (errno == ENOENT)
+			return 0;
+		warn("lock runtime lifecycle in %s", runtime_dir);
+		return 1;
+	}
+	return cleanup_locked(runtime_dir);
 }
 
 static pid_t start_network(const NetworkOptions *network, const NetworkState *state)
@@ -308,7 +363,7 @@ static int setup(const Config *configuration, json_object *config, bool *state_c
 		.container_id = xstrdup(QM_CONTAINER_ID),
 		.netns = xstrdup(netns),
 	};
-	/* Check for conflicts before replacing an earlier cleanup journal. */
+	/* Check for conflicts before replacing earlier runtime state. */
 	const NetworkOptions network = get_network_options(configuration, config);
 	debug("Checking network resource ownership");
 	state->network = network_prepare(&network);
@@ -341,14 +396,16 @@ static int setup(const Config *configuration, json_object *config, bool *state_c
 		warn("lock network setup state %s", state_file);
 		return 1;
 	}
-	/* Workers inherit the lock; setup closes the parent's copy before
-	 * execing crun. No worker PID needs to be persisted.
+	/* Workers inherit both .lock and this shared state.json lock. Returning
+	 * from setup closes only the parent's state_fd, so local rollback can
+	 * open a separate descriptor and wait for the workers while holding .lock.
+	 * No worker PID needs to be persisted.
 	 */
 	*network_pid = start_network(&network, state->network);
 	return *network_pid < 0;
 }
 
-static int crun_run(json_object *config)
+static int crun_run(json_object *config, int lifecycle_fd)
 {
 	autofree char *crun_state = join_path(opt_runtime_dir, "crun");
 	autofree char *notify_alias = NULL;
@@ -385,7 +442,7 @@ static int crun_run(json_object *config)
 	if (js_get_bool_maybe(js_get_object(config, "process"), "terminal")) {
 		console_socket = join_path(opt_runtime_dir, "console.sock");
 		debug("Forwarding container console to stdout");
-		console_pid = console_start(console_socket);
+		console_pid = console_start(console_socket, lifecycle_fd);
 		if (console_pid < 0)
 			return 1;
 	}
@@ -406,6 +463,9 @@ static int crun_run(json_object *config)
 	      QM_CONTAINER_ID, CRUN, opt_runtime_dir, crun_state,
 	      notify_socket ? notify_socket : "(unset)");
 
+	/* Hand control to crun and the service manager. O_CLOEXEC closes our
+	 * lifecycle_fd; network setup workers retain theirs until they exit.
+	 */
 	execv(CRUN, argv.strv);
 	warn("exec %s", CRUN);
 	if (console_pid > 0) {
@@ -779,6 +839,11 @@ static int update_resolv_conf(const Config *configuration)
 	return 0;
 }
 
+/* The signals directory lock serializes marker set/clear with launch-time
+ * relabeling. Signal commands take only this lock so they also work before
+ * launch; launch takes .lock first. Cleanup preserves the directory and markers
+ * without taking this lock, keeping the locked inode stable across restarts.
+ */
 static int open_signals_directory(const char *path, bool create)
 {
 	if (create && mkdir(path, 0755) < 0 && errno != EEXIST)
@@ -1276,11 +1341,18 @@ int main(int argc, char **argv)
 	if (command == COMMAND_UPDATE_RESOLV_CONF)
 		return update_resolv_conf(configuration);
 
+	if (!opt_prepare_only && geteuid() != 0)
+		errx(1, "launch requires root");
+	ensure_private_directory(opt_runtime_dir);
+	/* Serialize recovery, state publication and setup with other launch and
+	 * cleanup commands. See lock_lifecycle() for lock scope and inheritance.
+	 */
+	autoclose int lifecycle_fd = lock_lifecycle(opt_runtime_dir);
+	if (lifecycle_fd < 0)
+		err(1, "lock runtime lifecycle in %s", opt_runtime_dir);
 	if (!opt_prepare_only) {
-		if (geteuid() != 0)
-			errx(1, "launch requires root");
 		debug("Checking for pending cleanup in %s", opt_runtime_dir);
-		if (cleanup(opt_runtime_dir))
+		if (cleanup_locked(opt_runtime_dir))
 			warnx("cleanup incomplete; continuing startup");
 	}
 
@@ -1308,7 +1380,7 @@ int main(int argc, char **argv)
 	pid_t network_pid = -1;
 	int status = setup(configuration, config, &state_created, &network_pid);
 	if (!status)
-		status = crun_run(config);
+		status = crun_run(config, lifecycle_fd);
 
 	/* A successful launch execs crun. On a local failure, cancel the job
 	 * before cleanup waits for the shared lock held by its descendants.
@@ -1318,7 +1390,7 @@ int main(int argc, char **argv)
 		wait_child(network_pid);
 	}
 	if (state_created)
-		cleanup(opt_runtime_dir);
+		cleanup_locked(opt_runtime_dir);
 
 	return status;
 }

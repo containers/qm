@@ -147,8 +147,10 @@ void write_text_file(const char *name, const char *contents);
  * Missing paths succeed; return 1 and report other errors on stderr.
  */
 int remove_tree_contents(const char *path);
-/* Preserve one named entry directly inside path, including its contents. */
-int remove_tree_contents_except(const char *path, const char *preserve);
+/* Preserve named entries directly inside path, including their contents.
+ * preserve is a NULL-terminated array, or NULL to remove everything.
+ */
+int remove_tree_contents_except(const char *path, const char *const *preserve);
 /* Write a slash-separated key under /proc/sys; optional ignores missing keys.
  * Return 0 on success, -1 on failure and report errors on stderr.
  */

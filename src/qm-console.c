@@ -127,7 +127,7 @@ static void console_forward(int listener, const char *path, pid_t parent)
 	}
 }
 
-pid_t console_start(const char *path)
+pid_t console_start(const char *path, int lifecycle_fd)
 {
 	struct sockaddr_un address = {.sun_family = AF_UNIX};
 	if (strlen(path) >= sizeof(address.sun_path)) {
@@ -155,7 +155,9 @@ pid_t console_start(const char *path)
 	pid_t child = fork();
 	if (child < 0)
 		warn("fork console relay");
-	else if (child == 0)
+	else if (child == 0) {
+		close(lifecycle_fd);
 		console_forward(listener, path, parent);
+	}
 	return child;
 }

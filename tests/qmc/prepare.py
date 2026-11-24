@@ -1924,7 +1924,9 @@ class PrepareTests(unittest.TestCase):
         self.assertEqual(result.returncode, 0, result.stderr)
         self.assertEqual(self.runtime.stat().st_ino, original.st_ino)
         self.assertEqual(self.runtime.stat().st_mode, original.st_mode)
-        self.assertEqual(list(self.runtime.iterdir()), [])
+        self.assertEqual(
+            list(self.runtime.iterdir()), [self.runtime / ".lock"]
+        )
 
     def test_cleanup_uses_recorded_crun_and_namespace(self):
         """Check cleanup uses recorded crun and namespace."""
@@ -2068,7 +2070,8 @@ class PrepareTests(unittest.TestCase):
         self.assertFalse(state.exists())
         self.assertTrue(self.runtime.is_dir())
         self.assertEqual(
-            list(self.runtime.iterdir()), [self.runtime / "signals"]
+            set(self.runtime.iterdir()),
+            {self.runtime / "signals", self.runtime / ".lock"},
         )
 
     def test_successful_cleanup_preserves_runtime_directory_metadata(self):
@@ -2099,7 +2102,8 @@ class PrepareTests(unittest.TestCase):
             self.assertEqual(self.runtime.stat().st_ino, original.st_ino)
             self.assertEqual(self.runtime.stat().st_mode, original.st_mode)
             self.assertEqual(
-                list(self.runtime.iterdir()), [self.runtime / "signals"]
+                set(self.runtime.iterdir()),
+                {self.runtime / "signals", self.runtime / ".lock"},
             )
 
     def test_cleanup_removes_bundle_without_following_symlinks(self):
@@ -2139,7 +2143,8 @@ class PrepareTests(unittest.TestCase):
         self.assertEqual(result.returncode, 0, result.stderr)
         self.assertTrue(self.runtime.is_dir())
         self.assertEqual(
-            list(self.runtime.iterdir()), [self.runtime / "signals"]
+            set(self.runtime.iterdir()),
+            {self.runtime / "signals", self.runtime / ".lock"},
         )
         self.assertEqual(target.read_text(), "outside the bundle\n")
 
@@ -2165,7 +2170,10 @@ class PrepareTests(unittest.TestCase):
                 capture_output=True,
             )
             self.assertEqual(result.returncode, 0, result.stderr)
-            self.assertEqual(list(self.runtime.iterdir()), [signal.parent])
+            self.assertEqual(
+                set(self.runtime.iterdir()),
+                {signal.parent, self.runtime / ".lock"},
+            )
             self.assertEqual(signal.stat().st_ino, original.st_ino)
         result = subprocess.run(
             [*command, "--clear", "network-ready"],

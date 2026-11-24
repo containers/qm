@@ -21,6 +21,8 @@ prepare_launcher = executable('test-prepare',
   link_args: ['-fno-lto', '-Wl,--wrap=get_current_cgroup', '-Wl,--wrap=read_text_file', '-Wl,--wrap=ftruncate64'])
 test('prepare', python, args: [files('prepare.py'), prepare_launcher,
   meson.project_source_root(), '/payload'])
+test('lifecycle', python, args: [files('lifecycle.py'), qmc,
+  meson.project_source_root()])
 test('exec', python, args: [files('exec.py'), qmc])
 test('inspect', python, args: [files('inspection.py'), qmc])
 test('signals', python, args: [files('signals.py'), qmc])

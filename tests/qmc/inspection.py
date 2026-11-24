@@ -57,7 +57,7 @@ class InspectTests(unittest.TestCase):
         """Save oci."""
         self.runtime.mkdir()
         (self.runtime / "config.json").write_text(json.dumps(config))
-        (self.runtime / "state.json").write_text("invalid cleanup journal\n")
+        (self.runtime / "state.json").write_text("invalid runtime state\n")
 
     def test_merged_settings_without_runtime_or_source_access(self):
         """Check merged settings without runtime or source access."""
