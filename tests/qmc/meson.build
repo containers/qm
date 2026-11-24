@@ -9,9 +9,10 @@ executable('test-launch-network', qmc_sources + ['network-nft.c'],
   dependencies: qmc_deps,
   link_args: ['-Wl,--wrap=nft_run_cmd_from_buffer', '-Wl,--wrap=mnl_socket_sendto',
     '-Wl,--wrap=sysctl_write'])
-executable('test-network', ['network.c', '../../src/qm-network.c', '../../src/qm-utils.c', '../../src/qm-state.c'],
+network_test = executable('test-network', ['network.c', '../../src/qm-network.c', '../../src/qm-utils.c', '../../src/qm-state.c'],
   include_directories: qmc_includes,
   dependencies: qmc_deps)
+test('network-policy', python, args: [files('network-policy.py'), network_test], timeout: 60)
 prepare_launcher = executable('test-prepare',
   qmc_sources + ['prepare-cgroup.c', 'prepare-machine-id.c', 'file-truncate.c'],
   include_directories: qmc_includes,

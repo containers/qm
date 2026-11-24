@@ -472,19 +472,31 @@ static NftOwner nft_owner(struct nft_ctx *ctx, const char *name, const char *own
 	return NFT_OWNER_ABSENT;
 }
 
-/* Clamp both SYN and SYN+ACK using current routes, before filtering and
- * source NAT. A NAT chain would only see the first packet of a flow.
- */
 /* clang-format off */
 static const char nft_rules_template[] =
+	/* QM has one configured peer IP. Reject other IPv4 sources
+	 * arriving on its veth before routing, covering both traffic
+	 * to host services and traffic forwarded to other networks.
+	 * Other interfaces and legitimate QM traffic remain subject
+	 * to the host's firewall rules.
+	 */
+	"add chain ip ${table} source_check { type filter hook prerouting priority filter; policy accept; }\n"
+	"add rule ip ${table} source_check iifname \"${veth}\" ip saddr != ${ip} drop\n"
+	/* Clamp both SYN and SYN+ACK using current routes so TCP
+	 * works across smaller uplinks, including later route changes.
+	 * A NAT chain would only see the first packet of a flow.
+	 */
 	"add chain ip ${table} forward_mss { type filter hook forward priority mangle; policy accept; }\n"
 	"add rule ip ${table} forward_mss iifname \"${veth}\" tcp flags syn tcp option maxseg size set rt mtu\n"
 	"add rule ip ${table} forward_mss oifname \"${veth}\" tcp flags syn tcp option maxseg size set rt mtu\n"
-	"add chain ip ${table} forward { type filter hook forward priority filter; policy accept; }\n"
-	"add rule ip ${table} forward iifname \"${veth}\" ip saddr ${subnet} accept\n"
-	"add rule ip ${table} forward iifname \"${veth}\" drop\n"
+	/* Masquerade only traffic received from the QM peer and
+	 * destined outside its subnet. Matching the ingress interface
+	 * leaves host-originated traffic and traffic from unrelated
+	 * interfaces untouched, even if their source addresses overlap.
+	 * Connections within the subnet retain the peer's source IP.
+	 */
 	"add chain ip ${table} postrouting { type nat hook postrouting priority srcnat; policy accept; }\n"
-	"add rule ip ${table} postrouting ip saddr ${subnet} ip daddr != ${subnet} masquerade\n";
+	"add rule ip ${table} postrouting iifname \"${veth}\" ip saddr ${ip} ip daddr != ${subnet} masquerade\n";
 /* clang-format on */
 
 static int nft_setup(struct nft_ctx *ctx, const NetworkOptions *options,
@@ -504,6 +516,7 @@ static int nft_setup(struct nft_ctx *ctx, const NetworkOptions *options,
 	const FormatVar vars[] = {
 		{"table", options->nft_table},
 		{"veth", options->veth},
+		{"ip", options->ip},
 		{"subnet", subnet},
 		{NULL},
 	};

@@ -6,10 +6,16 @@ OCI preparation, inspection, command errors, signals and utility failures withou
 a running QM instance or host network changes. Meson and RPM builds enable them
 by default; use `-Dtests=false` for a build without test fixtures.
 
+The `network-policy` test uses the network fixture in private user, mount and
+network namespaces to check source validation for host-bound and forwarded
+packets, and to ensure QM masquerading leaves unrelated traffic unchanged. It
+needs iproute and nftables, and reports a skip if its tools or unprivileged
+namespaces are unavailable. It does not need cgroup delegation or a QM rootfs.
+
 Some preparation and exec cases need private mounts or privileges. unittest
 reports these cases as skipped when their prerequisites are unavailable. Passing
-this suite does not establish that the installed service runs with SELinux or
-that networking works; those checks require a disposable integration machine.
+this suite does not establish installed-service networking or SELinux behavior;
+those checks require a disposable integration machine.
 
 ## Installed service (disposable CentOS 10 machine)
 
