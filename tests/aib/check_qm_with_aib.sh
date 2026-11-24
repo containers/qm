@@ -1,18 +1,15 @@
 #!/bin/bash
 
-# shellcheck disable=SC1091
-source ../e2e/lib/utils
+set -euo pipefail
 
 # Download basic QM manifest
-exec_cmd "curl -o qm.aib.yml https://gitlab.com/CentOS/automotive/src/automotive-image-builder/-/raw/main/examples/qm.aib.yml?ref_type=heads"
+curl -fL -o qm.aib.yml https://gitlab.com/CentOS/automotive/src/automotive-image-builder/-/raw/main/examples/qm.aib.yml
 
 USE_QM_COPR="${PACKIT_COPR_PROJECT:-@centos-automotive-sig/qm-next}"
-COPR_URL="https://download.copr.fedorainfracloud.org/results/${USE_QM_COPR}/epel-10-$(uname -m)/"
-#shellcheck disable=SC2089
-EXTRA_REPOS="extra_repos=[{id: qm_build, baseurl: $COPR_URL}]"
-
+# Packit builds QM for EPEL 10; scope that chroot to this repository.
+QM_COPR_URL="https://download.copr.fedorainfracloud.org/results/${USE_QM_COPR}/epel-10-$(uname -m)/"
 
 # Run AIB in container
-exec_cmd "curl -o auto-image-builder.sh https://gitlab.com/CentOS/automotive/src/automotive-image-builder/-/raw/main/auto-image-builder.sh?ref_type=heads"
-#shellcheck disable=SC2027,SC2090,SC2086
-exec_cmd "/bin/bash auto-image-builder.sh build --target qemu --define \\\"$EXTRA_REPOS\\\" qm.aib.yml qm.qcow2"
+curl -fL -o aib.sh https://gitlab.com/CentOS/automotive/src/automotive-image-builder/-/raw/main/aib.sh
+/bin/bash aib.sh build --target qemu \
+    --extra-repo "$QM_COPR_URL" qm.aib.yml qm.qcow2
