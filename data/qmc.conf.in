@@ -5,6 +5,7 @@
   "gateway": "10.90.0.1",
   "prefix-length": 24,
   "rootfs": "/usr/lib/qm/rootfs",
+  "read-only": true,
   "seccomp": "/usr/share/qm/seccomp-no-rt.json",
   "capabilities": [
     {"name": "all"},

@@ -143,6 +143,7 @@ class InspectTests(unittest.TestCase):
         self.settings["capabilities"] = [{"name": "chown", "remove": True}]
         for field, expected in (
             ("rootfs", "/base/rootfs\n"),
+            ("read-only", "true\n"),
             ("verbose", "false\n"),
             ("prefix-length", "24\n"),
             ("memory-max", "infinity\n"),

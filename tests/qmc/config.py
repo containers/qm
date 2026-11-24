@@ -17,6 +17,7 @@ DATA_DIR = sys.argv.pop(1)
 DEFAULTS = {
     "base-config": DATA_DIR + "/qm.json",
     "hostname": "qm",
+    "read-only": True,
     "ip": "10.90.0.2",
     "gateway": "10.90.0.1",
     "prefix-length": 24,
@@ -134,6 +135,20 @@ class ConfigTests(unittest.TestCase):
             json.loads(result.stdout), {**DEFAULTS, "hostname": "only"}
         )
 
+    def test_read_only_can_be_overridden_in_both_directions(self):
+        """Later layers can enable writes or restore a read-only rootfs."""
+        self.write(self.vendor, "qmc.conf", {"read-only": True})
+        self.write(self.admin, "qmc.conf", {"read-only": False})
+        result = self.load()
+        self.assertEqual(result.returncode, 0, result.stderr)
+        self.assertFalse(json.loads(result.stdout)["read-only"])
+        self.write(
+            self.admin, "qmc.conf.d/90-read-only.conf", {"read-only": True}
+        )
+        result = self.load()
+        self.assertEqual(result.returncode, 0, result.stderr)
+        self.assertTrue(json.loads(result.stdout)["read-only"])
+
     def test_explicit_file_replaces_standard_layers(self):
         """Check explicit file replaces standard layers."""
         self.write(
@@ -167,6 +182,9 @@ class ConfigTests(unittest.TestCase):
             '{"hostname": "bad host"}',
             '{"userns": "invalid"}',
             '{"rootfs": "relative"}',
+            '{"read-only": "false"}',
+            '{"read-only": 0}',
+            '{"read-only": null}',
             '{"etc-dir": "/etc/qm"}',
             '{"var-dir": "/var/qm"}',
             '{"ip": "bad"}',
