@@ -2,7 +2,7 @@
 
 ## Creating a new release
 
-Initially, make sure to [bump **qm.te** and **VERSION** files in the git repo](https://github.com/containers/qm/pull/760) to the next release, i.e: *v0.7.5*.
+Initially, bump **VERSION** in the git repo to the next release, e.g. `2.1`.
 After that, follow the steps below using GitHub UI.
 
 **Create a new Release**

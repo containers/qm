@@ -2,7 +2,7 @@
 
 BASEDIR="$(dirname "$(dirname "$(realpath "$0")")")"
 PREV_VERSION=$(cat "${BASEDIR}/VERSION")
-FILES=("qm.te" "VERSION")
+FILES=("VERSION")
 DEBUG=0
 VERSION=
 

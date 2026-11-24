@@ -7,8 +7,13 @@ data_dir = get_option('datadir') / 'qm'
 make = find_program('make')
 md2man = find_program('go-md2man')
 
+policy_config = configuration_data()
+policy_config.set('QM_VERSION', meson.project_version())
+policy_source = configure_file(input: 'qm.te.in', output: 'qm.te',
+  configuration: policy_config)
+
 policy = custom_target('qm-policy',
-  input: ['qm.te', 'qm.fc', 'qm.if'],
+  input: [policy_source, 'qm.fc', 'qm.if'],
   output: 'qm.pp.bz2',
   command: [find_program('build-aux/build-policy'), make,
     '@OUTPUT@', '@INPUT@'],
