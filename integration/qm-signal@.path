@@ -1,0 +1,8 @@
+# SPDX-License-Identifier: GPL-2.0-only
+
+[Unit]
+Description=Watch for host signal %i
+
+[Path]
+PathExists=/run/host/qmc-signals/%i
+Unit=qm-signal@%i.target

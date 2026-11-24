@@ -35,3 +35,40 @@ an additional private network, or `Network=host` to share QM's namespace.
 These application settings do not select the outer host's network namespace.
 Place application Quadlets in `/etc/qm/containers/systemd/` on the host,
 then run `qmc exec systemctl daemon-reload` and start the application service.
+
+## Waiting for host networking
+
+Host network readiness can be forwarded to QM for applications that need it at
+startup. Install `qm-integration` inside QM's rootfs.
+
+On the host, enable network integration:
+
+```sh
+sudo systemctl enable --now qm-network-integration.service
+```
+
+This sends a readiness signal to QM once host networking is online. The host's
+appropriate wait-online provider must be enabled, such as
+`NetworkManager-wait-online.service` or `systemd-networkd-wait-online.service`.
+
+Inside QM, enable the wait service:
+
+```sh
+sudo qmc exec systemctl enable qm-wait-for-host-network.service
+```
+
+This delays `network-online.target` inside QM until the host readiness signal
+arrives.
+
+The service waits up to 120 seconds; override
+`TimeoutStartSec=` in a guest service drop-in to change that limit. As with other
+wait-online services, a timeout fails the wait service and permits the target's
+startup to continue.
+
+Guest services that require the milestone should have:
+
+```ini
+[Unit]
+Wants=network-online.target
+After=network-online.target
+```

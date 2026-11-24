@@ -1,0 +1,13 @@
+# SPDX-License-Identifier: GPL-2.0-only
+
+[Unit]
+Description=Publish %i signal to QM
+
+[Service]
+Type=oneshot
+RemainAfterExit=yes
+RuntimeDirectory=qm
+RuntimeDirectoryMode=0700
+RuntimeDirectoryPreserve=yes
+ExecStart=@BINDIR@/qmc signal %i
+ExecStop=@BINDIR@/qmc signal --clear %i

@@ -90,6 +90,25 @@ The host publisher and the application service must be configured separately.
 A oneshot service triggered while a marker exists should use
 `RemainAfterExit=yes` to avoid repeated activation.
 
+The host template unit `qm-signal@.service` publishes its instance name as a
+signal when started and clears it when stopped. For example:
+
+```sh
+sudo systemctl start qm-signal@network-ready.service
+sudo systemctl stop qm-signal@network-ready.service
+```
+
+Inside QM, `qm-integration` supplies `qm-signal@.path` and `qm-signal@.target`.
+Starting `qm-signal@network-ready.path` watches the corresponding marker and
+activates `qm-signal@network-ready.target` when it exists. A guest boot target
+can pull in the watcher with `Wants=qm-signal@network-ready.path`. Enable
+consumer services with `WantedBy=qm-signal@network-ready.target` in their
+`[Install]` section to run when the signal arrives. The target remains active
+after the marker is cleared.
+
+For the supplied host-network publisher and guest wait-online service, see
+[Waiting for host networking](how_tos/network.md#waiting-for-host-networking).
+
 ## Options and exit status
 
 All commands accept `--help`, `--verbose` and `--runtime-dir DIR`.

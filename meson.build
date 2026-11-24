@@ -4,6 +4,10 @@ project('qm', 'c', version: files('VERSION'), license: 'GPL-2.0-only',
   meson_version: '>=1.2.0', default_options: ['c_std=gnu17', 'warning_level=3', 'werror=true', 'python.bytecompile=-1'])
 
 data_dir = get_option('datadir') / 'qm'
+systemd = dependency('systemd')
+unit_dir = systemd.get_variable(pkgconfig: 'systemdsystemunitdir')
+sysctl_dir = systemd.get_variable(pkgconfig: 'sysctldir')
+
 make = find_program('make')
 md2man = find_program('go-md2man')
 
@@ -49,6 +53,7 @@ configure_file(output: 'config.h', configuration: build_config)
 subdir('src')
 subdir('data')
 subdir('systemd')
+subdir('integration')
 
 if get_option('tests')
   python = import('python').find_installation('python3')
