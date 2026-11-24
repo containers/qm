@@ -25,6 +25,11 @@
         "type": "RLIMIT_NPROC",
         "hard": 1048576,
         "soft": 1048576
+      },
+      {
+        "type": "RLIMIT_MSGQUEUE",
+        "hard": 409600,
+        "soft": 409600
       }
     ],
     "selinuxLabel": "system_u:system_r:qm_t:s0"
