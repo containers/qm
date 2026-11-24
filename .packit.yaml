@@ -129,9 +129,8 @@ jobs:
             virtualization:
               is-supported: true
 
-  # TODO: Restore pull_request once automotive-image-builder supports qmc.
   - job: tests
-    trigger: ignore
+    trigger: pull_request
     packages: [qm]
     identifier: automotive-image-builder
     tmt_plan: /plans/e2e/aib
