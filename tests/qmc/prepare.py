@@ -1881,6 +1881,55 @@ class PrepareTests(unittest.TestCase):
         self.assertEqual(result.returncode, 0, result.stderr)
         self.assertFalse((self.runtime / "state.json").exists())
 
+    def test_cleanup_when_crun_removes_state_during_delete(self):
+        """Accept a failed delete only if the container directory is gone."""
+        result = self.prepare()
+        self.assertEqual(result.returncode, 0, result.stderr)
+        status = self.runtime / "crun/qm/status"
+        executable = self.directory / "racing-crun"
+        state_file = self.runtime / "state.json"
+        pin = self.runtime / "netns"
+        for remove_directory in (False, True):
+            with self.subTest(remove_directory=remove_directory):
+                status.parent.mkdir(exist_ok=True)
+                status.touch()
+                pin.touch()
+                executable.write_text(
+                    f"#!{sys.executable}\nimport pathlib, sys\n"
+                    f"status = pathlib.Path({str(status)!r})\n"
+                    "status.unlink()\n"
+                    f"if {remove_directory!r}:\n    status.parent.rmdir()\n"
+                    "sys.exit(1)\n"
+                )
+                executable.chmod(0o755)
+                saved = {
+                    "version": 1,
+                    "bundle": str(self.runtime),
+                    "netns": str(pin),
+                    "crun": {
+                        "executable": str(executable),
+                        "root": str(self.runtime / "crun"),
+                        "id": "qm",
+                    },
+                }
+                state_file.write_text(json.dumps(saved))
+                result = subprocess.run(
+                    [
+                        str(LAUNCHER), "cleanup", "--runtime-dir",
+                        str(self.runtime),
+                    ],
+                    text=True,
+                    capture_output=True,
+                )
+                self.assertFalse(pin.exists())
+                if remove_directory:
+                    self.assertEqual(result.returncode, 0, result.stderr)
+                    self.assertFalse(state_file.exists())
+                    self.assertFalse(status.parent.exists())
+                else:
+                    self.assertNotEqual(result.returncode, 0)
+                    self.assertEqual(json.loads(state_file.read_text()), saved)
+
     def test_cleanup_without_namespace(self):
         """Check cleanup without namespace."""
         result = self.prepare()

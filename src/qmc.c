@@ -153,7 +153,13 @@ static int crun_delete(const State *state)
 	strv_builder_add(&argv, "--force");
 	strv_builder_add(&argv, id);
 
-	return run_command(argv.strv);
+	int result = run_command(argv.strv);
+	/* A running crun also removes its state when the container exits. It may
+	 * win the race with delete after the status check above.
+	 */
+	if (result && access(container, F_OK) < 0 && errno == ENOENT)
+		return 0;
+	return result;
 }
 
 static int teardown_namespace(const char *netns)
