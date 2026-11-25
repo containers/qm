@@ -10,6 +10,8 @@ void userns_configure_mounts(json_object *config, const char *runtime_dir)
 {
 	if (!js_get(js_get(config, "linux"), "uidMappings"))
 		return;
+	/* Canonicalize the runtime prefix to include a trailing slash. */
+	autofree char *runtime_prefix = join_path(runtime_dir, "");
 	json_object *mounts = js_need(config, "mounts", json_type_array);
 	for (size_t i = 0; i < json_object_array_length(mounts); i++) {
 		json_object *entry = json_object_array_get_idx(mounts, i);
@@ -19,8 +21,7 @@ void userns_configure_mounts(json_object *config, const char *runtime_dir)
 		/* Persistent trees are already shifted on disk. Only qmc's generated
 		 * files and host-owned signal state need a translated runtime mount.
 		 */
-		if (!(starts_with(source, runtime_dir) &&
-		      source[strlen(runtime_dir)] == '/'))
+		if (!starts_with(source, runtime_prefix))
 			continue;
 		json_object *options = js_need(entry, "options", json_type_array);
 		bool mapped = false;
