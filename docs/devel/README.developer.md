@@ -145,3 +145,20 @@ namespaces both disabled and required. Existing TMT/FFI tests remain separate.
 The outer launcher and its cleanup state use `/run/qm`; application Podman state
 inside QM remains managed by Podman. Changes to runtime behavior should include
 focused regressions in `tests/qmc/` and an installed-service VM run when relevant.
+
+## Lint checks
+
+Install `pre-commit`, then run the same hooks as CI on all tracked files:
+
+```sh
+make lint
+```
+
+To run only the Python lint checks, including the configured flake8 plugins:
+
+```sh
+make lint LINT_HOOK=flake8
+```
+
+Both commands use `.pre-commit-config.yaml`. Pre-commit downloads and installs
+the hook environments on first use.

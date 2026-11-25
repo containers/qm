@@ -9,13 +9,15 @@ VERSION ?= $(shell cat VERSION)
 RPM_TOPDIR ?= $(CURDIR)/rpmbuild
 ROOTDIR ?= $(CURDIR)
 TARGETS ?= qm
+LINT_HOOK ?=
 PACKIT_SUBPACKAGES := wayland
 FILTERED_TARGETS := $(filter-out $(PACKIT_SUBPACKAGES),$(TARGETS))
 
-.PHONY: help all install clean man selinux file_contexts dist rpm subpackages install-policy codespell
+.PHONY: help all install clean man selinux file_contexts dist rpm subpackages install-policy lint codespell
 help:
 	@echo 'Build: make all; install: make install DESTDIR=...; packages: make rpm'
 	@echo 'Subsystems: make TARGETS=kvm subpackages'
+	@echo 'Lint: make lint; Python only: make lint LINT_HOOK=flake8 (requires pre-commit)'
 
 $(BUILDDIR)/build.ninja:
 	meson setup $(BUILDDIR) --prefix=$(PREFIX) --datadir=$(DATADIR) --sysconfdir=$(SYSCONFDIR)
@@ -51,6 +53,9 @@ $(FILTERED_TARGETS):
 
 install-policy: all
 	semodule -i $(BUILDDIR)/qm.pp.bz2
+
+lint:
+	pre-commit run $(LINT_HOOK) --all-files --show-diff-on-failure
 
 codespell:
 	codespell -S build,tmp,.git -L te -w
