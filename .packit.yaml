@@ -132,6 +132,16 @@ jobs:
   - job: tests
     trigger: pull_request
     packages: [qm]
+    identifier: qmc-smoke
+    tmt_plan: /plans/qmc-smoke
+    # The isolated launcher tests build their fixtures from the PR source.
+    skip_build: true
+    targets:
+      - epel-10-x86_64
+
+  - job: tests
+    trigger: pull_request
+    packages: [qm]
     identifier: automotive-image-builder
     tmt_plan: /plans/e2e/aib
     targets:

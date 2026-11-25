@@ -60,3 +60,10 @@ for the host signal. It uses the generic signal path and target templates for
 both `host-network-online` and `network-ready`. The two machine-ID variants
 exercise a signal published before startup and one published while guest
 startup is blocked.
+
+Packit runs `/plans/qmc-smoke` for pull requests on a disposable CentOS Stream 10
+VM. Its `smoke.sh` wrapper builds QMC from source and runs the integration tests
+in private namespaces. Missing prerequisites fail the job.
+
+To reproduce that job on a disposable VM, install the dependencies listed in
+`smoke.fmf` (with CRB enabled), then run `sudo bash tests/qmc/smoke.sh`.
