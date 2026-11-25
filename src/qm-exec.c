@@ -11,6 +11,7 @@
 #include <fcntl.h>
 #include <poll.h>
 #include <signal.h>
+#include <sys/ioctl.h>
 #include <sys/prctl.h>
 #include <sys/socket.h>
 #include <sys/stat.h>
@@ -59,10 +60,16 @@ static int relay_fd(int fd, bool input, bool *is_socket)
 		err(1, "stat exec stdio");
 	*is_socket = S_ISSOCK(st.st_mode);
 	int copy;
-	if (S_ISFIFO(st.st_mode) || isatty(fd)) {
-		/* A dup shares status flags with the caller. Reopen pipes and terminals
-		 * to make only our own description nonblocking. Sockets use MSG_DONTWAIT
-		 * below; regular files keep their shared offset and append semantics.
+	unsigned int pty_number;
+	bool terminal = isatty(fd);
+	if (terminal && ioctl(fd, TIOCGPTN, &pty_number) == 0)
+		errx(1, "PTY masters are not supported for exec stdio (fd %d)", fd);
+	if (S_ISFIFO(st.st_mode) || terminal) {
+		/* A dup shares status flags with the caller. Reopen pipes and terminal
+		 * slaves to make only our own description nonblocking. PTY masters
+		 * cannot be reopened independently and are rejected above. Sockets use
+		 * MSG_DONTWAIT below; regular files keep their shared offset and
+		 * append semantics.
 		 */
 		autofree char *path = xasprintf("/proc/self/fd/%d", fd);
 		copy = open(path, (input ? O_RDONLY : O_WRONLY) | O_NONBLOCK | O_NOCTTY |

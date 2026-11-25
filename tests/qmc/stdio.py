@@ -10,6 +10,7 @@ import subprocess
 import sys
 import tempfile
 import time
+import tty
 import unittest
 
 RELAY = sys.argv.pop(1)
@@ -102,6 +103,64 @@ class StdioTests(unittest.TestCase):
             self.assertEqual(output.tell(), 14)
             output.seek(0)
             self.assertEqual(output.read(), b"prefix\nsuffix\n")
+
+    def test_pty_output(self):
+        """Relay to PTY slaves and reject masters, preserving caller flags."""
+        for use_master in (False, True):
+            for stream in (1, 2):
+                for blocking in (False, True):
+                    with self.subTest(master=use_master, stream=stream,
+                                      blocking=blocking):
+                        master, slave = os.openpty()
+                        try:
+                            tty.setraw(slave)
+                            writer, reader = ((master, slave) if use_master
+                                              else (slave, master))
+                            os.set_blocking(writer, blocking)
+                            flags = fcntl.fcntl(writer, fcntl.F_GETFL)
+                            data = bytes(range(256)) * 4
+                            program = (
+                                f"import os; os.write({stream}, {data!r})"
+                            )
+                            outputs = {"stdout": subprocess.PIPE,
+                                       "stderr": subprocess.PIPE}
+                            outputs["stdout" if stream == 1 else "stderr"] = (
+                                writer
+                            )
+                            result = subprocess.run(
+                                [RELAY, sys.executable, "-c", program],
+                                timeout=5,
+                                **outputs,
+                            )
+                            self.assertEqual(
+                                fcntl.fcntl(writer, fcntl.F_GETFL), flags
+                            )
+                            if use_master:
+                                self.assertEqual(result.returncode, 1)
+                                error = result.stderr
+                                if stream == 2:
+                                    self.assertTrue(select.select(
+                                        [reader], [], [], 5
+                                    )[0], "missing PTY master error")
+                                    error = os.read(reader, 4096)
+                                self.assertIn(
+                                    b"PTY masters are not supported", error
+                                )
+                                continue
+                            self.assertEqual(result.returncode, 0,
+                                             result.stderr)
+                            received = bytearray()
+                            deadline = time.monotonic() + 5
+                            while len(received) < len(data):
+                                self.assertTrue(select.select(
+                                    [reader], [], [],
+                                    max(0, deadline - time.monotonic()),
+                                )[0], "output did not reach the original PTY")
+                                received.extend(os.read(reader, len(data)))
+                            self.assertEqual(received, data)
+                        finally:
+                            os.close(master)
+                            os.close(slave)
 
     def test_signal_with_blocked_output(self):
         """Forward termination even when a pipe or journal socket is full."""
