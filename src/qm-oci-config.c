@@ -210,20 +210,31 @@ static bool expand_device_directory(PtrArray *paths, const PathOperation *operat
 	return found;
 }
 
+static const char *device_pattern_component(const char *source)
+{
+	autofree char *components = xstrdup(source);
+	char *remaining = components;
+	char *component;
+	while ((component = strsep(&remaining, "/"))) {
+		/* Backslashes are literal, as with glob()'s GLOB_NOESCAPE. */
+		if (glob_pattern_p(component, 0))
+			return source + (component - components);
+	}
+
+	return NULL;
+}
+
 static char *device_destination(const PathOperation *operation, const char *source,
-				bool pattern)
+				const char *pattern_component)
 {
 	if (!strcmp(operation->source, operation->destination))
 		return xstrdup(source);
-	if (!pattern)
+	if (!pattern_component)
 		return xstrdup(operation->destination);
 
 	/* Remap the tree below the source's first wildcard component. */
-	const char *wildcard = strpbrk(operation->source, "*?[");
-	const char *prefix_end =
-		memrchr(operation->source, '/', wildcard - operation->source + 1);
 	return join_path(operation->destination,
-			 source + (prefix_end - operation->source) + 1);
+			 source + (pattern_component - operation->source));
 }
 
 static void expand_devices(PtrArray *paths, const PathOperation *operation)
@@ -239,12 +250,14 @@ static void expand_devices(PtrArray *paths, const PathOperation *operation)
 	if (result != 0 && result != GLOB_NOMATCH)
 		err(1, "glob %s", operation->source);
 
-	bool pattern = matches.gl_flags & GLOB_MAGCHAR;
+	const char *pattern_component = device_pattern_component(operation->source);
+	/* glob() may omit GLOB_MAGCHAR when only parent components have wildcards. */
+	bool pattern = (matches.gl_flags & GLOB_MAGCHAR) || pattern_component;
 	bool found = false;
 	for (size_t i = 0; i < matches.gl_pathc; i++) {
 		const char *source = matches.gl_pathv[i];
 		autofree char *destination =
-			device_destination(operation, source, pattern);
+			device_destination(operation, source, pattern_component);
 		struct stat st;
 		int stat_result = stat(source, &st);
 

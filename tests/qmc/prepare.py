@@ -769,6 +769,99 @@ class PrepareTests(unittest.TestCase):
                         config, f"{prefix}/{name}", f"/dev/{name}"
                     )
 
+    def test_device_globs_with_literal_backslashes(self):
+        """Keep backslashes literal when remapping each glob match."""
+        devices = self.directory / "devices"
+        devices.mkdir()
+        sources = {r"\n": "/dev/null", r"\z": "/dev/zero"}
+        for name, source in sources.items():
+            (devices / name).symlink_to(source)
+
+        for pattern in (r"\*", r"\?", r"\[nz]"):
+            with self.subTest(pattern=pattern):
+                result = self.prepare(
+                    settings={
+                        "devices": [
+                            {
+                                "source": str(devices / pattern),
+                                "destination": "/dev/test",
+                            }
+                        ]
+                    }
+                )
+                self.assertEqual(result.returncode, 0, result.stderr)
+                config = self.generated()
+                self.assertEqual(
+                    [d["path"] for d in config["linux"]["devices"]],
+                    [f"/dev/test/{name}" for name in sources],
+                )
+                for name, source in sources.items():
+                    self.assert_device(config, f"/dev/test/{name}", source)
+
+    def test_device_globs_after_literal_brackets(self):
+        """Start remapped suffixes at the first actual glob component."""
+        devices = self.directory / "literal[" / "parent"
+        devices.mkdir(parents=True)
+        sources = {"null": "/dev/null", "zero": "/dev/zero"}
+        for name, source in sources.items():
+            (devices / name).symlink_to(source)
+
+        for pattern in ("*", "????", "[nz]*"):
+            with self.subTest(pattern=pattern):
+                result = self.prepare(
+                    settings={
+                        "devices": [
+                            {
+                                "source": str(devices / pattern),
+                                "destination": "/dev/test",
+                            }
+                        ]
+                    }
+                )
+                self.assertEqual(result.returncode, 0, result.stderr)
+                config = self.generated()
+                self.assertEqual(
+                    [d["path"] for d in config["linux"]["devices"]],
+                    [f"/dev/test/{name}" for name in sources],
+                )
+                for name, source in sources.items():
+                    self.assert_device(config, f"/dev/test/{name}", source)
+
+    def test_device_globs_in_parent_components(self):
+        """Preserve each matched subtree when remapping device globs."""
+        devices = self.directory / "input"
+        sources = {"adapter0": "/dev/null", "adapter1": "/dev/zero"}
+        for name, source in sources.items():
+            parent = devices / name
+            parent.mkdir(parents=True)
+            (parent / "node").symlink_to(source)
+
+        for pattern in (
+            "*/node",
+            "adapter?/node",
+            "adapter[01]/node",
+            "*/nod?",
+            "adapter?/n*",
+            "adapter[01]/[no]*",
+        ):
+            for destination in (None, "/dev/test"):
+                with self.subTest(pattern=pattern, destination=destination):
+                    operation = {"source": str(devices / pattern)}
+                    if destination:
+                        operation["destination"] = destination
+                    result = self.prepare(settings={"devices": [operation]})
+                    self.assertEqual(result.returncode, 0, result.stderr)
+                    config = self.generated()
+                    prefix = destination or str(devices)
+                    self.assertEqual(
+                        [d["path"] for d in config["linux"]["devices"]],
+                        [f"{prefix}/{name}/node" for name in sources],
+                    )
+                    for name, source in sources.items():
+                        self.assert_device(
+                            config, f"{prefix}/{name}/node", source
+                        )
+
     def test_device_glob_overrides_and_removals(self):
         """Check device glob overrides and removals."""
         devices = self.device_glob_fixture()
