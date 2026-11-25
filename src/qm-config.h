@@ -38,6 +38,7 @@ typedef struct {
 	char *base_config;
 	char *hostname;
 	char *rootfs;
+	bool read_only;
 	char *seccomp_file;
 	char *resolv_conf;
 	char *ip;

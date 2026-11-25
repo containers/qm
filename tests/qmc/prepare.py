@@ -523,6 +523,22 @@ class PrepareTests(unittest.TestCase):
         self.assertEqual(mounts["/var/tmp"], "/var/qm/tmp")
         self.assertIn("TZ=Europe/Stockholm", config["process"]["env"])
 
+    def test_rootfs_read_only_setting(self):
+        """Apply the read-only setting independently of the OCI base flag."""
+        for base_read_only in (True, False):
+            for read_only in (None, True, False):
+                with self.subTest(base=base_read_only, setting=read_only):
+                    self.base["root"]["readonly"] = base_read_only
+                    settings = (
+                        {} if read_only is None else {"read-only": read_only}
+                    )
+                    result = self.prepare(settings=settings)
+                    self.assertEqual(result.returncode, 0, result.stderr)
+                    self.assertEqual(
+                        self.generated()["root"]["readonly"],
+                        True if read_only is None else read_only,
+                    )
+
     def test_default_mounts_can_be_removed(self):
         """Check default mounts can be removed."""
         result = self.prepare(

@@ -46,6 +46,7 @@ capabilities or seccomp path. Use drop-ins for ordinary customization.
 | --- | --- |
 | `hostname` | String; `qm` |
 | `rootfs` | Absolute rootfs path; vendor default `/usr/lib/qm/rootfs` |
+| `read-only` | Boolean; `true`. Set to `false` for a writable rootfs |
 | `ip` | QM IPv4 address; `10.90.0.2` |
 | `gateway` | Host-side IPv4 address; `10.90.0.1` |
 | `prefix-length` | Integer 1–31; `24` |
@@ -60,7 +61,9 @@ capabilities or seccomp path. Use drop-ins for ordinary customization.
 | `seccomp` | Absolute seccomp JSON path; vendor default `/usr/share/qm/seccomp-no-rt.json` |
 | `base-config` | Absolute OCI base JSON path; `/usr/share/qm/qm.json` |
 
-The shipped rootfs is read-only. Writable host defaults are `/etc/qm` for `/etc`,
+The rootfs is read-only by default (controlled by `read-only` option). Writable
+host defaults are `/etc/qm` for `/etc`,
+
 `/var/qm` for `/var`, and `/var/qm/tmp` for `/var/tmp`. Use setup's `--rootfs`,
 `--rwetcfs` and `--rwvarfs` options when preparing different locations; setup
 writes matching container settings and service mount dependencies. Moving an

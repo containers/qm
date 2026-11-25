@@ -667,13 +667,14 @@ static json_object *create_config(const Config *configuration)
 {
 	debug("Loading OCI configuration from %s", configuration->base_config);
 	autofreejson json_object *config = js_load(configuration->base_config);
+	json_object *root = js_need(config, "root", json_type_object);
 	if (configuration->rootfs)
-		js_set_string(js_need(config, "root", json_type_object), "path",
-			      configuration->rootfs);
+		js_set_string(root, "path", configuration->rootfs);
+	js_object_add(root, "readonly", js_new_bool(configuration->read_only));
 
 	json_object *linux_config = js_need(config, "linux", json_type_object);
 	json_object *process = js_need(config, "process", json_type_object);
-	if (js_string(js_need(config, "root", json_type_object), "path")[0] != '/')
+	if (js_string(root, "path")[0] != '/')
 		errx(1, "root.path must be absolute");
 	configure_oci_policy(config, configuration);
 
