@@ -2,11 +2,12 @@
 
 # shellcheck disable=SC1091
 source ../e2e/lib/utils
+source ../e2e/lib/repoutils
 
 # Download basic QM manifest
 exec_cmd "curl -o qm.aib.yml https://gitlab.com/CentOS/automotive/src/automotive-image-builder/-/raw/main/examples/qm.aib.yml?ref_type=heads"
 
-USE_QM_COPR="${PACKIT_COPR_PROJECT:-@centos-automotive-sig/qm-next}"
+USE_QM_COPR="$(qm_copr_project)"
 COPR_URL="https://download.copr.fedorainfracloud.org/results/${USE_QM_COPR}/epel-9-$(uname -m)/"
 #shellcheck disable=SC2089
 EXTRA_REPOS="extra_repos=[{id: qm_build, baseurl: $COPR_URL}]"

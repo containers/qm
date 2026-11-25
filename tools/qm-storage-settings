@@ -43,71 +43,135 @@ exec_command() {
 setup_init() {
     ROOTFS=$(exec_command "/usr/share/qm/qm-rootfs")
 
-    STORAGE_CONF_PATHS=(
-        "${ROOTFS}/etc/containers/storage.conf"
-        "${ROOTFS}/usr/lib/containers/storage.conf"
-        "${ROOTFS}/usr/share/containers/storage.conf"
-    )
+    # Always configure the writable /etc copy. On CS9 it is already present;
+    # on CS10, seed it from the vendor default instead of editing /usr/share.
+    STORAGE_CONFIG="${ROOTFS}/etc/containers/storage.conf"
+    if [ -f "${STORAGE_CONFIG}" ]; then
+        return
+    fi
 
-    for STORAGE_CONF_PATH in "${STORAGE_CONF_PATHS[@]}"; do
-        if [ -f "${STORAGE_CONF_PATH}" ]; then
-            STORAGE_CONFIG="${STORAGE_CONF_PATH}"
+    for DEFAULT_STORAGE_CONFIG in \
+        "${ROOTFS}/usr/share/containers/storage.conf" \
+        "${ROOTFS}/usr/lib/containers/storage.conf"; do
+        if [ -f "${DEFAULT_STORAGE_CONFIG}" ]; then
+            install -D -m 0644 "${DEFAULT_STORAGE_CONFIG}" "${STORAGE_CONFIG}"
             return
         fi
     done
 
-    if [  -d /run/osbuild/ostree ]; then # osbuild exist, let's try ostree approach
-        STORAGE_CONFIG="/run/osbuild/tree/${STORAGE_CONFIG}"
-        if [ ! -f "${STORAGE_CONFIG}" ]; then
-            echo "Exiting /etc/containers/storage.conf not found under /run/osbuild/tree/"
-            exit 255
-        fi
-    fi
+    echo "Exiting: no storage.conf found under ${ROOTFS}" >&2
+    exit 255
 }
 
 additional_images_storages() {
-    if ! grep -q "/var/lib/shared" "${STORAGE_CONFIG}"; then
-        awk -i inplace '
-        BEGIN {
-            # Initialize insideBlock to 0 to track when we are inside the "additionalimagestores" block
-            insideBlock = 0
+    if grep -Fq '"/var/lib/shared"' "${STORAGE_CONFIG}"; then
+        return
+    fi
+
+    local tmp="${STORAGE_CONFIG}.tmp"
+    if ! awk '
+        function emit_array( i) {
+            if (last_item && body[last_item] !~ /,[[:space:]]*(#.*)?$/) {
+                if (body[last_item] ~ /[[:space:]]+#/) {
+                    sub(/[[:space:]]+#/, ", #", body[last_item])
+                } else {
+                    body[last_item] = body[last_item] ","
+                }
+            }
+            for (i = 1; i <= count; i++) {
+                print body[i]
+                delete body[i]
+            }
+            print "    \"/var/lib/shared\","
+            print close_line
+            count = 0
+            last_item = 0
         }
 
-        {
-            # Check if the current line is the start of the block
-            if ($0 ~ /additionalimagestores = \[/) {
-                print $0             # Print the starting line of the block
-                insideBlock = 1      # Set insideBlock to 1 indicating that we are inside the block
-                next                 # Skip to the next line to process further
+        !added && !in_array {
+            line = $0
+            match(line, /^[[:space:]]*/)
+            indent = substr(line, 1, RLENGTH)
+            content = substr(line, RLENGTH + 1)
+            commented_array = 0
+
+            if (content ~ /^#[[:space:]]*additionalimagestores[[:space:]]*=/) {
+                sub(/^#[[:space:]]*/, "", content)
+                commented_array = 1
+            } else if (content !~ /^additionalimagestores[[:space:]]*=/) {
+                print
+                next
             }
 
-            # Execute the following if we are inside the specified block
-            if (insideBlock == 1) {
-                # Check if the line contains the specific path "/usr/lib/containers/storage" or
-                # /usr/share/containers/storage
-                if ($0 ~ /"\/usr\/(lib|share)\/containers\/storage"/) {
-                    if ($0 !~ /,$/) {  # If the line does not end with a comma
-                        print $0 ","  # Print the line with a comma appended
-                    } else {
-                        print $0      # Otherwise, print the line as it is
+            open_idx = index(content, "[")
+            if (!open_idx) {
+                print
+                next
+            }
+            print indent substr(content, 1, open_idx)
+            rest = substr(content, open_idx + 1)
+            if (rest ~ /\]/) {
+                close_idx = index(rest, "]")
+                value = substr(rest, 1, close_idx - 1)
+                suffix = substr(rest, close_idx + 1)
+                if (value ~ /[^[:space:]]/) {
+                    body[++count] = "    " value
+                    if (value ~ /"[^"]+"/) {
+                        last_item = count
                     }
-                    print "   \"/var/lib/shared\""  # Add a new path to the list
-                    next             # Skip to the next line to continue processing within the block
                 }
-
-                # Check if the current line is the end of the block
-                if ($0 ~ /^\s*\]$/) {
-                    print $0          # Print the line that ends the block
-                    insideBlock = 0   # Reset insideBlock to 0 as we are leaving the block
-                    next              # Move to the next line outside the block
-                }
-
-                print $0  # Print other lines within the block that do not need modification
+                close_line = "]" suffix
+                emit_array()
+                added = 1
             } else {
-                print $0  # Print lines outside the block as they are
+                if (rest ~ /[^[:space:]]/) {
+                    body[++count] = "    " rest
+                    if (rest ~ /"[^"]+"/) {
+                        last_item = count
+                    }
+                }
+                in_array = 1
             }
-        }' "${STORAGE_CONFIG}"
+            next
+        }
+
+        in_array {
+            line = $0
+            if (commented_array) {
+                match(line, /^[[:space:]]*/)
+                indent = substr(line, 1, RLENGTH)
+                content = substr(line, RLENGTH + 1)
+                if (content ~ /^#[[:space:]]*"[^"]*"[[:space:]]*,?[[:space:]]*(#.*)?$/ ||
+                    content ~ /^#[[:space:]]*\][[:space:]]*(#.*)?$/) {
+                    sub(/^#[[:space:]]*/, "", content)
+                    line = indent content
+                }
+            }
+
+            if (line ~ /^[[:space:]]*\]/) {
+                close_line = line
+                emit_array()
+                in_array = 0
+                added = 1
+                next
+            }
+
+            body[++count] = line
+            if (line !~ /^[[:space:]]*#/ && line ~ /"[^"]+"/) {
+                last_item = count
+            }
+            next
+        }
+
+        { print }
+        END { if (!added) exit 1 }
+    ' "${STORAGE_CONFIG}" > "${tmp}"; then
+        rm -f "${tmp}"
+        echo "Exiting: additionalimagestores array not found in ${STORAGE_CONFIG}" >&2
+        return 1
     fi
+
+    mv "${tmp}" "${STORAGE_CONFIG}"
 }
 
 update_storage_conf() {
@@ -117,29 +181,16 @@ update_storage_conf() {
 	exit 255
     fi
 
-    # 1. Uncomment lines from 'additionalimage' to ']'
-    if grep -q '#.*additionalimage' "$STORAGE_CONFIG"; then
-        sed -i '/additionalimage.*/,/]/s/^#//g' "$STORAGE_CONFIG"
-    fi
-
-    # 2. Append line after 'additionalimages'
-    if ! grep -qE 'additionalimagestores\s*=\s*\[.*"/var/lib/shared".*\]' "${STORAGE_CONFIG}"; then
-        if [ ! -d "${STORAGE_CONFIG}" ]; then
-	     mkdir -p "${ROOTFS}/var/lib/shared"
-	fi
-	sed -i -E '/^additionalimagestores = \[/ {
-            s/(\])$/"\/var\/lib\/shared"\1/
-            s/(.+),(\])$/"\/var\/lib\/shared"\2/
-        }' "${STORAGE_CONFIG}"
-    fi
-
-    # 3. Uncomment or change 'transient_store'
-    if ! grep -q '^transient_store=true' "$STORAGE_CONFIG"; then
-        sed -i 's|^#.*transient_store.*|transient_store=true|g' "$STORAGE_CONFIG"
-    fi
-
-    # 4. Add /var/lib/shared
+    # Add /var/lib/shared to the additional image store array.
+    mkdir -p "${ROOTFS}/var/lib/shared"
     additional_images_storages
+
+    # Uncomment or change 'transient_store'
+    if grep -Eq '^[[:space:]]*#?[[:space:]]*transient_store[[:space:]]*=' "$STORAGE_CONFIG"; then
+        sed -i -E \
+            's/^[[:space:]]*#?[[:space:]]*transient_store[[:space:]]*=.*/transient_store = true/' \
+            "$STORAGE_CONFIG"
+    fi
 
     # Append TMPDIR
     if test -f "${ROOTFS}/etc/containers/containers.conf"; then

@@ -9,6 +9,7 @@ prepare:
     how: install
     order: 20
     package:
+      - podman
       - jq
 
 execute:

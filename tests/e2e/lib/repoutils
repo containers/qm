@@ -35,6 +35,16 @@ EOF
 }
 
 
+qm_copr_project() {
+  if [[ -n "${PACKIT_QM_COPR_PROJECT:-}" ]]; then
+    printf '%s\n' "${PACKIT_QM_COPR_PROJECT}"
+  elif [[ -n "${PACKIT_PR_ID:-}" ]]; then
+    printf 'packit/containers-qm-%s\n' "${PACKIT_PR_ID}"
+  else
+    printf '%s\n' "${PACKIT_COPR_PROJECT:-@centos-automotive-sig/qm-next}"
+  fi
+}
+
 install_qm_rpms() {
   ###########################################################################
   # Description:                                                            #
@@ -44,8 +54,8 @@ install_qm_rpms() {
   #   USE_QM_COPR:  copr repo to install                                    #
   ###########################################################################
 
-  if [[ -n "${USE_QM_COPR}" ]]; then
-     USE_QM_COPR="${PACKIT_COPR_PROJECT:-@centos-automotive-sig/qm-next}"
+  if [[ -z "${USE_QM_COPR:-}" || "${USE_QM_COPR}" =~ ^[Yy]$ ]]; then
+     USE_QM_COPR="$(qm_copr_project)"
   fi
   info_message "Installing qm setup rpm"
   info_message "Installing qm using ${USE_QM_COPR} repo"
@@ -74,7 +84,7 @@ install_qm_rpms() {
       fi
   fi
 
-  dnf install -y bluechi-ctl bluechi-agent bluechi-controller bluechi-is-online qm hostname
+  dnf install -y bluechi-ctl bluechi-agent bluechi-controller bluechi-is-online qm qmctl hostname
 }
 
 set_qm_rlimits() {
