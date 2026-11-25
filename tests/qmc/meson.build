@@ -38,4 +38,8 @@ stdio_test = executable('test-exec-stdio', ['exec-stdio.c', '../../src/qm-exec.c
   include_directories: qmc_includes, dependencies: dependency('json-c'))
 test('stdio', python, args: [files('stdio.py'), stdio_test])
 
+console_test = executable('test-console', ['console.c', '../../src/qm-console.c', '../../src/qm-utils.c'],
+  include_directories: qmc_includes, dependencies: dependency('json-c'))
+test('console', python, args: [files('console.py'), console_test])
+
 test('migration', python, args: [files('migration.py')])
