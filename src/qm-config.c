@@ -47,7 +47,7 @@ typedef struct {
 static void parse_object(void *target, json_object *object, const ConfigEntry *entries,
 			 size_t count, const char *name, const char *filename)
 {
-	if (!json_object_is_type(object, json_type_object))
+	if (!js_is_object(object))
 		errx(1, "%s: %s must be a JSON object", filename, name);
 
 	json_object_object_foreach (object, key, unused) {
@@ -79,11 +79,11 @@ static void parse_object(void *target, json_object *object, const ConfigEntry *e
 
 		void *field = (char *)target + entry->offset;
 		if (parser->type == json_type_array) {
-			for (size_t j = 0; j < json_object_array_length(value); j++) {
+			for (size_t j = 0; j < js_array_len(value); j++) {
 				autofree char *item_name =
 					xasprintf("%s[%zu]", field_name, j);
-				parser->parse(field, json_object_array_get_idx(value, j),
-					      item_name, filename);
+				parser->parse(field, js_array_get(value, j), item_name,
+					      filename);
 			}
 		} else {
 			parser->parse(field, value, field_name, filename);
@@ -114,7 +114,7 @@ static void clear_object(void *target, const ConfigEntry *entries, size_t count)
 static const char *config_string(json_object *value, const char *name,
 				 const char *filename)
 {
-	if (!json_object_is_type(value, json_type_string))
+	if (!js_is_string(value))
 		errx(1, "%s: %s must be a JSON string", filename, name);
 
 	const char *string = json_object_get_string(value);
@@ -127,7 +127,7 @@ static const char *config_string(json_object *value, const char *name,
 static void parse_memory(void *field, json_object *value, const char *name,
 			 const char *filename)
 {
-	if (json_object_is_type(value, json_type_int)) {
+	if (js_is_int(value)) {
 		if (json_object_get_int64(value) <= 0 ||
 		    json_object_get_uint64(value) > INT64_MAX)
 			errx(1, "%s: memory-max must be positive or infinity", filename);
@@ -302,10 +302,7 @@ static json_object *serialize_memory(const void *field)
 static json_object *serialize_strings(const void *field)
 {
 	const PtrArray *strings = field;
-	autofreejson json_object *result = js_new_array();
-	for (size_t i = 0; i < strings->length; i++)
-		js_array_add(result, js_new_string(strings->items[i]));
-	return steal_ptr(&result);
+	return js_new_strings((const char *const *)strings->items, strings->length);
 }
 
 static const ConfigParser path_parser = {
@@ -421,10 +418,11 @@ bool reserved_mount_destination(const char *destination)
 static void parse_path_operation(PtrArray *operations, json_object *value, bool device,
 				 const char *name, const char *filename)
 {
-	bool remove = json_object_is_type(value, json_type_object) &&
-		      json_object_get_boolean(js_get(value, "remove"));
+	/* Probe the operation before schema validation reports detailed field errors. */
+	bool remove =
+		js_is_object(value) && json_object_get_boolean(js_get(value, "remove"));
 	json_object *seat_value;
-	bool seat = device && json_object_is_type(value, json_type_object) &&
+	bool seat = device && js_is_object(value) &&
 		    json_object_object_get_ex(value, "seat", &seat_value);
 	const ConfigEntry *entries = mount_entries;
 	size_t count = N_ELEMENTS(mount_entries);

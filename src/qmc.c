@@ -109,13 +109,13 @@ static NetworkOptions get_network_options(const Config *configuration,
 		.disable_ipv6 = true,
 		.nft_table = "qm_launch",
 	};
-	json_object *mappings = js_get(js_get(config, "linux"), "gidMappings");
+	json_object *mappings =
+		js_get_array_maybe(js_get_object(config, "linux"), "gidMappings");
 	if (mappings) {
-		for (size_t i = 0; i < json_object_array_length(mappings); i++) {
-			json_object *mapping = json_object_array_get_idx(mappings, i);
-			if (json_object_get_int64(js_get(mapping, "containerID")) == 0)
-				options.ping_gid =
-					json_object_get_int64(js_get(mapping, "hostID"));
+		for (size_t i = 0; i < js_array_len(mappings); i++) {
+			json_object *mapping = js_array_get_object(mappings, i);
+			if (js_get_int(mapping, "containerID") == 0)
+				options.ping_gid = js_get_int(mapping, "hostID");
 		}
 	}
 	return options;
@@ -382,7 +382,7 @@ static int crun_run(json_object *config)
 	}
 	autofree char *console_socket = NULL;
 	pid_t console_pid = -1;
-	if (json_object_get_boolean(js_get(js_get(config, "process"), "terminal"))) {
+	if (js_get_bool_maybe(js_get_object(config, "process"), "terminal")) {
 		console_socket = join_path(opt_runtime_dir, "console.sock");
 		debug("Forwarding container console to stdout");
 		console_pid = console_start(console_socket);
@@ -463,11 +463,11 @@ static void configure_identity(json_object *config, json_object *process,
 			       const char *hostname)
 {
 	const char *timezone = getenv("TZ");
-	json_object *old = js_need(process, "env", json_type_array);
+	json_object *old = js_get_array(process, "env");
 	autofreejson json_object *env = js_new_array();
-	for (size_t i = 0; i < json_object_array_length(old); i++) {
-		json_object *entry = json_object_array_get_idx(old, i);
-		const char *value = js_array_string(old, i);
+	for (size_t i = 0; i < js_array_len(old); i++) {
+		json_object *entry = js_array_get(old, i);
+		const char *value = js_array_get_string(old, i);
 		if (!starts_with(value, "HOSTNAME=") &&
 		    !starts_with(value, "container_uuid=") &&
 		    (!timezone || !starts_with(value, "TZ=")))
@@ -475,11 +475,11 @@ static void configure_identity(json_object *config, json_object *process,
 	}
 
 	autofree char *entry = xasprintf("HOSTNAME=%s", hostname);
-	js_array_add(env, js_new_string(entry));
+	js_array_add_string(env, entry);
 
 	if (timezone) {
 		autofree char *tz = xasprintf("TZ=%s", timezone);
-		js_array_add(env, js_new_string(tz));
+		js_array_add_string(env, tz);
 	}
 
 	js_object_add(process, "env", steal_ptr(&env));
@@ -488,8 +488,8 @@ static void configure_identity(json_object *config, json_object *process,
 
 static void configure_machine_id(json_object *process)
 {
-	json_object *args = js_need(process, "args", json_type_array);
-	const char *init = js_array_string(args, 0);
+	json_object *args = js_get_array(process, "args");
+	const char *init = js_array_get_string(args, 0);
 	if (strcmp(init, "/sbin/init") && strcmp(init, "/usr/sbin/init") &&
 	    strcmp(init, "/lib/systemd/systemd") &&
 	    strcmp(init, "/usr/lib/systemd/systemd"))
@@ -509,15 +509,15 @@ static void configure_machine_id(json_object *process)
 	 * The last option overrides any machine ID supplied by the base config.
 	 */
 	autofree char *argument = xasprintf("--machine-id=%s", id);
-	js_array_add(args, js_new_string(argument));
+	js_array_add_string(args, argument);
 }
 
 static json_object *find_mount(json_object *config, const char *destination)
 {
-	json_object *mounts = js_need(config, "mounts", json_type_array);
-	for (size_t i = 0; i < json_object_array_length(mounts); i++) {
-		json_object *mount = json_object_array_get_idx(mounts, i);
-		if (!strcmp(js_string(mount, "destination"), destination))
+	json_object *mounts = js_get_array(config, "mounts");
+	for (size_t i = 0; i < js_array_len(mounts); i++) {
+		json_object *mount = js_array_get_object(mounts, i);
+		if (!strcmp(js_get_string(mount, "destination"), destination))
 			return mount;
 	}
 
@@ -573,9 +573,9 @@ static void configure_seccomp(json_object *linux_config, json_object *process,
 static json_object *id_mapping(IdRange range)
 {
 	autofreejson json_object *mapping = js_new_object();
-	js_object_add(mapping, "containerID", js_new_int(0));
-	js_object_add(mapping, "hostID", js_new_int(range.start));
-	js_object_add(mapping, "size", js_new_int(range.count));
+	js_set_int(mapping, "containerID", 0);
+	js_set_int(mapping, "hostID", range.start);
+	js_set_int(mapping, "size", range.count);
 
 	return steal_ptr(&mapping);
 }
@@ -604,9 +604,9 @@ static void configure_userns(json_object *linux_config, const Config *configurat
 	if (js_get(linux_config, "uidMappings") || js_get(linux_config, "gidMappings"))
 		errx(1, "base config already has user namespace mappings");
 
-	json_object *namespaces = js_need(linux_config, "namespaces", json_type_array);
-	for (size_t i = 0; i < json_object_array_length(namespaces); i++)
-		if (!strcmp(js_string(json_object_array_get_idx(namespaces, i), "type"),
+	json_object *namespaces = js_get_array(linux_config, "namespaces");
+	for (size_t i = 0; i < js_array_len(namespaces); i++)
+		if (!strcmp(js_get_string(js_array_get_object(namespaces, i), "type"),
 			    "user"))
 			errx(1, "base config already has a user namespace");
 
@@ -630,10 +630,10 @@ static void configure_isolation(json_object *linux_config)
 	debug("Container cgroup %s", payload);
 	js_set_string(linux_config, "cgroupsPath", payload);
 
-	json_object *namespaces = js_need(linux_config, "namespaces", json_type_array);
-	for (size_t i = 0; i < json_object_array_length(namespaces); i++) {
-		json_object *entry = json_object_array_get_idx(namespaces, i);
-		if (!strcmp(js_string(entry, "type"), "network")) {
+	json_object *namespaces = js_get_array(linux_config, "namespaces");
+	for (size_t i = 0; i < js_array_len(namespaces); i++) {
+		json_object *entry = js_array_get_object(namespaces, i);
+		if (!strcmp(js_get_string(entry, "type"), "network")) {
 			autofree char *netns = join_path(opt_runtime_dir, "netns");
 			js_set_string(entry, "path", netns);
 			return;
@@ -645,12 +645,9 @@ static void configure_isolation(json_object *linux_config)
 
 static void configure_annotations(json_object *config)
 {
-	json_object *annotations = js_get(config, "annotations");
+	json_object *annotations = js_get_object_maybe(config, "annotations");
 	autofreejson json_object *clean = js_new_object();
 	if (annotations) {
-		if (!json_object_is_type(annotations, json_type_object))
-			errx(1, "invalid annotations: expected a JSON object");
-
 		json_object_object_foreach (annotations, key, value) {
 			if (!starts_with(key, "io.podman.") &&
 			    !starts_with(key, "org.systemd.property.") &&
@@ -667,14 +664,14 @@ static json_object *create_config(const Config *configuration)
 {
 	debug("Loading OCI configuration from %s", configuration->base_config);
 	autofreejson json_object *config = js_load(configuration->base_config);
-	json_object *root = js_need(config, "root", json_type_object);
+	json_object *root = js_get_object(config, "root");
 	if (configuration->rootfs)
 		js_set_string(root, "path", configuration->rootfs);
-	js_object_add(root, "readonly", js_new_bool(configuration->read_only));
+	js_set_bool(root, "readonly", configuration->read_only);
 
-	json_object *linux_config = js_need(config, "linux", json_type_object);
-	json_object *process = js_need(config, "process", json_type_object);
-	if (js_string(root, "path")[0] != '/')
+	json_object *linux_config = js_get_object(config, "linux");
+	json_object *process = js_get_object(config, "process");
+	if (js_get_string(root, "path")[0] != '/')
 		errx(1, "root.path must be absolute");
 	configure_oci_policy(config, configuration);
 
@@ -692,7 +689,7 @@ static json_object *create_config(const Config *configuration)
 	userns_configure_mounts(config, opt_runtime_dir);
 
 	debug("OCI configuration ready: hostname=%s rootfs=%s", configuration->hostname,
-	      js_string(js_get(config, "root"), "path"));
+	      js_get_string(js_get_object(config, "root"), "path"));
 	return steal_ptr(&config);
 }
 
@@ -885,8 +882,8 @@ static void write_container_files(const Config *configuration, json_object *conf
 {
 	const char *context =
 		opt_prepare_only ? NULL
-				 : json_object_get_string(
-					   js_get(js_get(config, "linux"), "mountLabel"));
+				 : js_get_string_maybe(js_get_object(config, "linux"),
+						       "mountLabel");
 
 	autofree char *signals = join_path(opt_runtime_dir, "signals");
 	autoclose int signals_fd = open_signals_directory(signals, true);
@@ -908,8 +905,7 @@ static void write_container_files(const Config *configuration, json_object *conf
 	js_set_string(hosts_config, "hostname", configuration->hostname);
 	js_set_string(hosts_config, "ip", configuration->ip);
 	js_set_string(hosts_config, "gateway", configuration->gateway);
-	js_object_add(hosts_config, "prefix-length",
-		      js_new_int(configuration->prefix_length));
+	js_set_int(hosts_config, "prefix-length", configuration->prefix_length);
 	container_file(files, "hosts.conf",
 		       json_object_to_json_string_ext(
 			       hosts_config,
@@ -947,7 +943,7 @@ static json_object *inspect_settings(const Config *configuration)
 	if (!configuration->rootfs) {
 		autofreejson json_object *base = js_load(configuration->base_config);
 		js_set_string(result, "rootfs",
-			      js_string(js_need(base, "root", json_type_object), "path"));
+			      js_get_string(js_get_object(base, "root"), "path"));
 	}
 	return steal_ptr(&result);
 }
@@ -976,7 +972,7 @@ static int inspect(const Config *configuration)
 
 	const char *contents;
 	size_t length;
-	if (opt_inspect_field && json_object_is_type(value, json_type_string)) {
+	if (opt_inspect_field && js_is_string(value)) {
 		contents = json_object_get_string(value);
 		length = json_object_get_string_len(value);
 	} else {

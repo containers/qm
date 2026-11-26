@@ -149,26 +149,61 @@ int run_command(char *const argv[]);
 
 void js_cleanup_json(void *p);
 
-/* Constructors and js_load return owned references. Getters return borrowed
+/* Exact JSON type checks; NULL matches none of these types. */
+bool js_is_bool(json_object *value);
+bool js_is_int(json_object *value);
+bool js_is_string(json_object *value);
+bool js_is_array(json_object *value);
+bool js_is_object(json_object *value);
+
+/* Constructors and js_load return owned references. JSON getters return borrowed
  * references; string pointers remain valid while their JSON value is alive.
- * js_object_add, js_array_add and js_array_insert consume the supplied reference. */
+ * js_object_add, js_array_add and js_array_insert consume the supplied reference.
+ * String constructors, setters and append helpers copy their input strings. */
 json_object *js_new_int(int64_t value);
 json_object *js_new_bool(bool value);
+/* Counted arrays need no terminator; values may be NULL when count is zero.
+ * A strv is NULL-terminated; NULL also represents an empty vector. */
 json_object *js_new_strings(const char *const values[], size_t count);
+json_object *js_new_strv(const char *const values[]);
 json_object *js_new_string(const char *value);
 json_object *js_new_array(void);
 json_object *js_new_object(void);
 
 void js_object_add(json_object *object, const char *key, json_object *value);
+/* Array helpers require a JSON array. js_array_get returns a borrowed value,
+ * or NULL for a null element or an out-of-range index. Typed getters require
+ * a non-null element of the requested type and report an error otherwise. */
+size_t js_array_len(json_object *array);
+json_object *js_array_get(json_object *array, size_t index);
+const char *js_array_get_string(json_object *array, size_t index);
+json_object *js_array_get_object(json_object *array, size_t index);
 void js_array_add(json_object *array, json_object *value);
+void js_array_add_string(json_object *array, const char *value);
 /* Insert before index, which must be at most the current array length. */
 void js_array_insert(json_object *array, size_t index, json_object *value);
 
+/* Untyped lookup for presence checks or values interpreted by another parser. */
 json_object *js_get(json_object *object, const char *key);
-json_object *js_need(json_object *object, const char *key, enum json_type type);
-const char *js_array_string(json_object *array, size_t index);
-const char *js_string(json_object *object, const char *key);
+/* Typed field getters require a non-null value of the requested type.
+ * The _maybe variants allow missing/null fields, returning NULL, 0 or false,
+ * but still reject values of the wrong type. References are borrowed. */
+json_object *js_get_object(json_object *object, const char *key);
+json_object *js_get_array(json_object *object, const char *key);
+int64_t js_get_int(json_object *object, const char *key);
+bool js_get_bool(json_object *object, const char *key);
+const char *js_get_string(json_object *object, const char *key);
+json_object *js_get_object_maybe(json_object *object, const char *key);
+json_object *js_get_array_maybe(json_object *object, const char *key);
+int64_t js_get_int_maybe(json_object *object, const char *key);
+bool js_get_bool_maybe(json_object *object, const char *key);
+const char *js_get_string_maybe(json_object *object, const char *key);
+void js_set_int(json_object *object, const char *key, int64_t value);
+void js_set_bool(json_object *object, const char *key, bool value);
 void js_set_string(json_object *object, const char *key, const char *value);
+void js_set_strings(json_object *object, const char *key, const char *const values[],
+		    size_t count);
+void js_set_strv(json_object *object, const char *key, const char *const values[]);
 
 json_object *js_load(const char *filename);
 void js_save(json_object *object, const char *filename);
