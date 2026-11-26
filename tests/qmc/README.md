@@ -11,6 +11,14 @@ reports these cases as skipped when their prerequisites are unavailable. Passing
 this suite does not establish that the installed service runs with SELinux or
 that networking works; those checks require a disposable integration machine.
 
+The `publish` test checks TCP/UDP forwarding, loopback and address restrictions,
+port ranges, connections from QM to its own published ports, and cleanup using
+actual nftables rules in private user, mount and network namespaces. It needs
+`unshare`, `nsenter`, `ip`, `nft` and `mount`, and is skipped when namespace
+creation is unavailable. It does not require cgroup delegation or a QM rootfs,
+and does not modify the host network. Installed service and SELinux behavior
+still require the checks below.
+
 ## Installed service (disposable CentOS 10 machine)
 
 Install the built QM RPM and prepare its default rootfs first. Keep SELinux

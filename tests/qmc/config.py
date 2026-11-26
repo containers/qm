@@ -226,6 +226,134 @@ class ConfigTests(unittest.TestCase):
             },
         )
 
+    def test_published_ports_merge_and_round_trip(self):
+        """Published ports accumulate and serialize with explicit protocols."""
+        self.write(
+            self.vendor,
+            "qmc.conf",
+            {"publish-ports": ["8080:80", "127.0.0.1:5353:53/udp"]},
+        )
+        self.write(
+            self.admin,
+            "qmc.conf.d/50-ports.conf",
+            {
+                "publish-ports": [
+                    "9000-9002:8000-8002",
+                    "9000:8000/udp",
+                    "0.0.0.0:9999:9999/sctp",
+                    "1:65535",
+                ]
+            },
+        )
+        self.write(
+            self.admin, "qmc.conf.d/90-empty.conf", {"publish-ports": []}
+        )
+        result = self.load()
+        self.assertEqual(result.returncode, 0, result.stderr)
+        ports = [
+            "8080:80/tcp",
+            "127.0.0.1:5353:53/udp",
+            "9000-9002:8000-8002/tcp",
+            "9000:8000/udp",
+            "9999:9999/sctp",
+            "1:65535/tcp",
+        ]
+        self.assertEqual(json.loads(result.stdout)["publish-ports"], ports)
+        filename = self.write(
+            self.directory, "roundtrip.conf", json.loads(result.stdout)
+        )
+        again = self.load(filename)
+        self.assertEqual(again.returncode, 0, again.stderr)
+        self.assertEqual(json.loads(again.stdout), json.loads(result.stdout))
+
+    def test_invalid_published_ports(self):
+        """Reject malformed addresses, ports, protocols and unequal ranges."""
+        for value in (
+            None,
+            "8080:80",
+            [None],
+            [80],
+            [{}],
+            [""],
+            ["80"],
+            [":80"],
+            ["127.0.0.1::80"],
+            ["0:80"],
+            ["8080:0"],
+            ["65536:80"],
+            ["1:65536"],
+            ["999999999999999999999:80"],
+            ["-1:80"],
+            ["+1:80"],
+            [" 80:80"],
+            ["80:80\n"],
+            ["80:80\u0000bad"],
+            ["localhost:8080:80"],
+            ["::1:8080:80"],
+            ["[::1]:8080:80"],
+            ["999.1.1.1:80:80"],
+            ["224.0.0.1:80:80"],
+            ["0.0.0.1:80:80"],
+            ["80:80/icmp"],
+            ["80:80/"],
+            ["80:80/tcp/udp"],
+            ["80:80:80:80"],
+            ["80-79:80-79"],
+            ["80-81:80"],
+            ["80:80-81"],
+            ["80-82:80-81"],
+            ["1-65536:1-65536"],
+            ["80-:80"],
+            ["80:80; add table ip injected"],
+        ):
+            with self.subTest(value=value):
+                path = self.write(
+                    self.vendor, "qmc.conf", {"publish-ports": value}
+                )
+                result = self.load()
+                self.assertNotEqual(result.returncode, 0)
+                self.assertIn(str(path), result.stderr)
+                self.assertIn("publish-ports", result.stderr)
+
+    def test_published_port_conflicts(self):
+        """Reject overlapping bindings across layers in either order."""
+        for earlier, later in (
+            ("8080:80", "8080:81"),
+            ("8080:80", "127.0.0.1:8080:81"),
+            ("127.0.0.1:8080:80", "0.0.0.0:8080:81"),
+            ("8080-8082:80-82", "8082-8084:90-92"),
+            ("8081:80", "8080-8082:90-92"),
+        ):
+            with self.subTest(earlier=earlier, later=later):
+                self.write(
+                    self.vendor, "qmc.conf", {"publish-ports": [earlier]}
+                )
+                path = self.write(
+                    self.admin, "qmc.conf", {"publish-ports": [later]}
+                )
+                result = self.load()
+                self.assertNotEqual(result.returncode, 0)
+                self.assertIn(str(path), result.stderr)
+                self.assertIn("conflicts", result.stderr)
+
+    def test_published_ports_allow_distinct_addresses_and_protocols(self):
+        """Allow one port on distinct addresses or transport protocols."""
+        self.write(
+            self.vendor,
+            "qmc.conf",
+            {
+                "publish-ports": [
+                    "127.0.0.1:8080:80",
+                    "127.0.0.2:8080:81",
+                    "8080:82/udp",
+                    "8080:83/sctp",
+                    "8081:84",
+                ]
+            },
+        )
+        result = self.load()
+        self.assertEqual(result.returncode, 0, result.stderr)
+
     def test_collection_operations_accumulate_across_layers(self):
         """Check collection operations accumulate across layers."""
         self.write(

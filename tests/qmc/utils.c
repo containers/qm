@@ -118,6 +118,18 @@ static void test_format_named(void)
 	for (size_t i = 0; i < N_ELEMENTS(cases); i++) {
 		autofree char *result = format_named(cases[i].format, vars);
 		assert(streq(result, cases[i].expected));
+
+		/* Append to an existing stream and leave it open for the caller. */
+		autofree char *stream_result = NULL;
+		size_t size;
+		FILE *output = open_memstream(&stream_result, &size);
+		assert(output);
+		assert(fputs("prefix:", output) >= 0);
+		assert(format_named_to(output, cases[i].format, vars) == 0);
+		assert(format_named_to(output, ":${name}", vars) == 0);
+		assert(fclose(output) == 0);
+		autofree char *expected = xasprintf("prefix:%s:qm", cases[i].expected);
+		assert(streq(stream_result, expected));
 	}
 
 	const FormatVar no_vars[] = {{NULL}};
@@ -148,6 +160,29 @@ static void test_format_named(void)
 		errno = 0;
 		assert(format_named(invalid[i], vars) == NULL);
 		assert(errno == EINVAL);
+
+		autofree char *partial = NULL;
+		size_t size;
+		FILE *output = open_memstream(&partial, &size);
+		assert(output);
+		errno = 0;
+		assert(format_named_to(output, invalid[i], vars) == -1);
+		assert(errno == EINVAL);
+		assert(fputs("still open", output) >= 0);
+		assert(fclose(output) == 0);
+	}
+
+	/* Check immediate write failures for literals, escapes and substitutions. */
+	autofclose FILE *full = fopen("/dev/full", "w");
+	assert(full);
+	assert(setvbuf(full, NULL, _IONBF, 0) == 0);
+	const char *writes[] = {"literal", "$$", "${name}"};
+	for (size_t i = 0; i < N_ELEMENTS(writes); i++) {
+		clearerr(full);
+		errno = 0;
+		assert(format_named_to(full, writes[i], vars) == -1);
+		assert(errno == ENOSPC);
+		assert(ferror(full));
 	}
 }
 

@@ -5,6 +5,9 @@
 
 #pragma once
 
+#include "qm-port.h"
+#include "qm-utils.h"
+
 #include <json-c/json.h>
 #include <stdbool.h>
 #include <stdint.h>
@@ -23,6 +26,7 @@ typedef struct {
 	uint32_t ping_gid; /* Host GID of payload root, for ping_group_range. */
 	bool disable_ipv6;
 	const char *nft_table;
+	const PtrArray *publish_ports; /* Borrowed PortMapping pointers; NULL is empty. */
 } NetworkOptions;
 
 typedef struct NetworkState NetworkState;

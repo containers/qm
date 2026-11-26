@@ -5,6 +5,7 @@
 
 #pragma once
 
+#include "qm-port.h"
 #include "qm-utils.h"
 
 #include <netinet/in.h>
@@ -55,8 +56,9 @@ typedef struct {
 	PtrArray mounts;
 	PtrArray devices;
 
-	PtrArray capabilities; /* Owned CapabilityOperation pointers, in load order. */
-	PtrArray unmask;       /* Owned strings. */
+	PtrArray capabilities;	/* Owned CapabilityOperation pointers, in load order. */
+	PtrArray unmask;	/* Owned strings. */
+	PtrArray publish_ports; /* Owned PortMapping pointers, in load order. */
 } Config;
 
 void config_free(Config *config);
@@ -72,7 +74,7 @@ static inline void cleanup_config(Config **config)
 
 /* Load qmc.conf, then sorted .conf files from qmc.conf.d, in each directory in turn.
  * Missing files/directories are optional. Later scalar keys replace earlier values;
- * mount, device, capability and unmask operations accumulate in load order.
+ * mount, device, capability, unmask and published port lists accumulate in load order.
  * An explicit filename instead loads only that file, which must exist.
  * Returns an allocated Config with defaults and owned strings; free with config_free.
  * Failures report the offending file and exit.
