@@ -75,6 +75,13 @@ typedef struct {
  */
 char *format_named(const char *format, const FormatVar vars[]);
 
+/* Expand with the same rules directly into output. Return 0 on success or -1
+ * with errno set on failure. Does not flush or close output; the caller must
+ * check for buffered write errors when flushing or closing it. Invalid input
+ * can leave partial output in the stream.
+ */
+int format_named_to(FILE *output, const char *format, const FormatVar vars[]);
+
 /* Builds an allocated NULL-terminated vector, borrowing strings.
  * Initialize to {0}. Each add requires a non-NULL string and grows the array
  * as needed. Clear frees the array, leaving the borrowed strings untouched.

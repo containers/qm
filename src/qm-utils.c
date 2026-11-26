@@ -72,15 +72,8 @@ char *xasprintf(const char *format, ...)
 	return result;
 }
 
-char *format_named(const char *format, const FormatVar vars[])
+int format_named_to(FILE *output, const char *format, const FormatVar vars[])
 {
-	autofree char *result = NULL;
-	size_t size;
-	/* Close the stream before freeing its buffer on error. */
-	autofclose FILE *output = open_memstream(&result, &size);
-	if (!output)
-		return NULL;
-
 	for (const char *p = format; *p;) {
 		if (p[0] == '$' && p[1] == '$') {
 			p++;
@@ -89,7 +82,7 @@ char *format_named(const char *format, const FormatVar vars[])
 			const char *end = strchr(name, '}');
 			if (!end) {
 				errno = EINVAL;
-				return NULL;
+				return -1;
 			}
 			size_t length = end - name;
 			const FormatVar *var;
@@ -99,16 +92,29 @@ char *format_named(const char *format, const FormatVar vars[])
 					break;
 			if (!var->name) {
 				errno = EINVAL;
-				return NULL;
+				return -1;
 			}
 			if (fputs(var->value, output) == EOF)
-				return NULL;
+				return -1;
 			p = end + 1;
 			continue;
 		}
 		if (fputc(*p++, output) == EOF)
-			return NULL;
+			return -1;
 	}
+	return 0;
+}
+
+char *format_named(const char *format, const FormatVar vars[])
+{
+	autofree char *result = NULL;
+	size_t size;
+	/* Close the stream before freeing its buffer on error. */
+	autofclose FILE *output = open_memstream(&result, &size);
+	if (!output)
+		return NULL;
+	if (format_named_to(output, format, vars) < 0)
+		return NULL;
 	if (fclose(steal_ptr(&output)) < 0)
 		return NULL;
 	return steal_ptr(&result);
