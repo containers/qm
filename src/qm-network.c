@@ -442,16 +442,22 @@ static int nft_command(struct nft_ctx *ctx, const char *command)
 	return 0;
 }
 
-/* Return 0 if absent, 1 if ours, 2 if another owner, or -1 on error. */
-static int nft_owner(struct nft_ctx *ctx, const char *name, const char *owner)
+typedef enum {
+	NFT_OWNER_ERROR = -1,
+	NFT_OWNER_ABSENT = 0,
+	NFT_OWNER_OURS = 1,
+	NFT_OWNER_FOREIGN = 2,
+} NftOwner;
+
+static NftOwner nft_owner(struct nft_ctx *ctx, const char *name, const char *owner)
 {
 	if (nft_command(ctx, "list tables ip\n"))
-		return -1;
+		return NFT_OWNER_ERROR;
 	autofreejson json_object *output =
 		json_tokener_parse(nft_ctx_get_output_buffer(ctx));
 	if (!output) {
 		warnx("invalid nftables response");
-		return -1;
+		return NFT_OWNER_ERROR;
 	}
 	json_object *objects = js_get_array(output, "nftables");
 	for (size_t i = 0; i < js_array_len(objects); i++) {
@@ -460,9 +466,10 @@ static int nft_owner(struct nft_ctx *ctx, const char *name, const char *owner)
 		if (!table || !streq(js_get_string(table, "name"), name))
 			continue;
 		const char *comment = js_get_string_maybe(table, "comment");
-		return comment && streq(comment, owner) ? 1 : 2;
+		return comment && streq(comment, owner) ? NFT_OWNER_OURS
+							: NFT_OWNER_FOREIGN;
 	}
-	return 0;
+	return NFT_OWNER_ABSENT;
 }
 
 static int nft_setup(struct nft_ctx *ctx, const NetworkOptions *options,
@@ -627,10 +634,10 @@ NetworkState *network_prepare(const NetworkOptions *options)
 		return NULL;
 	}
 	autonft struct nft_ctx *nft = nft_open();
-	int table = nft_owner(nft, options->nft_table, owner);
-	if (table < 0)
+	NftOwner table = nft_owner(nft, options->nft_table, owner);
+	if (table == NFT_OWNER_ERROR)
 		return NULL;
-	if (table) {
+	if (table != NFT_OWNER_ABSENT) {
 		warnx("nftables table %s already exists; run qmc cleanup for its "
 		      "owner",
 		      options->nft_table);
@@ -736,13 +743,13 @@ int network_teardown(const NetworkState *state)
 	const char *nft_table = state->nft_table;
 	int result = 0;
 	autonft struct nft_ctx *nft = nft_open();
-	int table = nft_owner(nft, nft_table, owner);
-	if (table < 0)
+	NftOwner table = nft_owner(nft, nft_table, owner);
+	if (table == NFT_OWNER_ERROR)
 		result = 1;
-	else if (table == 1) {
+	else if (table == NFT_OWNER_OURS) {
 		autofree char *command = xasprintf("delete table ip %s\n", nft_table);
 		result |= nft_command(nft, command) != 0;
-	} else if (table == 2) {
+	} else if (table == NFT_OWNER_FOREIGN) {
 		warnx("nftables table %s belongs to another owner; leaving it "
 		      "alone",
 		      nft_table);
