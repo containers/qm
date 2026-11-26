@@ -66,6 +66,7 @@ Requires(post): libselinux-utils
 Requires: jq
 Requires: crun
 Requires: systemd >= 254
+Requires: /usr/bin/true
 Requires: shadow-utils
 %{?systemd_requires}
 # Retired tools and OCI device hooks; no command compatibility implied.
@@ -87,6 +88,17 @@ Software install into the QM environment under `/usr/lib/qm/rootfs` is
 automatically isolated from the host. If developers need to further
 isolate there applications from other processes in the QM they should
 use container tools like Podman.
+
+%package integration
+Summary: Integration of QM with host services
+BuildArch: noarch
+Requires: systemd
+Requires: /usr/bin/sleep
+%{?systemd_requires}
+
+%description integration
+Optional systemd services running inside QM. Install this package
+inside the QM rootfs to support e.g. wait for host network readiness.
 
 %prep
 %autosetup -Sgit -n %{name}-%{version}
@@ -137,16 +149,16 @@ fi
 /usr/share/qm/create-seccomp-rules
 # The binary was unpacked before its new file-context rule was installed.
 /sbin/restorecon %{_bindir}/qmc
-%systemd_post qm.service
+%systemd_post qm.service qm-network-integration.service
 %sysctl_apply 00-qm-forwarding.conf 90-qm-launch.conf
 
 %preun
-%systemd_preun qm.service qm-resolv-conf.path qm-resolv-conf.service
+%systemd_preun qm.service qm-resolv-conf.path qm-resolv-conf.service qm-network-integration.service qm-signal@.service
 # Preserve the prepared rootfs and application data on package removal. An
 # explicit setup --remove-qm-rootfs remains available before uninstalling.
 
 %postun
-%systemd_postun qm.service qm-resolv-conf.path qm-resolv-conf.service
+%systemd_postun qm.service qm-resolv-conf.path qm-resolv-conf.service qm-network-integration.service qm-signal@.service
 if [ $1 -eq 0 ]; then
    # This section executes only on package removal, not on upgrade
    . %{_sysconfdir}/selinux/config
@@ -170,6 +182,15 @@ if [ -d /run/systemd/system ]; then
         rmdir /run/qm-rpm-upgrade
     fi
 fi
+
+%post integration
+%systemd_post qm-wait-for-host-network.service
+
+%preun integration
+%systemd_preun qm-wait-for-host-network.service qm-signal@.path qm-signal@.target
+
+%postun integration
+%systemd_postun qm-wait-for-host-network.service qm-signal@.path qm-signal@.target
 
 #define license tag if not already defined
 %{!?_licensedir:%global license %doc}
@@ -197,6 +218,8 @@ fi
 %{_unitdir}/qm.service
 %{_unitdir}/qm-resolv-conf.path
 %{_unitdir}/qm-resolv-conf.service
+%{_unitdir}/qm-signal@.service
+%{_unitdir}/qm-network-integration.service
 %{_sysctldir}/00-qm-forwarding.conf
 %{_sysctldir}/90-qm-launch.conf
 %{_mandir}/man8/*
@@ -205,6 +228,12 @@ fi
 %ghost %dir %{_installscriptdir}
 %ghost %dir %{_installscriptdir}/rootfs
 %ghost %{_installscriptdir}/rootfs/*
+
+%files integration
+%license LICENSE
+%{_unitdir}/qm-wait-for-host-network.service
+%{_unitdir}/qm-signal@.path
+%{_unitdir}/qm-signal@.target
 
 %changelog
 %if %{defined autochangelog}

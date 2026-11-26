@@ -7,6 +7,7 @@
 import json
 import os
 import pathlib
+import select
 import signal
 import socket
 import struct
@@ -40,15 +41,41 @@ with tempfile.TemporaryDirectory(prefix="qm-systemd-") as temporary:
         initial_id = "uninitialized"
     (etc / "machine-id").write_text(initial_id + "\n")
     (etc / "os-release").write_text('ID=qm-test\nPRETTY_NAME="QM test"\n')
+    # First boot must retain the fixture's enablement instead of applying the
+    # host distribution's presets to its read-only /usr unit collection.
+    presets = etc / "systemd/system-preset"
+    presets.mkdir(parents=True)
+    (presets / "00-qm-test.preset").write_text("ignore *\n")
     units = etc / "systemd/system"
     units.mkdir(parents=True)
     (units / "qm-test.target").write_text(
         (
             '[Unit]\n'
             'DefaultDependencies=no\n'
-            'Requires=qm-test-ready.service qm-test-signal.path\n'
-            'After=qm-test-ready.service\n'
+            'Requires=qm-test-ready.service qm-signal@network-ready.path '
+            'network-online.target\n'
+            'After=qm-test-ready.service network-online.target\n'
         )
+    )
+    for name in (
+        "qm-wait-for-host-network.service",
+        "qm-signal@.path",
+        "qm-signal@.target",
+    ):
+        (units / name).write_text((SOURCE / "integration" / name).read_text())
+    # This synthetic root boots only the test target, without normal sysinit.
+    for name in (
+        "qm-wait-for-host-network.service", "qm-signal@.path",
+    ):
+        dropin = units / (name + ".d")
+        dropin.mkdir()
+        (dropin / "fixture.conf").write_text(
+            "[Unit]\nDefaultDependencies=no\n"
+        )
+    wants = units / "network-online.target.wants"
+    wants.mkdir()
+    (wants / "qm-wait-for-host-network.service").symlink_to(
+        "../qm-wait-for-host-network.service"
     )
     # Readiness here uses PID 1's /run/systemd/notify, distinct from crun's
     # proxy.
@@ -58,9 +85,10 @@ with tempfile.TemporaryDirectory(prefix="qm-systemd-") as temporary:
         "ExecStart=/usr/bin/systemd-notify --ready\n"
         "StandardOutput=null\nStandardError=null\n"
     )
-    (units / "qm-test-signal.path").write_text(
-        "[Unit]\nDefaultDependencies=no\n[Path]\n"
-        "PathExists=/run/host/qmc-signals/network-ready\n"
+    signal_wants = units / "qm-signal@network-ready.target.wants"
+    signal_wants.mkdir()
+    (signal_wants / "qm-test-signal.service").symlink_to(
+        "../qm-test-signal.service"
     )
     (units / "qm-test-signal.service").write_text(
         (
@@ -125,6 +153,7 @@ with tempfile.TemporaryDirectory(prefix="qm-systemd-") as temporary:
     signal_before_startup = MACHINE_ID_STATE == "existing"
     if signal_before_startup:
         subprocess.run([*signal_command, "network-ready"], check=True)
+        subprocess.run([*signal_command, "host-network-online"], check=True)
 
     with socket.socket(socket.AF_UNIX, socket.SOCK_DGRAM) as notify, (
         directory / "console.log"
@@ -146,7 +175,47 @@ with tempfile.TemporaryDirectory(prefix="qm-systemd-") as temporary:
             stderr=log,
             env={**os.environ, "NOTIFY_SOCKET": "/run/systemd/notify"},
         )
+
+        def exec_in_qm(*command):
+            """Execute a bounded command in the synthetic QM rootfs."""
+            return subprocess.run(
+                [
+                    str(LAUNCHER),
+                    "exec",
+                    "--runtime-dir",
+                    str(runtime),
+                    *command,
+                ],
+                text=True,
+                capture_output=True,
+                timeout=5,
+            )
+
         try:
+            if not signal_before_startup:
+                deadline = time.monotonic() + 10
+                while True:
+                    result = exec_in_qm(
+                        "/usr/bin/systemctl", "show", "--property=ActiveState",
+                        "qm-wait-for-host-network.service",
+                    )
+                    activating = result.stdout == "ActiveState=activating\n"
+                    if result.returncode == 0 and activating:
+                        break
+                    assert time.monotonic() < deadline, result
+                    time.sleep(0.01)
+                assert not select.select([notify], [], [], 0.1)[0], (
+                    "Guest reported ready before the host network signal"
+                )
+                result = exec_in_qm(
+                    "/usr/bin/systemctl", "show", "--property=ActiveState",
+                    "network-online.target",
+                )
+                assert result.returncode == 0, result
+                assert result.stdout == "ActiveState=inactive\n", result
+                subprocess.run(
+                    [*signal_command, "host-network-online"], check=True
+                )
             notify.settimeout(10)
             message, ancillary, flags, address = notify.recvmsg(
                 256, socket.CMSG_SPACE(struct.calcsize("3i"))
@@ -181,21 +250,20 @@ with tempfile.TemporaryDirectory(prefix="qm-systemd-") as temporary:
                 result.returncode == 0 and result.stdout == "active\n"
             ), result
 
-            def exec_in_qm(*command):
-                """Execute a bounded command in the synthetic QM rootfs."""
-                return subprocess.run(
-                    [
-                        str(LAUNCHER),
-                        "exec",
-                        "--runtime-dir",
-                        str(runtime),
-                        *command,
-                    ],
-                    text=True,
-                    capture_output=True,
-                    timeout=5,
-                )
-
+            result = exec_in_qm(
+                "/usr/bin/systemctl", "is-active",
+                "qm-signal@host-network-online.target",
+                "network-online.target",
+            )
+            assert (
+                result.returncode == 0 and result.stdout == "active\nactive\n"
+            ), result
+            result = exec_in_qm(
+                "/usr/bin/systemctl", "show", "--property=Result",
+                "qm-wait-for-host-network.service",
+            )
+            assert result.returncode == 0, result
+            assert result.stdout == "Result=success\n", result
             if not signal_before_startup:
                 result = exec_in_qm(
                     "/usr/bin/test", "-e", "/run/signal-received"
@@ -313,6 +381,12 @@ with tempfile.TemporaryDirectory(prefix="qm-systemd-") as temporary:
                 "Systemd PID 1 inherits the host machine ID, "
                 f"handles machine-id commit ({MACHINE_ID_STATE}), "
                 "accepts service notifications and forwards readiness",
+                flush=True,
+            )
+            print(
+                "Guest network-online.target and READY=1 wait for the "
+                "host signal "
+                f"({'before' if signal_before_startup else 'during'} startup)",
                 flush=True,
             )
             print(

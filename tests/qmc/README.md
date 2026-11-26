@@ -53,3 +53,10 @@ iproute, a C compiler, and a usable private cgroup subtree. They do not establis
 installed-unit or SELinux behavior. `--map-auto` needs subordinate-ID ranges for
 the invoking user. Without them, omit that option; the pre-shifted filesystem
 case is then reported as skipped.
+
+The systemd fixture also installs the guest network integration service and
+checks that `network-online.target` and the guest readiness notification wait
+for the host signal. It uses the generic signal path and target templates for
+both `host-network-online` and `network-ready`. The two machine-ID variants
+exercise a signal published before startup and one published while guest
+startup is blocked.

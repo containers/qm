@@ -1,0 +1,14 @@
+# SPDX-License-Identifier: GPL-2.0-only
+
+[Unit]
+Description=Forward host network readiness to QM
+Wants=network-online.target
+After=network-online.target
+OnSuccess=qm-signal@host-network-online.service
+
+[Service]
+Type=oneshot
+ExecStart=/usr/bin/true
+
+[Install]
+WantedBy=multi-user.target

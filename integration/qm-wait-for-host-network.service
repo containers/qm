@@ -1,0 +1,18 @@
+# SPDX-License-Identifier: GPL-2.0-only
+
+[Unit]
+Description=Wait for the host network to be online
+Wants=qm-signal@host-network-online.path
+Conflicts=qm-signal@host-network-online.target
+Before=network-online.target qm-signal@host-network-online.target
+ConditionPathExists=!/run/host/qmc-signals/host-network-online
+
+[Service]
+Type=oneshot
+# The path-triggered target stops this service, releasing network-online.target.
+ExecStart=/usr/bin/sleep infinity
+SuccessExitStatus=SIGTERM
+TimeoutStartSec=120s
+
+[Install]
+WantedBy=network-online.target
