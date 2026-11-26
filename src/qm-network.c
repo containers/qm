@@ -364,6 +364,33 @@ static int interface_sysctls(const NetworkOptions *options, const char *name)
 	       sysctl_write(disable_ipv6, options->disable_ipv6 ? "1" : "0", true);
 }
 
+static int configure_namespace_child(Rtnl *nl, const NetworkOptions *options, int netns)
+{
+	autofree char *ping_range =
+		xasprintf("%u %u", options->ping_gid, options->ping_gid);
+	if (setns(netns, CLONE_NEWNET) < 0)
+		return -1;
+	if (rtnl_open(nl) < 0)
+		return -1;
+
+	Link eth;
+	if (get_link(nl, options->interface, 0, &eth) < 0 || !eth.index)
+		return -1;
+	if (interface_sysctls(options, options->interface))
+		return -1;
+	/* This netns is owned by the host user namespace. Configure
+	 * it before crun enters an optional payload user namespace. */
+	if (sysctl_write("net/ipv4/ping_group_range", ping_range, false))
+		return -1;
+	if (add_address(nl, eth.index, options->ip, options->prefix_len) < 0)
+		return -1;
+	if (link_change(nl, eth.index, false) < 0)
+		return -1;
+	if (add_default_route(nl, eth.index, options->gateway) < 0)
+		return -1;
+	return 0;
+}
+
 static int configure_namespace(const NetworkOptions *options, int netns)
 {
 	pid_t parent = getpid();
@@ -377,24 +404,12 @@ static int configure_namespace(const NetworkOptions *options, int netns)
 		}
 		if (getppid() != parent)
 			_exit(1);
+		/* Keep the socket alive until the child exits. */
 		autortnl Rtnl nl = {0};
-		Link eth;
-		autofree char *ping_range =
-			xasprintf("%u %u", options->ping_gid, options->ping_gid);
-		int result =
-			setns(netns, CLONE_NEWNET) < 0 || rtnl_open(&nl) < 0 ||
-			get_link(&nl, options->interface, 0, &eth) < 0 || !eth.index ||
-			interface_sysctls(options, options->interface) ||
-			/* This netns is owned by the host user namespace. Configure
-			 * it before crun enters an optional payload user namespace. */
-			sysctl_write("net/ipv4/ping_group_range", ping_range, false) ||
-			add_address(&nl, eth.index, options->ip, options->prefix_len) <
-				0 ||
-			link_change(&nl, eth.index, false) < 0 ||
-			add_default_route(&nl, eth.index, options->gateway) < 0;
-		if (result)
+		int result = configure_namespace_child(&nl, options, netns);
+		if (result < 0)
 			warn("configure QM network namespace");
-		_exit(result != 0);
+		_exit(result < 0);
 	}
 	return wait_child(child);
 }
@@ -630,6 +645,28 @@ NetworkState *network_prepare(const NetworkOptions *options)
 	return state;
 }
 
+/* Return the host interface index, or -1 on failure. */
+static int configure_host_veth(Rtnl *nl, const NetworkOptions *options, const char *owner,
+			       int netns, uint32_t mtu)
+{
+	Link veth;
+	autofree char *forwarding =
+		xasprintf("net/ipv4/conf/%s/forwarding", options->veth);
+	if (create_veth(nl, options, owner, netns, mtu) < 0)
+		return -1;
+	if (get_link(nl, options->veth, 0, &veth) < 0)
+		return -1;
+	if (set_alias(nl, veth.index, owner) < 0)
+		return -1;
+	if (sysctl_write(forwarding, "1", false))
+		return -1;
+	if (interface_sysctls(options, options->veth))
+		return -1;
+	if (add_address(nl, veth.index, options->gateway, options->prefix_len) < 0)
+		return -1;
+	return veth.index;
+}
+
 int network_setup(const NetworkOptions *options, const NetworkState *state)
 {
 	const char *owner = state->owner;
@@ -649,15 +686,8 @@ int network_setup(const NetworkOptions *options, const NetworkState *state)
 		warn("open %s", netns);
 		return 1;
 	}
-	Link veth;
-	autofree char *forwarding =
-		xasprintf("net/ipv4/conf/%s/forwarding", options->veth);
-	if (create_veth(&nl, options, owner, ns, mtu) < 0 ||
-	    get_link(&nl, options->veth, 0, &veth) < 0 ||
-	    set_alias(&nl, veth.index, owner) < 0 ||
-	    sysctl_write(forwarding, "1", false) ||
-	    interface_sysctls(options, options->veth) ||
-	    add_address(&nl, veth.index, options->gateway, options->prefix_len) < 0) {
+	int veth_index = configure_host_veth(&nl, options, owner, ns, mtu);
+	if (veth_index < 0) {
 		warn("set up QM network");
 		return 1;
 	}
@@ -669,7 +699,7 @@ int network_setup(const NetworkOptions *options, const NetworkState *state)
 	autonft struct nft_ctx *nft = nft_open();
 	if (nft_setup(nft, options, owner))
 		return 1;
-	if (link_change(&nl, veth.index, false) < 0) {
+	if (link_change(&nl, veth_index, false) < 0) {
 		warn("bring up QM host veth");
 		return 1;
 	}
