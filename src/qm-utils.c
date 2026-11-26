@@ -128,6 +128,14 @@ bool starts_with(const char *string, const char *prefix)
 	return strncmp(string, prefix, strlen(prefix)) == 0;
 }
 
+bool path_starts_with(const char *path, const char *prefix)
+{
+	size_t length = strlen(prefix);
+	return strncmp(path, prefix, length) == 0 &&
+	       (!length || prefix[length - 1] == '/' || path[length] == '\0' ||
+		path[length] == '/');
+}
+
 char *join_path(const char *a, const char *b)
 {
 	while (*b == '/')

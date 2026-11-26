@@ -4,7 +4,6 @@
  */
 #include "qm-userns.h"
 #include "qm-utils.h"
-#include <string.h>
 
 void userns_configure_mounts(json_object *config, const char *runtime_dir)
 {
@@ -19,8 +18,7 @@ void userns_configure_mounts(json_object *config, const char *runtime_dir)
 		/* Persistent trees are already shifted on disk. Only qmc's generated
 		 * files and host-owned signal state need a translated runtime mount.
 		 */
-		if (!(starts_with(source, runtime_dir) &&
-		      source[strlen(runtime_dir)] == '/'))
+		if (!path_starts_with(source, runtime_dir) || streq(source, runtime_dir))
 			continue;
 		json_object *options = js_get_array(entry, "options");
 		bool mapped = false;
