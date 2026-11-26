@@ -753,6 +753,21 @@ static void update_container_file(const char *name, const char *contents)
 static int update_resolv_conf(const Config *configuration)
 {
 	debug("Updating DNS and hosts files in %s", opt_runtime_dir);
+	autofree char *files = join_path(opt_runtime_dir, "files");
+	autoclose int files_fd = TEMP_FAILURE_RETRY(
+		open(files, O_RDONLY | O_DIRECTORY | O_NOFOLLOW | O_CLOEXEC));
+	if (files_fd < 0) {
+		if (errno == ENOENT)
+			return 0;
+		err(1, "open directory %s", files);
+	}
+	/* Serialize the entire refresh, including source reads, so a waiting
+	 * updater cannot overwrite newer contents or truncate another's write.
+	 * Lock the existing directory without replacing the bind-mounted files.
+	 */
+	if (TEMP_FAILURE_RETRY(flock(files_fd, LOCK_EX)) < 0)
+		err(1, "lock directory %s", files);
+
 	autofree char *dns = try_read_text_file(configuration->resolv_conf);
 	if (!dns && errno != ENOENT)
 		err(1, "read %s", configuration->resolv_conf);
