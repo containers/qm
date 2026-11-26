@@ -1,6 +1,7 @@
 # SPDX-License-Identifier: GPL-2.0-only
 config_test = executable('test-config',
-  ['config.c', '../../src/qm-config.c', '../../src/qm-oci-config.c', '../../src/qm-utils.c'],
+  ['config.c', '../../src/qm-config.c', '../../src/qm-oci-config.c',
+    '../../src/qm-utils.c', '../../src/qm-port.c'],
   include_directories: qmc_includes,
   dependencies: [dependency('json-c'), dependency('libsystemd', version: '>=254')])
 test('config', python, args: [files('config.py'), config_test, get_option('prefix') / data_dir])
@@ -9,9 +10,12 @@ executable('test-launch-network', qmc_sources + ['network-nft.c'],
   dependencies: qmc_deps,
   link_args: ['-Wl,--wrap=nft_run_cmd_from_buffer', '-Wl,--wrap=mnl_socket_sendto',
     '-Wl,--wrap=sysctl_write'])
-executable('test-network', ['network.c', '../../src/qm-network.c', '../../src/qm-utils.c', '../../src/qm-state.c'],
+network_test = executable('test-network',
+  ['network.c', '../../src/qm-network.c', '../../src/qm-utils.c',
+    '../../src/qm-state.c', '../../src/qm-config.c', '../../src/qm-port.c'],
   include_directories: qmc_includes,
   dependencies: qmc_deps)
+test('publish', python, args: [files('publish.py'), network_test, qmc], timeout: 60)
 prepare_launcher = executable('test-prepare',
   qmc_sources + ['prepare-cgroup.c', 'prepare-machine-id.c', 'file-truncate.c'],
   include_directories: qmc_includes,

@@ -50,6 +50,7 @@ capabilities or seccomp path. Use drop-ins for ordinary customization.
 | `ip` | QM IPv4 address; `10.90.0.2` |
 | `gateway` | Host-side IPv4 address; `10.90.0.1` |
 | `prefix-length` | Integer 1–31; `24` |
+| `publish-ports` | Array of `"[IPv4:]host-port:container-port[/protocol]"` strings; none by default |
 | `resolv-conf` | Absolute host resolver file; automatically selected by default |
 | `userns` | `"auto"`, `"off"` or `"required"`; `"auto"` |
 | `verbose` | Boolean; vendor default `true` |
@@ -76,8 +77,38 @@ need a corresponding systemd path-unit override.
 
 QM supports an isolated IPv4 network with outbound masquerading. IP and gateway
 must be distinct usable addresses in the same subnet. Host firewall policy must
-permit forwarding for it. Outer host networking and port publishing are not
-supported. Application Podman networking inside QM remains available.
+permit forwarding for it. Outer host networking is not supported. Application
+Podman networking inside QM remains available.
+
+## Published ports
+
+Publish services from QM to the host with `/etc/qmc.conf.d/50-ports.conf`:
+
+```json
+{
+  "publish-ports": [
+    "8080:80",
+    "127.0.0.1:8443:443",
+    "5353:53/udp",
+    "9000-9002:8000-8002"
+  ]
+}
+```
+
+Each entry uses a podman-style option like `[IPv4:]host-port:container-port[/protocol]`.
+The host port is required; ports must be in 1–65535. The default protocol is `tcp`; `udp` and
+`sctp` are also supported. Publish TCP and UDP separately to use both protocols.
+Ranges must have equal lengths and map in order. IPv6 addresses and automatic
+host port allocation are not supported.
+
+Omitting the host address, or specifying `0.0.0.0`, publishes on all host IPv4
+addresses, including localhost. Use `127.0.0.1` for access only from the host,
+or another host IPv4 address to restrict the destination address.
+
+Entries accumulate across configuration files; an empty list adds nothing.
+Overlapping host ports for the same address and protocol are configuration
+errors, including overlaps with a wildcard address. Remove entries from their
+source file to stop publishing them.
 
 ## Mounts
 

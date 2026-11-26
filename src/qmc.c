@@ -108,6 +108,7 @@ static NetworkOptions get_network_options(const Config *configuration,
 		.rp_filter = 2,
 		.disable_ipv6 = true,
 		.nft_table = "qm_launch",
+		.publish_ports = &configuration->publish_ports,
 	};
 	json_object *mappings =
 		js_get_array_maybe(js_get_object(config, "linux"), "gidMappings");

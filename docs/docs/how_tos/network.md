@@ -15,7 +15,7 @@ Choose a subnet that does not overlap host routes or other container networks:
 Save this as `/etc/qmc.conf.d/50-network.conf`, inspect it with `qmc inspect`,
 and restart `qm.service`. The address and gateway must be distinct usable
 addresses in the same subnet. Only IPv4 is supported by the outer launcher;
-outer host networking and port-publishing options are unavailable.
+outer host networking is unavailable.
 
 Host firewall rules must permit forwarding for the selected QM subnet. QM's
 rules do not override a drop policy in another firewall. The host can reach
@@ -35,6 +35,19 @@ an additional private network, or `Network=host` to share QM's namespace.
 These application settings do not select the outer host's network namespace.
 Place application Quadlets in `/etc/qm/containers/systemd/` on the host,
 then run `qmc exec systemctl daemon-reload` and start the application service.
+
+## Publishing ports
+
+Save host-to-QM mappings in `/etc/qmc.conf.d/50-ports.conf`:
+
+```json
+{"publish-ports": ["8080:80", "127.0.0.1:8443:443", "5353:53/udp"]}
+```
+
+Host port 8080 now reaches port 80 inside QM. Port 8443 reaches QM
+port 443 only through host localhost; UDP port 5353 reaches QM
+port 53. Omitting the host address publishes on all host IPv4
+addresses. Host ports must be specified explicitly.
 
 ## Waiting for host networking
 

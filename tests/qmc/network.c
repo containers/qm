@@ -3,6 +3,7 @@
  * See LICENSE for the full license text.
  */
 
+#include "qm-config.h"
 #include "qm-network.h"
 #include "qm-state.h"
 #include "qm-utils.h"
@@ -18,8 +19,12 @@ static void save_state(const State *state, const char *filename, bool replace)
 
 int main(int argc, char **argv)
 {
-	if (argc != 2 && (argc != 3 || strcmp(argv[2], "--prepare-only")))
-		errx(2, "usage: test-network RUNTIME_DIR [--prepare-only]");
+	if (argc != 2 && (argc != 3 || strcmp(argv[2], "--prepare-only")) &&
+	    (argc != 4 || strcmp(argv[2], "--config")))
+		errx(2,
+		     "usage: test-network RUNTIME_DIR [--prepare-only | --config FILE]");
+	autofreeconfig Config *config =
+		argc == 4 ? configuration_load(NULL, NULL, argv[3]) : NULL;
 	const NetworkOptions options = {
 		.runtime_dir = argv[1],
 		.veth = "test-veth",
@@ -33,6 +38,7 @@ int main(int argc, char **argv)
 		.rp_filter = 1,
 		.disable_ipv6 = false,
 		.nft_table = "test_network",
+		.publish_ports = config ? &config->publish_ports : NULL,
 	};
 	autofree char *state_file = join_path(options.runtime_dir, QM_STATE_FILE);
 	autostate State *state = xnew(State);

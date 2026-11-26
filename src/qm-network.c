@@ -485,7 +485,65 @@ static const char nft_rules_template[] =
 	"add rule ip ${table} forward iifname \"${veth}\" drop\n"
 	"add chain ip ${table} postrouting { type nat hook postrouting priority srcnat; policy accept; }\n"
 	"add rule ip ${table} postrouting ip saddr ${subnet} ip daddr != ${subnet} masquerade\n";
+
+/* Only locally addressed traffic is published. Exclude loopback destinations
+ * from ingress so a loopback binding cannot be reached from the network.
+ * Source NAT lets loopback and QM clients reach QM through published ports.
+ * route_localnet is enabled on our veth; keep incoming loopback addresses
+ * forbidden there, including access to host loopback services.
+ */
+static const char nft_publish_template[] =
+	"add chain ip ${table} prerouting { type nat hook prerouting priority dstnat; policy accept; }\n"
+	"add chain ip ${table} output { type nat hook output priority dstnat; policy accept; }\n"
+	"add chain ip ${table} publish\n"
+	"add rule ip ${table} prerouting ip daddr != 127.0.0.0/8 fib daddr type local jump publish\n"
+	"add rule ip ${table} output fib daddr type local jump publish\n"
+	"add rule ip ${table} postrouting oifname \"${veth}\" ip daddr ${ip} ip saddr { 127.0.0.0/8, ${subnet} } ct status dnat masquerade\n"
+	"add chain ip ${table} localnet { type filter hook prerouting priority raw; policy accept; }\n"
+	"add rule ip ${table} localnet iifname \"${veth}\" ip saddr 127.0.0.0/8 drop\n"
+	"add rule ip ${table} localnet iifname \"${veth}\" ip daddr 127.0.0.0/8 drop\n";
+
+static const char nft_publish_rule_template[] =
+	"add rule ip ${table} publish ${address}${protocol} dport ${host-port} dnat to ${ip}:${container-port}\n";
 /* clang-format on */
+
+static int nft_publish_rules(FILE *rules, const NetworkOptions *options,
+			     const FormatVar vars[])
+{
+	if (format_named_to(rules, nft_publish_template, vars) < 0)
+		return -1;
+	const PtrArray *ports = options->publish_ports;
+	for (size_t i = 0; i < ports->length; i++) {
+		const PortMapping *mapping = ports->items[i];
+		char ip[INET_ADDRSTRLEN];
+		if (!inet_ntop(AF_INET, &mapping->host_ip, ip, sizeof(ip)))
+			return -1;
+		autofree char *address = mapping->host_ip.s_addr
+						 ? xasprintf("ip daddr %s ", ip)
+						 : xstrdup("");
+		/* Expand ranges to preserve the offset for every destination;
+		 * an nft NAT range alone would allocate ports instead.
+		 */
+		for (unsigned int j = 0; j < mapping->range; j++) {
+			autofree char *host = xasprintf("%u", mapping->host_port + j);
+			autofree char *container =
+				xasprintf("%u", mapping->container_port + j);
+			const FormatVar port_vars[] = {
+				{"table", options->nft_table},
+				{"ip", options->ip},
+				{"address", address},
+				{"protocol", port_mapping_protocol_name(mapping)},
+				{"host-port", host},
+				{"container-port", container},
+				{NULL},
+			};
+			if (format_named_to(rules, nft_publish_rule_template, port_vars) <
+			    0)
+				return -1;
+		}
+	}
+	return 0;
+}
 
 static int nft_setup(struct nft_ctx *ctx, const NetworkOptions *options,
 		     const char *owner)
@@ -505,10 +563,18 @@ static int nft_setup(struct nft_ctx *ctx, const NetworkOptions *options,
 		{"table", options->nft_table},
 		{"veth", options->veth},
 		{"subnet", subnet},
+		{"ip", options->ip},
 		{NULL},
 	};
-	autofree char *rules = format_named(nft_rules_template, vars);
-	if (!rules) {
+	autofree char *rules = NULL;
+	size_t length = 0;
+	autofclose FILE *stream = open_memstream(&rules, &length);
+	if (!stream)
+		oom();
+	int result = format_named_to(stream, nft_rules_template, vars);
+	if (!result && options->publish_ports && options->publish_ports->length)
+		result = nft_publish_rules(stream, options, vars);
+	if (result || fflush(stream)) {
 		warn("format nftables rules");
 		return -1;
 	}
@@ -554,6 +620,12 @@ static int validate_options(const NetworkOptions *options)
 	for (size_t i = 0; i < N_ELEMENTS(addresses); i++) {
 		struct in_addr ip;
 		if (!addresses[i] || inet_pton(AF_INET, addresses[i], &ip) != 1)
+			goto invalid;
+	}
+	const PtrArray *ports = options->publish_ports;
+	for (size_t i = 0; ports && i < ports->length; i++) {
+		const PortMapping *mapping = ports->items[i];
+		if (!mapping || !port_mapping_valid(mapping))
 			goto invalid;
 	}
 	return 0;
@@ -671,6 +743,12 @@ static int configure_host_veth(Rtnl *nl, const NetworkOptions *options, const ch
 		return -1;
 	if (interface_sysctls(options, options->veth))
 		return -1;
+	if (options->publish_ports && options->publish_ports->length) {
+		autofree char *localnet =
+			xasprintf("net/ipv4/conf/%s/route_localnet", options->veth);
+		if (sysctl_write(localnet, "1", false))
+			return -1;
+	}
 	if (add_address(nl, veth.index, options->gateway, options->prefix_len) < 0)
 		return -1;
 	return veth.index;

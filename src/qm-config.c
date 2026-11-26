@@ -637,6 +637,47 @@ static const ConfigParser unmask_parser = {
 	.serialize = serialize_strings,
 };
 
+static void parse_publish_port(void *field, json_object *value, const char *name,
+			       const char *filename)
+{
+	const char *string = config_string(value, name, filename);
+	PortMapping mapping;
+	if (!port_mapping_parse(string, &mapping))
+		errx(1,
+		     "%s: %s: invalid published port '%s'; expected "
+		     "[IPv4:]host-port:container-port[/tcp|udp|sctp] with matching "
+		     "ranges",
+		     filename, name, string);
+
+	PtrArray *ports = field;
+	for (size_t i = 0; i < ports->length; i++) {
+		if (port_mapping_conflicts(&mapping, ports->items[i]))
+			errx(1, "%s: %s conflicts with an earlier published port: %s",
+			     filename, name, string);
+	}
+	PortMapping *entry = xnew(PortMapping);
+	*entry = mapping;
+	ptr_array_add(ports, entry);
+}
+
+static json_object *serialize_publish_ports(const void *field)
+{
+	const PtrArray *ports = field;
+	autofreejson json_object *result = js_new_array();
+	for (size_t i = 0; i < ports->length; i++) {
+		autofree char *text = port_mapping_format(ports->items[i]);
+		js_array_add_string(result, text);
+	}
+	return steal_ptr(&result);
+}
+
+static const ConfigParser publish_ports_parser = {
+	.type = json_type_array,
+	.parse = parse_publish_port,
+	.destroy = free,
+	.serialize = serialize_publish_ports,
+};
+
 static const ConfigEntry config_entries[] = {
 	CONFIG_ENTRY(Config, "base-config", base_config, path_parser),
 	CONFIG_ENTRY(Config, "hostname", hostname, hostname_parser),
@@ -657,6 +698,7 @@ static const ConfigEntry config_entries[] = {
 	CONFIG_ENTRY(Config, "devices", devices, devices_parser),
 	CONFIG_ENTRY(Config, "capabilities", capabilities, capabilities_parser),
 	CONFIG_ENTRY(Config, "unmask", unmask, unmask_parser),
+	CONFIG_ENTRY(Config, "publish-ports", publish_ports, publish_ports_parser),
 };
 
 json_object *configuration_serialize(const Config *config)
