@@ -44,25 +44,25 @@ static bool seccomp_condition_matches(json_object *condition, json_object *caps,
 {
 	if (!condition)
 		return true;
-	if (!json_object_is_type(condition, json_type_object))
+	if (!js_is_object(condition))
 		errx(1, "invalid seccomp condition");
 
 	json_object_object_foreach (condition, key, value) {
 		if (strcmp(key, "arches") && strcmp(key, "caps"))
 			errx(1, "unsupported seccomp condition: %s", key);
-		if (!json_object_is_type(value, json_type_array))
+		if (!js_is_array(value))
 			errx(1, "invalid seccomp condition: %s", key);
 	}
 
 	json_object *arches = js_get(condition, "arches");
-	if (arches && json_object_array_length(arches) &&
-	    js_contains(arches, arch) != include)
+	if (arches && js_array_len(arches) && js_contains(arches, arch) != include)
 		return false;
 
 	json_object *required = js_get(condition, "caps");
 	if (required)
-		for (size_t i = 0; i < json_object_array_length(required); i++)
-			if (js_contains(caps, js_array_string(required, i)) != include)
+		for (size_t i = 0; i < js_array_len(required); i++)
+			if (js_contains(caps, js_array_get_string(required, i)) !=
+			    include)
 				return false;
 
 	return true;
@@ -75,22 +75,21 @@ void resolve_seccomp(json_object *profile, json_object *process)
 
 	json_object *map = js_get(profile, "archMap");
 	if (map) {
-		if (!json_object_is_type(map, json_type_array))
+		if (!js_is_array(map))
 			errx(1, "invalid seccomp archMap");
 
 		autofreejson json_object *architectures = js_new_array();
-		js_array_add(architectures, js_new_string(arch->seccomp_name));
-		for (size_t i = 0; i < json_object_array_length(map); i++) {
-			json_object *entry = json_object_array_get_idx(map, i);
-			if (strcmp(js_string(entry, "architecture"), arch->seccomp_name))
+		js_array_add_string(architectures, arch->seccomp_name);
+		for (size_t i = 0; i < js_array_len(map); i++) {
+			json_object *entry = js_array_get_object(map, i);
+			if (strcmp(js_get_string(entry, "architecture"),
+				   arch->seccomp_name))
 				continue;
 
-			json_object *sub =
-				js_need(entry, "subArchitectures", json_type_array);
-			for (size_t j = 0; j < json_object_array_length(sub); j++)
+			json_object *sub = js_get_array(entry, "subArchitectures");
+			for (size_t j = 0; j < js_array_len(sub); j++)
 				js_array_add(architectures,
-					     json_object_get(
-						     json_object_array_get_idx(sub, j)));
+					     json_object_get(js_array_get(sub, j)));
 		}
 
 		js_object_add(profile, "architectures", steal_ptr(&architectures));
@@ -101,10 +100,10 @@ void resolve_seccomp(json_object *profile, json_object *process)
 		errx(1, "seccomp defaultErrno requires numeric defaultErrnoRet");
 	json_object_object_del(profile, "defaultErrno");
 
-	json_object *rules = js_need(profile, "syscalls", json_type_array);
+	json_object *rules = js_get_array(profile, "syscalls");
 	autofreejson json_object *filtered = js_new_array();
-	for (size_t i = 0; i < json_object_array_length(rules); i++) {
-		json_object *rule = json_object_array_get_idx(rules, i);
+	for (size_t i = 0; i < js_array_len(rules); i++) {
+		json_object *rule = js_array_get_object(rules, i);
 		if (!seccomp_condition_matches(js_get(rule, "includes"), caps,
 					       arch->containers_name, true) ||
 		    !seccomp_condition_matches(js_get(rule, "excludes"), caps,

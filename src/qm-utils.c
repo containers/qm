@@ -284,6 +284,31 @@ int sysctl_write(const char *key, const char *value, bool optional)
 	return 0;
 }
 
+bool js_is_bool(json_object *value)
+{
+	return json_object_is_type(value, json_type_boolean);
+}
+
+bool js_is_int(json_object *value)
+{
+	return json_object_is_type(value, json_type_int);
+}
+
+bool js_is_string(json_object *value)
+{
+	return json_object_is_type(value, json_type_string);
+}
+
+bool js_is_array(json_object *value)
+{
+	return json_object_is_type(value, json_type_array);
+}
+
+bool js_is_object(json_object *value)
+{
+	return json_object_is_type(value, json_type_object);
+}
+
 static json_object *js_checked(json_object *value)
 {
 	if (!value)
@@ -311,7 +336,16 @@ json_object *js_new_strings(const char *const values[], size_t count)
 {
 	autofreejson json_object *array = js_new_array();
 	for (size_t i = 0; i < count; i++)
-		js_array_add(array, js_new_string(values[i]));
+		js_array_add_string(array, values[i]);
+
+	return steal_ptr(&array);
+}
+
+json_object *js_new_strv(const char *const values[])
+{
+	autofreejson json_object *array = js_new_array();
+	for (size_t i = 0; values && values[i]; i++)
+		js_array_add_string(array, values[i]);
 
 	return steal_ptr(&array);
 }
@@ -332,20 +366,53 @@ void js_object_add(json_object *object, const char *key, json_object *value)
 		oom();
 }
 
+size_t js_array_len(json_object *array)
+{
+	return json_object_array_length(array);
+}
+
+json_object *js_array_get(json_object *array, size_t index)
+{
+	return json_object_array_get_idx(array, index);
+}
+
+const char *js_array_get_string(json_object *array, size_t index)
+{
+	json_object *value = js_array_get(array, index);
+	if (!js_is_string(value))
+		errx(1, "expected a JSON string in array");
+
+	return json_object_get_string(value);
+}
+
+json_object *js_array_get_object(json_object *array, size_t index)
+{
+	json_object *value = js_array_get(array, index);
+	if (!js_is_object(value))
+		errx(1, "expected a JSON object in array");
+
+	return value;
+}
+
 void js_array_add(json_object *array, json_object *value)
 {
 	if (json_object_array_add(array, value) < 0)
 		oom();
 }
 
+void js_array_add_string(json_object *array, const char *value)
+{
+	js_array_add(array, js_new_string(value));
+}
+
 void js_array_insert(json_object *array, size_t index, json_object *value)
 {
-	size_t length = json_object_array_length(array);
+	size_t length = js_array_len(array);
 	assert(index <= length);
 
 	js_array_add(array, NULL);
 	for (size_t i = length; i > index; i--) {
-		json_object *item = json_object_array_get_idx(array, i - 1);
+		json_object *item = js_array_get(array, i - 1);
 		if (json_object_array_put_idx(array, i, json_object_get(item)) < 0)
 			oom();
 	}
@@ -362,7 +429,8 @@ json_object *js_get(json_object *object, const char *key)
 	return value;
 }
 
-json_object *js_need(json_object *object, const char *key, enum json_type type)
+static json_object *js_get_typed(json_object *object, const char *key,
+				 enum json_type type)
 {
 	json_object *value = js_get(object, key);
 	if (!json_object_is_type(value, type))
@@ -371,23 +439,91 @@ json_object *js_need(json_object *object, const char *key, enum json_type type)
 	return value;
 }
 
-const char *js_array_string(json_object *array, size_t index)
+static json_object *js_get_typed_maybe(json_object *object, const char *key,
+				       enum json_type type)
 {
-	json_object *value = json_object_array_get_idx(array, index);
-	if (!json_object_is_type(value, json_type_string))
-		errx(1, "expected a JSON string in array");
+	json_object *value = js_get(object, key);
+	if (value && !json_object_is_type(value, type))
+		errx(1, "invalid %s: expected a JSON %s", key, json_type_to_name(type));
 
-	return json_object_get_string(value);
+	return value;
 }
 
-const char *js_string(json_object *object, const char *key)
+json_object *js_get_object(json_object *object, const char *key)
 {
-	return json_object_get_string(js_need(object, key, json_type_string));
+	return js_get_typed(object, key, json_type_object);
+}
+
+json_object *js_get_array(json_object *object, const char *key)
+{
+	return js_get_typed(object, key, json_type_array);
+}
+
+int64_t js_get_int(json_object *object, const char *key)
+{
+	return json_object_get_int64(js_get_typed(object, key, json_type_int));
+}
+
+bool js_get_bool(json_object *object, const char *key)
+{
+	return json_object_get_boolean(js_get_typed(object, key, json_type_boolean));
+}
+
+const char *js_get_string(json_object *object, const char *key)
+{
+	return json_object_get_string(js_get_typed(object, key, json_type_string));
+}
+
+json_object *js_get_object_maybe(json_object *object, const char *key)
+{
+	return js_get_typed_maybe(object, key, json_type_object);
+}
+
+json_object *js_get_array_maybe(json_object *object, const char *key)
+{
+	return js_get_typed_maybe(object, key, json_type_array);
+}
+
+int64_t js_get_int_maybe(json_object *object, const char *key)
+{
+	return json_object_get_int64(js_get_typed_maybe(object, key, json_type_int));
+}
+
+bool js_get_bool_maybe(json_object *object, const char *key)
+{
+	return json_object_get_boolean(
+		js_get_typed_maybe(object, key, json_type_boolean));
+}
+
+const char *js_get_string_maybe(json_object *object, const char *key)
+{
+	return json_object_get_string(js_get_typed_maybe(object, key, json_type_string));
+}
+
+void js_set_int(json_object *object, const char *key, int64_t value)
+{
+	js_object_add(object, key, js_new_int(value));
+}
+
+void js_set_bool(json_object *object, const char *key, bool value)
+{
+	js_object_add(object, key, js_new_bool(value));
 }
 
 void js_set_string(json_object *object, const char *key, const char *value)
 {
 	js_object_add(object, key, js_new_string(value));
+}
+
+void js_set_strings(json_object *object, const char *key, const char *const values[],
+		    size_t count)
+{
+	js_object_add(object, key, js_new_strings(values, count));
+}
+
+void js_set_strv(json_object *object, const char *key, const char *const values[])
+{
+	js_object_add(object, key, js_new_strv(values));
 }
 
 json_object *js_load(const char *filename)
@@ -397,7 +533,7 @@ json_object *js_load(const char *filename)
 	autofreejson json_object *result = json_tokener_parse_verbose(contents, &error);
 	if (error != json_tokener_success)
 		errx(1, "%s: %s", filename, json_tokener_error_desc(error));
-	if (!json_object_is_type(result, json_type_object))
+	if (!js_is_object(result))
 		errx(1, "%s: expected a JSON object", filename);
 
 	return steal_ptr(&result);
@@ -448,11 +584,11 @@ bool js_contains(json_object *array, const char *value)
 {
 	if (!array)
 		return false;
-	if (!json_object_is_type(array, json_type_array))
+	if (!js_is_array(array))
 		errx(1, "expected a JSON array");
 
-	for (size_t i = 0; i < json_object_array_length(array); i++)
-		if (!strcmp(js_array_string(array, i), value))
+	for (size_t i = 0; i < js_array_len(array); i++)
+		if (!strcmp(js_array_get_string(array, i), value))
 			return true;
 
 	return false;

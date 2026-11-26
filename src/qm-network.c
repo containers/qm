@@ -438,14 +438,14 @@ static int nft_owner(struct nft_ctx *ctx, const char *name, const char *owner)
 		warnx("invalid nftables response");
 		return -1;
 	}
-	json_object *objects = js_need(output, "nftables", json_type_array);
-	for (size_t i = 0; i < json_object_array_length(objects); i++) {
+	json_object *objects = js_get_array(output, "nftables");
+	for (size_t i = 0; i < js_array_len(objects); i++) {
 		json_object *table =
-			js_get(json_object_array_get_idx(objects, i), "table");
-		if (!table || strcmp(js_string(table, "name"), name))
+			js_get_object_maybe(js_array_get_object(objects, i), "table");
+		if (!table || strcmp(js_get_string(table, "name"), name))
 			continue;
-		json_object *comment = js_get(table, "comment");
-		return comment && !strcmp(json_object_get_string(comment), owner) ? 1 : 2;
+		const char *comment = js_get_string_maybe(table, "comment");
+		return comment && !strcmp(comment, owner) ? 1 : 2;
 	}
 	return 0;
 }
@@ -549,9 +549,9 @@ json_object *network_state_serialize(const NetworkState *state)
 
 NetworkState *network_state_deserialize(json_object *object)
 {
-	const char *owner = js_string(object, "owner");
-	const char *veth = js_string(object, "veth");
-	const char *nft_table = js_string(object, "nft_table");
+	const char *owner = js_get_string(object, "owner");
+	const char *veth = js_get_string(object, "veth");
+	const char *nft_table = js_get_string(object, "nft_table");
 	if (!valid_interface(veth) || !valid_table(nft_table) || !*owner ||
 	    strlen(owner) >= sizeof(((Link *)0)->alias))
 		errx(1, "invalid saved network state");

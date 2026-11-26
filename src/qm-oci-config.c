@@ -21,7 +21,7 @@ static json_object *ensure_object(json_object *parent, const char *name)
 	if (!js_get(parent, name))
 		js_object_add(parent, name, js_new_object());
 
-	return js_need(parent, name, json_type_object);
+	return js_get_object(parent, name);
 }
 
 static json_object *ensure_array(json_object *parent, const char *name)
@@ -29,7 +29,7 @@ static json_object *ensure_array(json_object *parent, const char *name)
 	if (!js_get(parent, name))
 		js_object_add(parent, name, js_new_array());
 
-	return js_need(parent, name, json_type_array);
+	return js_get_array(parent, name);
 }
 
 static void remove_path(json_object *array, const char *key, const char *path)
@@ -37,9 +37,9 @@ static void remove_path(json_object *array, const char *key, const char *path)
 	if (!array)
 		return;
 
-	for (size_t i = json_object_array_length(array); i > 0; i--) {
-		json_object *item = json_object_array_get_idx(array, i - 1);
-		if (!strcmp(js_string(item, key), path))
+	for (size_t i = js_array_len(array); i > 0; i--) {
+		json_object *item = js_array_get_object(array, i - 1);
+		if (!strcmp(js_get_string(item, key), path))
 			json_object_array_del_idx(array, i - 1, 1);
 	}
 }
@@ -50,28 +50,27 @@ static void remove_path(json_object *array, const char *key, const char *path)
 static void remove_device_rules(json_object *linux_config, json_object *removed)
 {
 	json_object *devices = js_get(linux_config, "devices");
-	int64_t device_major = json_object_get_int64(js_get(removed, "major"));
-	int64_t device_minor = json_object_get_int64(js_get(removed, "minor"));
-	const char *type = js_string(removed, "type");
+	int64_t device_major = js_get_int(removed, "major");
+	int64_t device_minor = js_get_int(removed, "minor");
+	const char *type = js_get_string(removed, "type");
 
-	for (size_t i = 0; devices && i < json_object_array_length(devices); i++) {
-		json_object *other = json_object_array_get_idx(devices, i);
-		if (!strcmp(js_string(other, "type"), type) &&
-		    json_object_get_int64(js_get(other, "major")) == device_major &&
-		    json_object_get_int64(js_get(other, "minor")) == device_minor)
+	for (size_t i = 0; devices && i < js_array_len(devices); i++) {
+		json_object *other = js_array_get_object(devices, i);
+		if (!strcmp(js_get_string(other, "type"), type) &&
+		    js_get_int(other, "major") == device_major &&
+		    js_get_int(other, "minor") == device_minor)
 			return;
 	}
 
 	json_object *rules = js_get(js_get(linux_config, "resources"), "devices");
-	for (size_t i = rules ? json_object_array_length(rules) : 0; i > 0; i--) {
-		json_object *rule = json_object_array_get_idx(rules, i - 1);
-		json_object *rule_type = js_get(rule, "type");
+	for (size_t i = rules ? js_array_len(rules) : 0; i > 0; i--) {
+		json_object *rule = js_array_get_object(rules, i - 1);
+		const char *rule_type = js_get_string_maybe(rule, "type");
 
-		if (json_object_get_boolean(js_get(rule, "allow")) && rule_type &&
-		    !strcmp(json_object_get_string(rule_type), type) &&
+		if (js_get_bool(rule, "allow") && rule_type && !strcmp(rule_type, type) &&
 		    js_get(rule, "major") && js_get(rule, "minor") &&
-		    json_object_get_int64(js_get(rule, "major")) == device_major &&
-		    json_object_get_int64(js_get(rule, "minor")) == device_minor)
+		    js_get_int(rule, "major") == device_major &&
+		    js_get_int(rule, "minor") == device_minor)
 			json_object_array_del_idx(rules, i - 1, 1);
 	}
 }
@@ -79,9 +78,9 @@ static void remove_device_rules(json_object *linux_config, json_object *removed)
 static void remove_device(json_object *linux_config, const char *destination)
 {
 	json_object *devices = js_get(linux_config, "devices");
-	for (size_t i = devices ? json_object_array_length(devices) : 0; i > 0; i--) {
-		json_object *device = json_object_array_get_idx(devices, i - 1);
-		if (strcmp(js_string(device, "path"), destination))
+	for (size_t i = devices ? js_array_len(devices) : 0; i > 0; i--) {
+		json_object *device = js_array_get_object(devices, i - 1);
+		if (strcmp(js_get_string(device, "path"), destination))
 			continue;
 
 		autofreejson json_object *removed = json_object_get(device);
@@ -96,10 +95,10 @@ static void add_device_rule(json_object *linux_config, const struct stat *st)
 		ensure_array(ensure_object(linux_config, "resources"), "devices");
 
 	autofreejson json_object *rule = js_new_object();
-	js_object_add(rule, "allow", js_new_bool(true));
+	js_set_bool(rule, "allow", true);
 	js_set_string(rule, "type", S_ISCHR(st->st_mode) ? "c" : "b");
-	js_object_add(rule, "major", js_new_int(major(st->st_rdev)));
-	js_object_add(rule, "minor", js_new_int(minor(st->st_rdev)));
+	js_set_int(rule, "major", major(st->st_rdev));
+	js_set_int(rule, "minor", minor(st->st_rdev));
 	js_set_string(rule, "access", "rwm");
 
 	js_array_add(rules, steal_ptr(&rule));
@@ -111,11 +110,11 @@ static void add_device(json_object *linux_config, const char *destination,
 	autofreejson json_object *device = js_new_object();
 	js_set_string(device, "path", destination);
 	js_set_string(device, "type", S_ISCHR(st->st_mode) ? "c" : "b");
-	js_object_add(device, "major", js_new_int(major(st->st_rdev)));
-	js_object_add(device, "minor", js_new_int(minor(st->st_rdev)));
-	js_object_add(device, "fileMode", js_new_int(st->st_mode & 07777));
-	js_object_add(device, "uid", js_new_int(st->st_uid));
-	js_object_add(device, "gid", js_new_int(st->st_gid));
+	js_set_int(device, "major", major(st->st_rdev));
+	js_set_int(device, "minor", minor(st->st_rdev));
+	js_set_int(device, "fileMode", st->st_mode & 07777);
+	js_set_int(device, "uid", st->st_uid);
+	js_set_int(device, "gid", st->st_gid);
 
 	js_array_add(ensure_array(linux_config, "devices"), steal_ptr(&device));
 	add_device_rule(linux_config, st);
@@ -420,8 +419,8 @@ static void configure_paths(json_object *oci, const Config *config)
 	resolve_path_operations(&resolved, &config->mounts);
 	resolve_path_operations(&resolved, &config->devices);
 
-	json_object *mounts = js_need(oci, "mounts", json_type_array);
-	json_object *linux_config = js_need(oci, "linux", json_type_object);
+	json_object *mounts = js_get_array(oci, "mounts");
+	json_object *linux_config = js_get_object(oci, "linux");
 
 	/* Remove base device nodes/rules before adding any new access rules. */
 	for (size_t i = 0; i < resolved.length; i++) {
@@ -467,19 +466,19 @@ static void configure_paths(json_object *oci, const Config *config)
 		js_set_string(mount, "source", source);
 		js_set_string(mount, "type", "bind");
 
-		autofreejson json_object *options = js_new_array();
-		for (size_t j = 0; j < operation->options.length; j++)
-			js_array_add(options, js_new_string(operation->options.items[j]));
+		autofreejson json_object *options =
+			js_new_strings((const char *const *)operation->options.items,
+				       operation->options.length);
 
-		js_array_add(options, js_new_string("rbind"));
-		js_array_add(options, js_new_string("rprivate"));
+		js_array_add_string(options, "rbind");
+		js_array_add_string(options, "rprivate");
 		js_object_add(mount, "options", steal_ptr(&options));
 
 		/* Replace in place so parent mounts stay before their children. */
 		bool replaced = false;
-		for (size_t j = 0; j < json_object_array_length(mounts);) {
-			json_object *old = json_object_array_get_idx(mounts, j);
-			if (strcmp(js_string(old, "destination"), destination)) {
+		for (size_t j = 0; j < js_array_len(mounts);) {
+			json_object *old = js_array_get_object(mounts, j);
+			if (strcmp(js_get_string(old, "destination"), destination)) {
 				j++;
 			} else if (!replaced) {
 				json_object_array_put_idx(mounts, j++,
@@ -495,9 +494,10 @@ static void configure_paths(json_object *oci, const Config *config)
 			 * /etc before the generated hostname, hosts and resolver binds.
 			 */
 			size_t index, length = strlen(destination);
-			for (index = 0; index < json_object_array_length(mounts); index++) {
-				const char *child = js_string(
-					json_object_array_get_idx(mounts, index), "destination");
+			for (index = 0; index < js_array_len(mounts); index++) {
+				const char *child =
+					js_get_string(js_array_get_object(mounts, index),
+						      "destination");
 				if (starts_with(child, destination) && child[length] == '/')
 					break;
 			}
@@ -514,8 +514,8 @@ static void update_capability_set(json_object *set, const CapabilityOperation *o
 	bool all = !strcmp(name, "all");
 
 	if (operation->remove) {
-		for (size_t i = json_object_array_length(set); i > 0; i--)
-			if (all || !strcmp(js_array_string(set, i - 1), name))
+		for (size_t i = js_array_len(set); i > 0; i--)
+			if (all || !strcmp(js_array_get_string(set, i - 1), name))
 				json_object_array_del_idx(set, i - 1, 1);
 		return;
 	}
@@ -523,9 +523,9 @@ static void update_capability_set(json_object *set, const CapabilityOperation *o
 	if (all) {
 		for (size_t i = 0; capability_names[i]; i++)
 			if (!js_contains(set, capability_names[i]))
-				js_array_add(set, js_new_string(capability_names[i]));
+				js_array_add_string(set, capability_names[i]);
 	} else if (!js_contains(set, name)) {
-		js_array_add(set, js_new_string(name));
+		js_array_add_string(set, name);
 	}
 }
 
@@ -534,8 +534,7 @@ static void configure_capabilities(json_object *oci, const Config *config)
 	if (!config->capabilities.length)
 		return;
 
-	json_object *caps =
-		ensure_object(js_need(oci, "process", json_type_object), "capabilities");
+	json_object *caps = ensure_object(js_get_object(oci, "process"), "capabilities");
 	const char *const sets[] = {"bounding", "effective", "permitted", "inheritable",
 				    "ambient"};
 
@@ -560,11 +559,11 @@ static void configure_capabilities(json_object *oci, const Config *config)
 
 void configure_oci_policy(json_object *oci, const Config *config)
 {
-	json_object *linux_config = js_need(oci, "linux", json_type_object);
+	json_object *linux_config = js_get_object(oci, "linux");
 	if (config->memory_max_set) {
 		json_object *memory =
 			ensure_object(ensure_object(linux_config, "resources"), "memory");
-		js_object_add(memory, "limit", js_new_int(config->memory_max));
+		js_set_int(memory, "limit", config->memory_max);
 	}
 
 	configure_capabilities(oci, config);
@@ -577,9 +576,9 @@ void configure_oci_policy(json_object *oci, const Config *config)
 			if (!paths)
 				continue;
 
-			for (size_t k = json_object_array_length(paths); k > 0; k--)
+			for (size_t k = js_array_len(paths); k > 0; k--)
 				if (!strcmp(path, "ALL") ||
-				    !strcmp(path, js_array_string(paths, k - 1)))
+				    !strcmp(path, js_array_get_string(paths, k - 1)))
 					json_object_array_del_idx(paths, k - 1, 1);
 		}
 	}
