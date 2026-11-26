@@ -11,6 +11,6 @@ jobs:
       - name: Build launcher and test fixtures
         run: |
           meson setup build --prefix=/usr
-          meson compile -C build qmc test-config test-prepare test-utils test-network test-launch-network test-exec-stdio
+          meson compile -C build qmc test-config test-prepare test-utils test-network test-launch-network test-exec-stdio test-console
       - name: Run regression tests
         run: meson test -C build --no-rebuild --print-errorlogs
