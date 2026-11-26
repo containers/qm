@@ -407,6 +407,95 @@ static void resolve_path_operations(PtrArray *resolved, const PtrArray *operatio
 	}
 }
 
+static json_object *new_bind_mount(const char *source, const char *destination,
+				   const PtrArray *options)
+{
+	autofreejson json_object *mount = js_new_object();
+	js_set_string(mount, "destination", destination);
+	js_set_string(mount, "source", source);
+	js_set_string(mount, "type", "bind");
+
+	autofreejson json_object *mount_options =
+		js_new_strings((const char *const *)options->items, options->length);
+	js_array_add_string(mount_options, "rbind");
+	js_array_add_string(mount_options, "rprivate");
+	js_object_add(mount, "options", steal_ptr(&mount_options));
+
+	return steal_ptr(&mount);
+}
+
+/* Borrow mount; the array retains its own reference when it is installed. */
+static void replace_or_insert_mount(json_object *mounts, json_object *mount)
+{
+	const char *destination = js_get_string(mount, "destination");
+
+	/* Replace in place so parent mounts stay before their children. */
+	bool replaced = false;
+	for (size_t i = 0; i < js_array_len(mounts);) {
+		json_object *old = js_array_get_object(mounts, i);
+		if (!streq(js_get_string(old, "destination"), destination)) {
+			i++;
+		} else if (!replaced) {
+			json_object_array_put_idx(mounts, i++, json_object_get(mount));
+			replaced = true;
+		} else {
+			json_object_array_del_idx(mounts, i, 1);
+		}
+	}
+	if (replaced)
+		return;
+
+	/* New parent mounts must precede existing children too, such as
+	 * /etc before the generated hostname, hosts and resolver binds.
+	 */
+	size_t index, length = strlen(destination);
+	for (index = 0; index < js_array_len(mounts); index++) {
+		const char *child =
+			js_get_string(js_array_get_object(mounts, index), "destination");
+		if (starts_with(child, destination) && child[length] == '/')
+			break;
+	}
+	js_array_insert(mounts, index, json_object_get(mount));
+}
+
+static void apply_resolved_path(json_object *mounts, json_object *linux_config,
+				const ResolvedPath *path)
+{
+	const PathOperation *operation = path->operation;
+	const char *destination = path->destination;
+	const char *source = path->source;
+	bool remove = path->remove;
+	bool device = operation->device;
+	struct stat st;
+
+	if (!remove && (device || operation->optional)) {
+		if (stat(source, &st) < 0) {
+			if (operation->optional && errno == ENOENT)
+				remove = true;
+			else
+				err(1, "stat %s", source);
+		}
+
+		if (!remove && device && !S_ISCHR(st.st_mode) && !S_ISBLK(st.st_mode))
+			errx(1, "%s is not a character or block device", source);
+	}
+
+	if (remove) {
+		remove_path(mounts, "destination", destination);
+		return;
+	}
+
+	if (device) {
+		remove_path(mounts, "destination", destination);
+		add_device(linux_config, destination, &st);
+		return;
+	}
+
+	autofreejson json_object *mount =
+		new_bind_mount(source, destination, &operation->options);
+	replace_or_insert_mount(mounts, mount);
+}
+
 static void configure_paths(json_object *oci, const Config *config)
 {
 	if (!config->mounts.length && !config->devices.length)
@@ -428,82 +517,8 @@ static void configure_paths(json_object *oci, const Config *config)
 		remove_device(linux_config, path->destination);
 	}
 
-	for (size_t i = 0; i < resolved.length; i++) {
-		const ResolvedPath *path = resolved.items[i];
-		const PathOperation *operation = path->operation;
-		const char *destination = path->destination;
-		const char *source = path->source;
-		bool remove = path->remove;
-		bool device = operation->device;
-		struct stat st;
-
-		if (!remove && (device || operation->optional)) {
-			if (stat(source, &st) < 0) {
-				if (operation->optional && errno == ENOENT)
-					remove = true;
-				else
-					err(1, "stat %s", source);
-			}
-
-			if (!remove && device && !S_ISCHR(st.st_mode) &&
-			    !S_ISBLK(st.st_mode))
-				errx(1, "%s is not a character or block device", source);
-		}
-
-		if (remove) {
-			remove_path(mounts, "destination", destination);
-			continue;
-		}
-
-		if (device) {
-			remove_path(mounts, "destination", destination);
-			add_device(linux_config, destination, &st);
-			continue;
-		}
-
-		autofreejson json_object *mount = js_new_object();
-		js_set_string(mount, "destination", destination);
-		js_set_string(mount, "source", source);
-		js_set_string(mount, "type", "bind");
-
-		autofreejson json_object *options =
-			js_new_strings((const char *const *)operation->options.items,
-				       operation->options.length);
-
-		js_array_add_string(options, "rbind");
-		js_array_add_string(options, "rprivate");
-		js_object_add(mount, "options", steal_ptr(&options));
-
-		/* Replace in place so parent mounts stay before their children. */
-		bool replaced = false;
-		for (size_t j = 0; j < js_array_len(mounts);) {
-			json_object *old = js_array_get_object(mounts, j);
-			if (!streq(js_get_string(old, "destination"), destination)) {
-				j++;
-			} else if (!replaced) {
-				json_object_array_put_idx(mounts, j++,
-							  json_object_get(mount));
-				replaced = true;
-			} else {
-				json_object_array_del_idx(mounts, j, 1);
-			}
-		}
-
-		if (!replaced) {
-			/* New parent mounts must precede existing children too, such as
-			 * /etc before the generated hostname, hosts and resolver binds.
-			 */
-			size_t index, length = strlen(destination);
-			for (index = 0; index < js_array_len(mounts); index++) {
-				const char *child =
-					js_get_string(js_array_get_object(mounts, index),
-						      "destination");
-				if (starts_with(child, destination) && child[length] == '/')
-					break;
-			}
-			js_array_insert(mounts, index, json_object_get(mount));
-		}
-	}
+	for (size_t i = 0; i < resolved.length; i++)
+		apply_resolved_path(mounts, linux_config, resolved.items[i]);
 
 	ptr_array_clear(&resolved, resolved_path_free);
 }
