@@ -20,6 +20,11 @@ static const int exec_signals[] = {SIGINT, SIGTERM, SIGHUP, SIGQUIT};
 static volatile sig_atomic_t pending_signals;
 
 typedef struct {
+	sigset_t watched, original;
+	struct sigaction previous[N_ELEMENTS(exec_signals)], previous_pipe;
+} ExecSignals;
+
+typedef struct {
 	int source, destination;
 	bool source_socket, destination_socket;
 	char buffer[16384];
@@ -110,7 +115,8 @@ static void write_stream(Stream *stream, bool input)
 	}
 }
 
-int exec_with_stdio(char *const argv[], bool interactive)
+/* The caller owns the pipes and the returned /dev/null descriptor. */
+static int prepare_stdio_pipes(int pipes[3][2], bool interactive)
 {
 	/* Keep new pipe descriptors clear of the standard descriptor numbers. */
 	for (int i = 0; i < 3; i++) {
@@ -120,66 +126,56 @@ int exec_with_stdio(char *const argv[], bool interactive)
 				err(1, "initialize closed exec stdio");
 		}
 	}
-	autoclose int null_input = open("/dev/null", O_RDONLY | O_CLOEXEC);
+	int null_input = open("/dev/null", O_RDONLY | O_CLOEXEC);
 	if (null_input < 0)
 		err(1, "open exec /dev/null");
-	int pipes[3][2] = {{-1, -1}, {-1, -1}, {-1, -1}};
 	for (int i = interactive ? 0 : 1; i < 3; i++) {
 		if (pipe2(pipes[i], O_CLOEXEC) < 0)
 			err(1, "create exec stdio pipe");
 	}
-	sigset_t watched, original;
-	sigemptyset(&watched);
+	return null_input;
+}
+
+static void block_exec_signals(ExecSignals *signals)
+{
+	sigemptyset(&signals->watched);
 	for (size_t i = 0; i < N_ELEMENTS(exec_signals); i++)
-		sigaddset(&watched, exec_signals[i]);
+		sigaddset(&signals->watched, exec_signals[i]);
 	/* Queue signals until the parent has installed its handlers, including
 	 * signals received immediately after the fork.
 	 */
-	if (sigprocmask(SIG_BLOCK, &watched, &original) < 0)
+	if (sigprocmask(SIG_BLOCK, &signals->watched, &signals->original) < 0)
 		err(1, "block exec signals");
 	pending_signals = 0;
-	pid_t parent = getpid();
-	pid_t child = fork();
-	if (child < 0)
-		err(1, "fork exec runtime");
-	if (!child) {
-		if (prctl(PR_SET_PDEATHSIG, SIGTERM) < 0 || getppid() != parent)
-			_exit(1);
-		if (setpgid(0, 0) < 0)
-			err(1, "set exec process group");
-		for (int i = 0; i < 3; i++) {
-			int fd = i == 0 ? (interactive ? pipes[0][0] : null_input)
-					: pipes[i][1];
-			if (dup2(fd, i) < 0)
-				err(1, "set exec stdio");
-		}
-		for (int i = 0; i < 3; i++) {
-			if (pipes[i][0] >= 0)
-				close(pipes[i][0]);
-			if (pipes[i][1] >= 0)
-				close(pipes[i][1]);
-		}
-		if (sigprocmask(SIG_SETMASK, &original, NULL) < 0)
-			err(1, "restore exec signals");
-		execv(argv[0], argv);
-		warn("exec %s", argv[0]);
+}
+
+static _Noreturn void exec_stdio_child(char *const argv[], int pipes[3][2], int input,
+				       pid_t parent, const sigset_t *original)
+{
+	if (prctl(PR_SET_PDEATHSIG, SIGTERM) < 0 || getppid() != parent)
 		_exit(1);
+	if (setpgid(0, 0) < 0)
+		err(1, "set exec process group");
+	for (int i = 0; i < 3; i++) {
+		int fd = i == 0 ? input : pipes[i][1];
+		if (dup2(fd, i) < 0)
+			err(1, "set exec stdio");
 	}
-	if (interactive)
-		close(pipes[0][0]);
-	close(pipes[1][1]);
-	close(pipes[2][1]);
-	autoclose int pidfd = syscall(SYS_pidfd_open, child, 0);
-	if (pidfd < 0) {
-		kill(child, SIGKILL);
-		wait_child(child);
-		err(1, "prepare exec stdio relay");
+	for (int i = 0; i < 3; i++) {
+		if (pipes[i][0] >= 0)
+			close(pipes[i][0]);
+		if (pipes[i][1] >= 0)
+			close(pipes[i][1]);
 	}
-	Stream streams[3] = {
-		{.source = -1, .destination = pipes[0][1]},
-		{.source = pipes[1][0]},
-		{.source = pipes[2][0]},
-	};
+	if (sigprocmask(SIG_SETMASK, original, NULL) < 0)
+		err(1, "restore exec signals");
+	execv(argv[0], argv);
+	warn("exec %s", argv[0]);
+	_exit(1);
+}
+
+static void prepare_relay_streams(Stream streams[3], bool interactive)
+{
 	if (interactive) {
 		streams[0].source = relay_fd(0, true, &streams[0].source_socket);
 		nonblocking(streams[0].destination);
@@ -189,15 +185,24 @@ int exec_with_stdio(char *const argv[], bool interactive)
 			relay_fd(i, false, &streams[i].destination_socket);
 		nonblocking(streams[i].source);
 	}
-	struct sigaction action = {.sa_handler = forward_signal, .sa_mask = watched};
-	struct sigaction previous[N_ELEMENTS(exec_signals)], previous_pipe;
+}
+
+static void install_exec_signal_handlers(ExecSignals *signals)
+{
+	struct sigaction action = {.sa_handler = forward_signal,
+				   .sa_mask = signals->watched};
 	for (size_t i = 0; i < N_ELEMENTS(exec_signals); i++)
-		if (sigaction(exec_signals[i], &action, &previous[i]) < 0)
+		if (sigaction(exec_signals[i], &action, &signals->previous[i]) < 0)
 			err(1, "set exec signal handler");
 	struct sigaction ignore = {.sa_handler = SIG_IGN};
 	sigemptyset(&ignore.sa_mask);
-	if (sigaction(SIGPIPE, &ignore, &previous_pipe) < 0)
+	if (sigaction(SIGPIPE, &ignore, &signals->previous_pipe) < 0)
 		err(1, "ignore exec SIGPIPE");
+}
+
+static void relay_streams(Stream streams[3], pid_t child, int pidfd,
+			  const sigset_t *original)
+{
 	bool exited = false, interrupted = false;
 	while (!exited || streams[1].source >= 0 || streams[1].length ||
 	       streams[2].source >= 0 || streams[2].length) {
@@ -223,7 +228,7 @@ int exec_with_stdio(char *const argv[], bool interactive)
 				.fd = stream->length ? stream->destination : -1,
 				.events = POLLOUT};
 		}
-		if (ppoll(fds, N_ELEMENTS(fds), NULL, &original) < 0) {
+		if (ppoll(fds, N_ELEMENTS(fds), NULL, original) < 0) {
 			if (errno == EINTR)
 				continue;
 			err(1, "poll exec stdio");
@@ -240,14 +245,56 @@ int exec_with_stdio(char *const argv[], bool interactive)
 				write_stream(stream, i == 0);
 		}
 	}
+}
+
+static void restore_exec_signals(const ExecSignals *signals)
+{
+	for (size_t i = 0; i < N_ELEMENTS(exec_signals); i++)
+		if (sigaction(exec_signals[i], &signals->previous[i], NULL) < 0)
+			err(1, "restore exec signal handler");
+	if (sigaction(SIGPIPE, &signals->previous_pipe, NULL) < 0 ||
+	    sigprocmask(SIG_SETMASK, &signals->original, NULL) < 0)
+		err(1, "restore exec signals");
+}
+
+int exec_with_stdio(char *const argv[], bool interactive)
+{
+	int pipes[3][2] = {{-1, -1}, {-1, -1}, {-1, -1}};
+	autoclose int null_input = prepare_stdio_pipes(pipes, interactive);
+	ExecSignals signals;
+	block_exec_signals(&signals);
+
+	pid_t parent = getpid();
+	pid_t child = fork();
+	if (child < 0)
+		err(1, "fork exec runtime");
+	if (!child)
+		exec_stdio_child(argv, pipes, interactive ? pipes[0][0] : null_input,
+				 parent, &signals.original);
+
+	if (interactive)
+		close(pipes[0][0]);
+	close(pipes[1][1]);
+	close(pipes[2][1]);
+	autoclose int pidfd = syscall(SYS_pidfd_open, child, 0);
+	if (pidfd < 0) {
+		kill(child, SIGKILL);
+		wait_child(child);
+		err(1, "prepare exec stdio relay");
+	}
+
+	Stream streams[3] = {
+		{.source = -1, .destination = pipes[0][1]},
+		{.source = pipes[1][0]},
+		{.source = pipes[2][0]},
+	};
+	prepare_relay_streams(streams, interactive);
+	install_exec_signal_handlers(&signals);
+	relay_streams(streams, child, pidfd, &signals.original);
+
 	for (int i = 0; i < 3; i++)
 		close_stream(&streams[i]);
 	int status = wait_child(child);
-	for (size_t i = 0; i < N_ELEMENTS(exec_signals); i++)
-		if (sigaction(exec_signals[i], &previous[i], NULL) < 0)
-			err(1, "restore exec signal handler");
-	if (sigaction(SIGPIPE, &previous_pipe, NULL) < 0 ||
-	    sigprocmask(SIG_SETMASK, &original, NULL) < 0)
-		err(1, "restore exec signals");
+	restore_exec_signals(&signals);
 	return status < 0 ? 1 : status;
 }
