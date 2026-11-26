@@ -68,8 +68,6 @@ static ConsoleMessage receive_console(int listener, const char *path)
 	}
 	if (master < 0 || sender.pid <= 0)
 		errx(1, "crun did not send a console descriptor and credentials");
-	close(connection);
-	connection = -1;
 	return (ConsoleMessage){.master = master, .sender_pid = sender.pid};
 }
 
