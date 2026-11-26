@@ -89,6 +89,68 @@ pid_t __wrap_fork(void)
 	return __real_fork();
 }
 
+static void test_format_named(void)
+{
+	const char *literal = "${name} $$ %s \"quoted\" \\path\ncaf\xc3\xa9";
+	const FormatVar vars[] = {
+		{"name", "qm"},
+		{"name_long", "qm-veth"},
+		{"empty", ""},
+		{"literal", literal},
+		{NULL},
+	};
+	const struct {
+		const char *format;
+		const char *expected;
+	} cases[] = {
+		{"", ""},
+		{"plain {braces} %s", "plain {braces} %s"},
+		{"${name}", "qm"},
+		{"${name_long}/${name}/${name_long}", "qm-veth/qm/qm-veth"},
+		{"${name}${empty}${name_long}", "qmqm-veth"},
+		{"[${empty}]", "[]"},
+		/* Values must be copied without expansion or escaping. */
+		{"${literal}", literal},
+		{"$ $$ $$$$ $name $${name} $$${name} $", "$ $ $$ $name ${name} $qm $"},
+		{"$${missing} $${name", "${missing} ${name"},
+		{"one\n${name}\ntwo\n", "one\nqm\ntwo\n"},
+	};
+	for (size_t i = 0; i < N_ELEMENTS(cases); i++) {
+		autofree char *result = format_named(cases[i].format, vars);
+		assert(streq(result, cases[i].expected));
+	}
+
+	const FormatVar no_vars[] = {{NULL}};
+	autofree char *plain = format_named("plain $$ $name", no_vars);
+	assert(streq(plain, "plain $ $name"));
+
+	/* Exercise growth beyond the memory stream's initial buffer. */
+	char large[16385];
+	memset(large, 'x', sizeof(large) - 1);
+	large[sizeof(large) - 1] = '\0';
+	const FormatVar large_vars[] = {{"large", large}, {NULL}};
+	autofree char *expected = xasprintf("prefix:%s:%s:suffix", large, large);
+	autofree char *result =
+		format_named("prefix:${large}:${large}:suffix", large_vars);
+	assert(streq(result, expected));
+
+	const char *invalid[] = {
+		"${missing}",
+		"${nam}",
+		"${name_longer}",
+		"${NAME}",
+		"${}",
+		"${name",
+		"prefix ${name} ${missing}",
+		"prefix ${name} ${name_long",
+	};
+	for (size_t i = 0; i < N_ELEMENTS(invalid); i++) {
+		errno = 0;
+		assert(format_named(invalid[i], vars) == NULL);
+		assert(errno == EINVAL);
+	}
+}
+
 static void test_character_classes(void)
 {
 	const struct {
@@ -241,6 +303,7 @@ static void test_remove_tree_contents_except(void)
 
 int main(void)
 {
+	test_format_named();
 	test_character_classes();
 	test_canonicalize_path();
 	test_ptr_array();

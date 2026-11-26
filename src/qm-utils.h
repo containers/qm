@@ -62,6 +62,19 @@ char *xasprintf(const char *format, ...) __attribute__((format(printf, 1, 2)));
 
 #define xnew(type) ((type *)xmalloc(sizeof(type)))
 
+typedef struct {
+	const char *name;
+	const char *value;
+} FormatVar;
+
+/* Expand ${name} using a name/value array terminated by {NULL}.
+ * Return an allocated string; values are copied literally, without escaping or
+ * recursive expansion. $$ produces a literal $. Return NULL with errno set on
+ * failure (EINVAL for unknown or unterminated variables).
+ * Names and values must be non-NULL strings.
+ */
+char *format_named(const char *format, const FormatVar vars[]);
+
 /* Builds an allocated NULL-terminated vector, borrowing strings.
  * Initialize to {0}. Each add requires a non-NULL string and grows the array
  * as needed. Clear frees the array, leaving the borrowed strings untouched.
