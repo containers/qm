@@ -77,6 +77,7 @@ void ptr_array_clear(PtrArray *array, void (*free_func)(void *));
 /* NULL compares equal only to NULL. */
 bool streq(const char *a, const char *b);
 bool starts_with(const char *string, const char *prefix);
+bool path_starts_with(const char *path, const char *prefix);
 char *join_path(const char *a, const char *b);
 
 typedef enum {

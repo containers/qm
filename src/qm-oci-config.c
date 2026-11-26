@@ -448,11 +448,11 @@ static void replace_or_insert_mount(json_object *mounts, json_object *mount)
 	/* New parent mounts must precede existing children too, such as
 	 * /etc before the generated hostname, hosts and resolver binds.
 	 */
-	size_t index, length = strlen(destination);
+	size_t index;
 	for (index = 0; index < js_array_len(mounts); index++) {
 		const char *child =
 			js_get_string(js_array_get_object(mounts, index), "destination");
-		if (starts_with(child, destination) && child[length] == '/')
+		if (path_starts_with(child, destination))
 			break;
 	}
 	js_array_insert(mounts, index, json_object_get(mount));
