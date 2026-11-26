@@ -299,13 +299,8 @@ char *try_read_text_file(const char *filename)
 
 		ssize_t count =
 			TEMP_FAILURE_RETRY(read(fd, buffer + length, size - length - 1));
-		if (count < 0) {
-			int saved_errno = errno;
-			close(fd);
-			fd = -1;
-			errno = saved_errno;
+		if (count < 0)
 			return NULL;
-		}
 		if (!count)
 			break;
 
