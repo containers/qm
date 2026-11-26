@@ -43,7 +43,7 @@ PassEnvironment=TZ
 # Keep launcher state private to the QM service.
 RuntimeDirectory=qm
 RuntimeDirectoryMode=0700
-# Retain the cleanup journal if cleanup fails; startup retries it.
+# Retain the runtime state if cleanup fails; startup retries it.
 RuntimeDirectoryPreserve=yes
 
 ExecStartPre=@DATADIR@/check-config-migration

@@ -407,9 +407,9 @@ with tempfile.TemporaryDirectory(prefix="qm-systemd-") as temporary:
                 [str(LAUNCHER), "cleanup", "--runtime-dir", str(runtime)],
                 check=True,
             )
-        assert runtime.is_dir() and list(runtime.iterdir()) == [
-            runtime / "signals"
-        ]
+        assert runtime.is_dir() and set(runtime.iterdir()) == {
+            runtime / "signals", runtime / ".lock"
+        }
         assert (
             runtime / "signals/persistent"
         ).stat().st_ino == persistent_inode

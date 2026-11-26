@@ -2,8 +2,8 @@
 
 Run `meson setup build --prefix=/usr`, then `meson test -C build --print-errorlogs`.
 The tests use Python unittest and C fixtures. They exercise configuration,
-OCI preparation, inspection, command errors, signals and utility failures without
-a running QM instance or host network changes. Meson and RPM builds enable them
+OCI preparation, lifecycle locking, inspection, command errors, signals and
+utility failures without a running QM instance or host network changes. Meson and RPM builds enable them
 by default; use `-Dtests=false` for a build without test fixtures.
 
 Some preparation and exec cases need private mounts or privileges. unittest

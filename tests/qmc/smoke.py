@@ -457,7 +457,9 @@ with tempfile.TemporaryDirectory(prefix="qm-launch-smoke-") as temporary:
         assert not (runtime / "netns").exists()
         assert not (runtime / "state.json").exists()
         assert runtime.is_dir()
-        assert set(runtime.iterdir()) <= {runtime / "signals"}
+        assert set(runtime.iterdir()) <= {
+            runtime / "signals", runtime / ".lock"
+        }
         if (runtime / "signals").exists():
             assert list((runtime / "signals").iterdir()) == []
 
@@ -1326,7 +1328,9 @@ with tempfile.TemporaryDirectory(prefix="qm-launch-smoke-") as temporary:
             assert not (runtime / "state.json").exists()
             assert not (runtime / "netns").exists()
             run(str(LAUNCHER), "cleanup", "--runtime-dir", str(runtime))
-            assert runtime.is_dir() and list(runtime.iterdir()) == []
+            assert runtime.is_dir() and list(runtime.iterdir()) == [
+                runtime / ".lock"
+            ]
             if kind == "interface":
                 run("ip", "link", "show", "qm-veth")
             else:

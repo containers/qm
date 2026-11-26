@@ -678,7 +678,7 @@ void write_text_file(const char *name, const char *contents)
 	write_all(fd, contents, strlen(contents));
 }
 
-int remove_tree_contents_except(const char *path, const char *preserve)
+int remove_tree_contents_except(const char *path, const char *const *preserve)
 {
 	char *paths[] = {(char *)path, NULL};
 	FTS *tree = fts_open(paths, FTS_NOCHDIR | FTS_PHYSICAL | FTS_XDEV, NULL);
@@ -691,6 +691,14 @@ int remove_tree_contents_except(const char *path, const char *preserve)
 	FTSENT *entry;
 	errno = 0;
 	while ((entry = fts_read(tree))) {
+		bool keep = false;
+		if (entry->fts_level == 1 && preserve) {
+			for (size_t i = 0; preserve[i]; i++)
+				if (streq(entry->fts_name, preserve[i])) {
+					keep = true;
+					break;
+				}
+		}
 		if (entry->fts_info == FTS_ERR || entry->fts_info == FTS_DNR ||
 		    entry->fts_info == FTS_NS) {
 			if (entry->fts_errno != ENOENT) {
@@ -698,8 +706,7 @@ int remove_tree_contents_except(const char *path, const char *preserve)
 				warn("remove %s", entry->fts_path);
 				result = 1;
 			}
-		} else if (entry->fts_level == 1 && preserve &&
-			   streq(entry->fts_name, preserve)) {
+		} else if (keep) {
 			fts_set(tree, entry, FTS_SKIP);
 		} else if (entry->fts_level > 0 && entry->fts_info != FTS_D &&
 			   remove(entry->fts_accpath) < 0 && errno != ENOENT) {

@@ -289,8 +289,9 @@ static void test_remove_tree_contents_except(void)
 	autofree char *link = join_path(discarded, "link");
 	assert(symlink(preserved, link) == 0);
 	struct stat before, after;
+	const char *preserve[] = {"keep", NULL};
 	assert(stat(preserved, &before) == 0);
-	assert(remove_tree_contents_except(path, "keep") == 0);
+	assert(remove_tree_contents_except(path, preserve) == 0);
 	assert(stat(preserved, &after) == 0 && before.st_ino == after.st_ino);
 	autofree char *contents = read_text_file(marker);
 	assert(!strcmp(contents, "keep\n"));
@@ -298,7 +299,7 @@ static void test_remove_tree_contents_except(void)
 	assert(remove_tree_contents(path) == 0);
 	assert(access(preserved, F_OK) < 0 && errno == ENOENT);
 	assert(rmdir(path) == 0);
-	assert(remove_tree_contents_except(path, "keep") == 0);
+	assert(remove_tree_contents_except(path, preserve) == 0);
 }
 
 int main(void)
