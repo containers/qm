@@ -20,16 +20,14 @@
 #include <sys/un.h>
 #include <unistd.h>
 
-static void console_forward(int listener, const char *path, pid_t parent)
-{
-	/* In particular, do not leave a child waiting for a console when crun
-	 * fails before sending it, or when the foreground runtime is killed.
-	 */
-	if (prctl(PR_SET_PDEATHSIG, SIGTERM) < 0)
-		err(1, "set console parent-death signal");
-	if (getppid() != parent)
-		_exit(0);
+typedef struct {
+	int master;
+	pid_t sender_pid;
+} ConsoleMessage;
 
+/* Consume listener and return an owned master descriptor and its sender PID. */
+static ConsoleMessage receive_console(int listener, const char *path)
+{
 	autoclose int connection =
 		TEMP_FAILURE_RETRY(accept4(listener, NULL, NULL, SOCK_CLOEXEC));
 	if (connection < 0)
@@ -55,7 +53,7 @@ static void console_forward(int listener, const char *path, pid_t parent)
 		err(1, "receive console");
 	if (count == 0 || (message.msg_flags & MSG_CTRUNC))
 		errx(1, "incomplete console message from crun");
-	autoclose int master = -1;
+	int master = -1;
 	struct ucred sender = {0};
 	for (struct cmsghdr *header = CMSG_FIRSTHDR(&message); header;
 	     header = CMSG_NXTHDR(&message, header)) {
@@ -72,13 +70,28 @@ static void console_forward(int listener, const char *path, pid_t parent)
 		errx(1, "crun did not send a console descriptor and credentials");
 	close(connection);
 	connection = -1;
+	return (ConsoleMessage){.master = master, .sender_pid = sender.pid};
+}
+
+static void console_forward(int listener, const char *path, pid_t parent)
+{
+	/* In particular, do not leave a child waiting for a console when crun
+	 * fails before sending it, or when the foreground runtime is killed.
+	 */
+	if (prctl(PR_SET_PDEATHSIG, SIGTERM) < 0)
+		err(1, "set console parent-death signal");
+	if (getppid() != parent)
+		_exit(0);
+
+	const ConsoleMessage console = receive_console(listener, path);
+	autoclose int master = console.master;
 
 	/* Crun's container init sends the master before exec. Keep the slave
 	 * open while init runs: systemd closes and reopens its console during
 	 * startup, and those gaps must not look like the end of the console.
 	 * Watch init rather than crun, which waits for this relay to drain.
 	 */
-	autoclose int init = syscall(SYS_pidfd_open, sender.pid, 0);
+	autoclose int init = syscall(SYS_pidfd_open, console.sender_pid, 0);
 	/* An init that exits immediately may already have been reaped by crun.
 	 * Its console still has to be drained, without holding the slave open.
 	 */
@@ -106,7 +119,7 @@ static void console_forward(int listener, const char *path, pid_t parent)
 		}
 		if (!fds[0].revents)
 			continue;
-		count = TEMP_FAILURE_RETRY(read(master, buffer, sizeof(buffer)));
+		ssize_t count = TEMP_FAILURE_RETRY(read(master, buffer, sizeof(buffer)));
 		/* A PTY returns EIO once the last slave descriptor is closed. */
 		if (count == 0 || (count < 0 && errno == EIO))
 			_exit(0);
