@@ -5,9 +5,11 @@
 
 #pragma once
 
+#include <errno.h>
 #include <json-c/json.h>
 #include <stdbool.h>
 #include <stdint.h>
+#include <stdio.h>
 #include <stdlib.h>
 #include <sys/types.h>
 #include <unistd.h>
@@ -15,18 +17,31 @@
 #define N_ELEMENTS(arr) (sizeof(arr) / sizeof((arr)[0]))
 #define autofree __attribute__((cleanup(cleanup_free)))
 #define autoclose __attribute__((cleanup(cleanup_close)))
+#define autofclose __attribute__((cleanup(cleanup_fclose)))
 #define autofreejson __attribute__((cleanup(js_cleanup_json)))
 
 static inline void cleanup_free(void *p)
 {
+	int saved_errno = errno;
 	free(*(void **)p);
+	errno = saved_errno;
 }
 
 static inline void cleanup_close(const int *fd)
 {
+	int saved_errno = errno;
 	/* Linux releases the descriptor even when close() returns EINTR. */
 	if (*fd >= 0)
 		close(*fd);
+	errno = saved_errno;
+}
+
+static inline void cleanup_fclose(FILE **file)
+{
+	int saved_errno = errno;
+	if (*file)
+		fclose(*file);
+	errno = saved_errno;
 }
 
 static inline void *steal_ptr(void *p)
