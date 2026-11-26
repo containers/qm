@@ -72,6 +72,48 @@ char *xasprintf(const char *format, ...)
 	return result;
 }
 
+char *format_named(const char *format, const FormatVar vars[])
+{
+	autofree char *result = NULL;
+	size_t size;
+	/* Close the stream before freeing its buffer on error. */
+	autofclose FILE *output = open_memstream(&result, &size);
+	if (!output)
+		return NULL;
+
+	for (const char *p = format; *p;) {
+		if (p[0] == '$' && p[1] == '$') {
+			p++;
+		} else if (p[0] == '$' && p[1] == '{') {
+			const char *name = p + 2;
+			const char *end = strchr(name, '}');
+			if (!end) {
+				errno = EINVAL;
+				return NULL;
+			}
+			size_t length = end - name;
+			const FormatVar *var;
+			for (var = vars; var->name; var++)
+				if (strlen(var->name) == length &&
+				    strncmp(var->name, name, length) == 0)
+					break;
+			if (!var->name) {
+				errno = EINVAL;
+				return NULL;
+			}
+			if (fputs(var->value, output) == EOF)
+				return NULL;
+			p = end + 1;
+			continue;
+		}
+		if (fputc(*p++, output) == EOF)
+			return NULL;
+	}
+	if (fclose(steal_ptr(&output)) < 0)
+		return NULL;
+	return steal_ptr(&result);
+}
+
 void strv_builder_add(StrvBuilder *builder, const char *string)
 {
 	if (builder->length + 1 >= builder->capacity) {
