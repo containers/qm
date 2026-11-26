@@ -118,6 +118,11 @@ void ptr_array_clear(PtrArray *array, void (*free_func)(void *))
 	*array = (PtrArray){0};
 }
 
+bool streq(const char *a, const char *b)
+{
+	return a == b || (a && b && strcmp(a, b) == 0);
+}
+
 bool starts_with(const char *string, const char *prefix)
 {
 	return strncmp(string, prefix, strlen(prefix)) == 0;
@@ -197,7 +202,7 @@ char *canonicalize_path(const char *path)
 
 bool parse_size(const char *string, int64_t *size)
 {
-	if (!strcmp(string, "infinity")) {
+	if (streq(string, "infinity")) {
 		*size = -1;
 		return true;
 	}
@@ -215,7 +220,7 @@ bool parse_size(const char *string, int64_t *size)
 	if (*p) {
 		const char *units = "KMGTPE";
 		const char *unit = strchr(units, *p++);
-		if (!unit || (*p && strcmp(p, "B") && strcmp(p, "iB")))
+		if (!unit || (*p && !streq(p, "B") && !streq(p, "iB")))
 			return false;
 
 		uint64_t multiplier = UINT64_C(1) << (10 * (unit - units + 1));
@@ -588,7 +593,7 @@ bool js_contains(json_object *array, const char *value)
 		errx(1, "expected a JSON array");
 
 	for (size_t i = 0; i < js_array_len(array); i++)
-		if (!strcmp(js_array_get_string(array, i), value))
+		if (streq(js_array_get_string(array, i), value))
 			return true;
 
 	return false;
@@ -649,7 +654,7 @@ int remove_tree_contents_except(const char *path, const char *preserve)
 				result = 1;
 			}
 		} else if (entry->fts_level == 1 && preserve &&
-			   !strcmp(entry->fts_name, preserve)) {
+			   streq(entry->fts_name, preserve)) {
 			fts_set(tree, entry, FTS_SKIP);
 		} else if (entry->fts_level > 0 && entry->fts_info != FTS_D &&
 			   remove(entry->fts_accpath) < 0 && errno != ENOENT) {
@@ -716,7 +721,7 @@ IdRange read_subid(const char *directory, const char *filename, const char *user
 		if (!first)
 			continue;
 		*first++ = '\0';
-		if (strcmp(line, username))
+		if (!streq(line, username))
 			continue;
 		if (result.found)
 			errx(1, "%s has multiple %s ranges", path, username);

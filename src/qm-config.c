@@ -54,7 +54,7 @@ static void parse_object(void *target, json_object *object, const ConfigEntry *e
 		(void)unused;
 		size_t i;
 		for (i = 0; i < count; i++)
-			if (!strcmp(key, entries[i].name))
+			if (streq(key, entries[i].name))
 				break;
 		if (i == count)
 			errx(1, "%s: unknown %s key: %s", filename, name, key);
@@ -219,7 +219,7 @@ static void parse_userns(void *field, json_object *value, const char *name,
 {
 	const char *string = config_string(value, name, filename);
 	for (size_t i = 0; i < N_ELEMENTS(userns_names); i++) {
-		if (!strcmp(string, userns_names[i])) {
+		if (streq(string, userns_names[i])) {
 			*(UserNamespaceMode *)field = i;
 			return;
 		}
@@ -409,7 +409,7 @@ bool reserved_mount_destination(const char *destination)
 					"/etc/hosts"};
 
 	for (size_t i = 0; i < N_ELEMENTS(reserved); i++)
-		if (!strcmp(destination, reserved[i]))
+		if (streq(destination, reserved[i]))
 			return true;
 
 	return false;
@@ -581,7 +581,7 @@ static void parse_unmask(void *field, json_object *value, const char *name,
 {
 	const char *path = config_string(value, name, filename);
 	char *canonical;
-	if (strcmp(path, "ALL"))
+	if (!streq(path, "ALL"))
 		canonical = absolute_path(value, name, filename);
 	else
 		canonical = xstrdup(path);
@@ -722,7 +722,7 @@ static void merge_file(Config *config, const char *filename, bool optional)
 static int conf_filter(const struct dirent *entry)
 {
 	size_t length = strlen(entry->d_name);
-	return length >= 5 && !strcmp(entry->d_name + length - 5, ".conf");
+	return length >= 5 && streq(entry->d_name + length - 5, ".conf");
 }
 
 /* Byte ordering is deterministic even when the host locale changes. */

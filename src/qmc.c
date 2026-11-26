@@ -445,7 +445,7 @@ static char *cgroup_parent(bool prepare_only)
 	autofree char *cgroup = get_current_cgroup();
 
 	char *subgroup = strrchr(cgroup, '/');
-	if (subgroup && !strcmp(subgroup + 1, SUPERVISOR_CGROUP))
+	if (subgroup && streq(subgroup + 1, SUPERVISOR_CGROUP))
 		*subgroup = '\0';
 	else if (!prepare_only)
 		errx(1,
@@ -453,7 +453,7 @@ static char *cgroup_parent(bool prepare_only)
 		     "DelegateSubgroup=%s",
 		     SUPERVISOR_CGROUP);
 
-	if (!prepare_only && (!*cgroup || !strcmp(cgroup, "/")))
+	if (!prepare_only && (!*cgroup || streq(cgroup, "/")))
 		errx(1, "run inside a delegated systemd service");
 
 	return steal_ptr(&cgroup);
@@ -490,9 +490,9 @@ static void configure_machine_id(json_object *process)
 {
 	json_object *args = js_get_array(process, "args");
 	const char *init = js_array_get_string(args, 0);
-	if (strcmp(init, "/sbin/init") && strcmp(init, "/usr/sbin/init") &&
-	    strcmp(init, "/lib/systemd/systemd") &&
-	    strcmp(init, "/usr/lib/systemd/systemd"))
+	if (!streq(init, "/sbin/init") && !streq(init, "/usr/sbin/init") &&
+	    !streq(init, "/lib/systemd/systemd") &&
+	    !streq(init, "/usr/lib/systemd/systemd"))
 		return;
 
 	autofree char *id = read_text_file("/etc/machine-id");
@@ -517,7 +517,7 @@ static json_object *find_mount(json_object *config, const char *destination)
 	json_object *mounts = js_get_array(config, "mounts");
 	for (size_t i = 0; i < js_array_len(mounts); i++) {
 		json_object *mount = js_array_get_object(mounts, i);
-		if (!strcmp(js_get_string(mount, "destination"), destination))
+		if (streq(js_get_string(mount, "destination"), destination))
 			return mount;
 	}
 
@@ -606,8 +606,8 @@ static void configure_userns(json_object *linux_config, const Config *configurat
 
 	json_object *namespaces = js_get_array(linux_config, "namespaces");
 	for (size_t i = 0; i < js_array_len(namespaces); i++)
-		if (!strcmp(js_get_string(js_array_get_object(namespaces, i), "type"),
-			    "user"))
+		if (streq(js_get_string(js_array_get_object(namespaces, i), "type"),
+			  "user"))
 			errx(1, "base config already has a user namespace");
 
 	autofreejson json_object *user = js_new_object();
@@ -633,7 +633,7 @@ static void configure_isolation(json_object *linux_config)
 	json_object *namespaces = js_get_array(linux_config, "namespaces");
 	for (size_t i = 0; i < js_array_len(namespaces); i++) {
 		json_object *entry = js_array_get_object(namespaces, i);
-		if (!strcmp(js_get_string(entry, "type"), "network")) {
+		if (streq(js_get_string(entry, "type"), "network")) {
 			autofree char *netns = join_path(opt_runtime_dir, "netns");
 			js_set_string(entry, "path", netns);
 			return;
@@ -651,7 +651,7 @@ static void configure_annotations(json_object *config)
 		json_object_object_foreach (annotations, key, value) {
 			if (!starts_with(key, "io.podman.") &&
 			    !starts_with(key, "org.systemd.property.") &&
-			    strcmp(key, "org.opencontainers.image.stopSignal"))
+			    !streq(key, "org.opencontainers.image.stopSignal"))
 				js_object_add(clean, key, json_object_get(value));
 		}
 	}
@@ -704,7 +704,7 @@ static void container_file(const char *base, const char *name, const char *conte
 static char *hosts_contents(const char *hosts, const Config *configuration)
 {
 	const char *hostname = configuration->hostname;
-	bool add_container_alias = strcmp(hostname, QM_CONTAINER_ID) != 0;
+	bool add_container_alias = !streq(hostname, QM_CONTAINER_ID);
 	return xasprintf("%s\n%s\thost.containers.internal "
 			 "host.docker.internal\n%s\t%s%s%s\n",
 			 hosts, configuration->gateway, configuration->ip, hostname,
@@ -1237,13 +1237,13 @@ static Command parse_options(int argc, char **argv)
 		usage(stderr);
 		exit(2);
 	}
-	if (!strcmp(argv[1], "--help")) {
+	if (streq(argv[1], "--help")) {
 		usage(stdout);
 		exit(0);
 	}
 
 	for (size_t i = 0; i < N_ELEMENTS(commands); i++) {
-		if (!strcmp(argv[1], commands[i].name)) {
+		if (streq(argv[1], commands[i].name)) {
 			parse_command_options(&commands[i], argc - 1, argv + 1);
 			return commands[i].command;
 		}

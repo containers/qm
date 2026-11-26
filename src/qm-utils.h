@@ -74,6 +74,8 @@ typedef struct {
 void ptr_array_add(PtrArray *array, void *item);
 void ptr_array_clear(PtrArray *array, void (*free_func)(void *));
 
+/* NULL compares equal only to NULL. */
+bool streq(const char *a, const char *b);
 bool starts_with(const char *string, const char *prefix);
 char *join_path(const char *a, const char *b);
 

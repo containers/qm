@@ -39,7 +39,7 @@ static void remove_path(json_object *array, const char *key, const char *path)
 
 	for (size_t i = js_array_len(array); i > 0; i--) {
 		json_object *item = js_array_get_object(array, i - 1);
-		if (!strcmp(js_get_string(item, key), path))
+		if (streq(js_get_string(item, key), path))
 			json_object_array_del_idx(array, i - 1, 1);
 	}
 }
@@ -56,7 +56,7 @@ static void remove_device_rules(json_object *linux_config, json_object *removed)
 
 	for (size_t i = 0; devices && i < js_array_len(devices); i++) {
 		json_object *other = js_array_get_object(devices, i);
-		if (!strcmp(js_get_string(other, "type"), type) &&
+		if (streq(js_get_string(other, "type"), type) &&
 		    js_get_int(other, "major") == device_major &&
 		    js_get_int(other, "minor") == device_minor)
 			return;
@@ -67,7 +67,7 @@ static void remove_device_rules(json_object *linux_config, json_object *removed)
 		json_object *rule = js_array_get_object(rules, i - 1);
 		const char *rule_type = js_get_string_maybe(rule, "type");
 
-		if (js_get_bool(rule, "allow") && rule_type && !strcmp(rule_type, type) &&
+		if (js_get_bool(rule, "allow") && rule_type && streq(rule_type, type) &&
 		    js_get(rule, "major") && js_get(rule, "minor") &&
 		    js_get_int(rule, "major") == device_major &&
 		    js_get_int(rule, "minor") == device_minor)
@@ -80,7 +80,7 @@ static void remove_device(json_object *linux_config, const char *destination)
 	json_object *devices = js_get(linux_config, "devices");
 	for (size_t i = devices ? js_array_len(devices) : 0; i > 0; i--) {
 		json_object *device = js_array_get_object(devices, i - 1);
-		if (strcmp(js_get_string(device, "path"), destination))
+		if (!streq(js_get_string(device, "path"), destination))
 			continue;
 
 		autofreejson json_object *removed = json_object_get(device);
@@ -152,7 +152,7 @@ static void resolve_path(PtrArray *paths, const PathOperation *operation,
 
 	for (size_t i = 0; i < paths->length; i++) {
 		ResolvedPath *previous = paths->items[i];
-		if (!strcmp(previous->destination, path->destination)) {
+		if (streq(previous->destination, path->destination)) {
 			resolved_path_free(previous);
 			paths->items[i] = path;
 			return;
@@ -212,7 +212,7 @@ static bool expand_device_directory(PtrArray *paths, const PathOperation *operat
 static char *device_destination(const PathOperation *operation, const char *source,
 				bool pattern)
 {
-	if (!strcmp(operation->source, operation->destination))
+	if (streq(operation->source, operation->destination))
 		return xstrdup(source);
 	if (!pattern)
 		return xstrdup(operation->destination);
@@ -293,7 +293,7 @@ static bool device_on_seat(sd_device *device, const char *seat)
 				errx(1, "reading device seat for %s: %s", seat,
 				     strerror(-r));
 
-			return !strcmp(name && *name ? name : "seat0", seat);
+			return streq(name && *name ? name : "seat0", seat);
 		}
 
 		r = sd_device_get_parent(device, &device);
@@ -364,9 +364,9 @@ static void expand_seat(PtrArray *paths, const PathOperation *operation)
 static bool same_path_request(const PathOperation *a, const PathOperation *b)
 {
 	if (a->seat || b->seat)
-		return a->seat && b->seat && !strcmp(a->seat, b->seat);
+		return streq(a->seat, b->seat);
 
-	return !strcmp(a->destination, b->destination);
+	return streq(a->destination, b->destination);
 }
 
 static void resolve_path_operations(PtrArray *resolved, const PtrArray *operations)
@@ -478,7 +478,7 @@ static void configure_paths(json_object *oci, const Config *config)
 		bool replaced = false;
 		for (size_t j = 0; j < js_array_len(mounts);) {
 			json_object *old = js_array_get_object(mounts, j);
-			if (strcmp(js_get_string(old, "destination"), destination)) {
+			if (!streq(js_get_string(old, "destination"), destination)) {
 				j++;
 			} else if (!replaced) {
 				json_object_array_put_idx(mounts, j++,
@@ -511,11 +511,11 @@ static void configure_paths(json_object *oci, const Config *config)
 static void update_capability_set(json_object *set, const CapabilityOperation *operation)
 {
 	const char *name = operation->name;
-	bool all = !strcmp(name, "all");
+	bool all = streq(name, "all");
 
 	if (operation->remove) {
 		for (size_t i = js_array_len(set); i > 0; i--)
-			if (all || !strcmp(js_array_get_string(set, i - 1), name))
+			if (all || streq(js_array_get_string(set, i - 1), name))
 				json_object_array_del_idx(set, i - 1, 1);
 		return;
 	}
@@ -577,8 +577,8 @@ void configure_oci_policy(json_object *oci, const Config *config)
 				continue;
 
 			for (size_t k = js_array_len(paths); k > 0; k--)
-				if (!strcmp(path, "ALL") ||
-				    !strcmp(path, js_array_get_string(paths, k - 1)))
+				if (streq(path, "ALL") ||
+				    streq(path, js_array_get_string(paths, k - 1)))
 					json_object_array_del_idx(paths, k - 1, 1);
 		}
 	}

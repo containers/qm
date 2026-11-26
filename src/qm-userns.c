@@ -14,7 +14,7 @@ void userns_configure_mounts(json_object *config, const char *runtime_dir)
 	for (size_t i = 0; i < js_array_len(mounts); i++) {
 		json_object *entry = js_array_get_object(mounts, i);
 		const char *source = js_get_string_maybe(entry, "source");
-		if (strcmp(js_get_string(entry, "type"), "bind") || !source)
+		if (!streq(js_get_string(entry, "type"), "bind") || !source)
 			continue;
 		/* Persistent trees are already shifted on disk. Only qmc's generated
 		 * files and host-owned signal state need a translated runtime mount.

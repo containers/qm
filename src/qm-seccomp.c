@@ -7,7 +7,6 @@
 #include "qm-utils.h"
 
 #include <err.h>
-#include <string.h>
 #include <sys/utsname.h>
 
 typedef struct {
@@ -33,7 +32,7 @@ static const Architecture *native_arch(void)
 		err(1, "uname");
 
 	for (size_t i = 0; i < N_ELEMENTS(architectures); i++)
-		if (!strcmp(host.machine, architectures[i].kernel_name))
+		if (streq(host.machine, architectures[i].kernel_name))
 			return &architectures[i];
 
 	errx(1, "unsupported seccomp architecture: %s", host.machine);
@@ -48,7 +47,7 @@ static bool seccomp_condition_matches(json_object *condition, json_object *caps,
 		errx(1, "invalid seccomp condition");
 
 	json_object_object_foreach (condition, key, value) {
-		if (strcmp(key, "arches") && strcmp(key, "caps"))
+		if (!streq(key, "arches") && !streq(key, "caps"))
 			errx(1, "unsupported seccomp condition: %s", key);
 		if (!js_is_array(value))
 			errx(1, "invalid seccomp condition: %s", key);
@@ -82,7 +81,7 @@ void resolve_seccomp(json_object *profile, json_object *process)
 		js_array_add_string(architectures, arch->seccomp_name);
 		for (size_t i = 0; i < js_array_len(map); i++) {
 			json_object *entry = js_array_get_object(map, i);
-			if (strcmp(js_get_string(entry, "architecture"),
+			if (!streq(js_get_string(entry, "architecture"),
 				   arch->seccomp_name))
 				continue;
 
