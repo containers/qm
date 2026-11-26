@@ -472,6 +472,21 @@ static NftOwner nft_owner(struct nft_ctx *ctx, const char *name, const char *own
 	return NFT_OWNER_ABSENT;
 }
 
+/* Clamp both SYN and SYN+ACK using current routes, before filtering and
+ * source NAT. A NAT chain would only see the first packet of a flow.
+ */
+/* clang-format off */
+static const char nft_rules_template[] =
+	"add chain ip ${table} forward_mss { type filter hook forward priority mangle; policy accept; }\n"
+	"add rule ip ${table} forward_mss iifname \"${veth}\" tcp flags syn tcp option maxseg size set rt mtu\n"
+	"add rule ip ${table} forward_mss oifname \"${veth}\" tcp flags syn tcp option maxseg size set rt mtu\n"
+	"add chain ip ${table} forward { type filter hook forward priority filter; policy accept; }\n"
+	"add rule ip ${table} forward iifname \"${veth}\" ip saddr ${subnet} accept\n"
+	"add rule ip ${table} forward iifname \"${veth}\" drop\n"
+	"add chain ip ${table} postrouting { type nat hook postrouting priority srcnat; policy accept; }\n"
+	"add rule ip ${table} postrouting ip saddr ${subnet} ip daddr != ${subnet} masquerade\n";
+/* clang-format on */
+
 static int nft_setup(struct nft_ctx *ctx, const NetworkOptions *options,
 		     const char *owner)
 {
@@ -486,30 +501,17 @@ static int nft_setup(struct nft_ctx *ctx, const NetworkOptions *options,
 	if (nft_command(ctx, table))
 		return -1;
 	autofree char *subnet = xasprintf("%s/%u", options->subnet, options->prefix_len);
-	/* Clamp both SYN and SYN+ACK using current routes, before filtering and
-	 * source NAT. A NAT chain would only see the first packet of a flow.
-	 */
-	autofree char *rules =
-		xasprintf("add chain ip %s forward_mss "
-			  "{ type filter hook forward priority mangle; policy accept; }\n"
-			  "add rule ip %s forward_mss iifname \"%s\" "
-			  "tcp flags syn tcp option maxseg size set rt mtu\n"
-			  "add rule ip %s forward_mss oifname \"%s\" "
-			  "tcp flags syn tcp option maxseg size set rt mtu\n"
-			  "add chain ip %s forward "
-			  "{ type filter hook forward priority filter; policy accept; }\n"
-			  "add rule ip %s forward iifname \"%s\" ip saddr %s accept\n"
-			  "add rule ip %s forward iifname \"%s\" drop\n"
-			  "add chain ip %s postrouting "
-			  "{ type nat hook postrouting priority srcnat; policy accept; "
-			  "}\n"
-			  "add rule ip %s postrouting "
-			  "ip saddr %s ip daddr != %s masquerade\n",
-			  options->nft_table, options->nft_table, options->veth,
-			  options->nft_table, options->veth, options->nft_table,
-			  options->nft_table, options->veth, subnet, options->nft_table,
-			  options->veth,
-			  options->nft_table, options->nft_table, subnet, subnet);
+	const FormatVar vars[] = {
+		{"table", options->nft_table},
+		{"veth", options->veth},
+		{"subnet", subnet},
+		{NULL},
+	};
+	autofree char *rules = format_named(nft_rules_template, vars);
+	if (!rules) {
+		warn("format nftables rules");
+		return -1;
+	}
 	/* One transaction installs all chains and rules in the owned table. */
 	return nft_command(ctx, rules);
 }
