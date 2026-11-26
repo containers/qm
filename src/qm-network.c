@@ -442,10 +442,10 @@ static int nft_owner(struct nft_ctx *ctx, const char *name, const char *owner)
 	for (size_t i = 0; i < js_array_len(objects); i++) {
 		json_object *table =
 			js_get_object_maybe(js_array_get_object(objects, i), "table");
-		if (!table || strcmp(js_get_string(table, "name"), name))
+		if (!table || !streq(js_get_string(table, "name"), name))
 			continue;
 		const char *comment = js_get_string_maybe(table, "comment");
-		return comment && !strcmp(comment, owner) ? 1 : 2;
+		return comment && streq(comment, owner) ? 1 : 2;
 	}
 	return 0;
 }
@@ -586,7 +586,7 @@ NetworkState *network_prepare(const NetworkOptions *options)
 		warn("read host IPv4 forwarding setting");
 		return NULL;
 	}
-	if (strcmp(forwarding, "1\n")) {
+	if (!streq(forwarding, "1\n")) {
 		warnx("host IPv4 forwarding is disabled; apply 00-qm-forwarding.conf "
 		      "with systemd-sysctl before launching QM");
 		return NULL;
@@ -685,7 +685,7 @@ static int remove_link(Rtnl *nl, const char *name, const char *owner)
 	}
 	if (!link.index)
 		return 0;
-	if (link.alias[0] ? strcmp(link.alias, owner)
+	if (link.alias[0] ? !streq(link.alias, owner)
 			  : link.group != owner_group(owner)) {
 		warnx("%s belongs to another owner; leaving it alone", name);
 		return 1;
