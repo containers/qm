@@ -1,0 +1,16 @@
+summary: QMC integration tests
+
+discover:
+    how: fmf
+    test: ^/tests/qmc/smoke$
+
+prepare:
+    - name: Enable build dependencies from CRB
+      how: feature
+      crb: enabled
+
+execute:
+    how: tmt
+
+report:
+    how: junit

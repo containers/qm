@@ -6,10 +6,16 @@ OCI preparation, inspection, command errors, signals and utility failures withou
 a running QM instance or host network changes. Meson and RPM builds enable them
 by default; use `-Dtests=false` for a build without test fixtures.
 
+The `network-policy` test uses the network fixture in private user, mount and
+network namespaces to check source validation for host-bound and forwarded
+packets, and to ensure QM masquerading leaves unrelated traffic unchanged. It
+needs iproute and nftables, and reports a skip if its tools or unprivileged
+namespaces are unavailable. It does not need cgroup delegation or a QM rootfs.
+
 Some preparation and exec cases need private mounts or privileges. unittest
 reports these cases as skipped when their prerequisites are unavailable. Passing
-this suite does not establish that the installed service runs with SELinux or
-that networking works; those checks require a disposable integration machine.
+this suite does not establish installed-service networking or SELinux behavior;
+those checks require a disposable integration machine.
 
 ## Installed service (disposable CentOS 10 machine)
 
@@ -60,3 +66,10 @@ for the host signal. It uses the generic signal path and target templates for
 both `host-network-online` and `network-ready`. The two machine-ID variants
 exercise a signal published before startup and one published while guest
 startup is blocked.
+
+Packit runs `/plans/qmc-smoke` for pull requests on a disposable CentOS Stream 10
+VM. Its `smoke.sh` wrapper builds QMC from source and runs the integration tests
+in private namespaces. Missing prerequisites fail the job.
+
+To reproduce that job on a disposable VM, install the dependencies listed in
+`smoke.fmf` (with CRB enabled), then run `sudo bash tests/qmc/smoke.sh`.

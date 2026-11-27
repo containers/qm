@@ -1,0 +1,28 @@
+summary: QMC integration tests
+description: |
+    Build QMC from source and exercise its integration tests on a disposable
+    VM. Missing prerequisites must fail the test.
+test: bash ./smoke.sh
+framework: shell
+duration: 10m
+require:
+    - bzip2
+    - coreutils
+    - crun
+    - gcc
+    - golang-github-cpuguy83-md2man
+    - iproute
+    - iputils
+    - json-c-devel
+    - libmnl-devel
+    - make
+    - meson
+    - nftables
+    - nftables-devel
+    - ninja-build
+    - procps-ng
+    - python3
+    - systemd
+    - systemd-devel
+    - util-linux
+id: 029a6f52-744c-4b0c-a037-14596d2166d6
