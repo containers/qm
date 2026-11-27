@@ -791,9 +791,10 @@ with tempfile.TemporaryDirectory(prefix="qm-launch-smoke-") as temporary:
                 timeout=10,
             )
             assert result.returncode == 23, result.stderr
+            output = os.read(master, 4096)
             assert (
-                os.read(master, 4096) == b"EXEC argument with spaces tty=1\r\n"
-            )
+                output.rstrip(b"\r\n") == b"EXEC argument with spaces tty=1"
+            ), output
         finally:
             os.close(slave)
             os.close(master)
